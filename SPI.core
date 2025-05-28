@@ -1,0 +1,85 @@
+CAPI=2:
+
+#-----------------------------------------------------------------------------
+# Title      : SPI Core file
+# Project    : Asylum
+#-----------------------------------------------------------------------------
+# File       : SPI.core
+# Author     : mrosiere
+#-----------------------------------------------------------------------------
+# Description: 
+#-----------------------------------------------------------------------------
+# Copyright (c) 2021
+#-----------------------------------------------------------------------------
+# Revisions  :
+# Date        Version  Author   Description
+#-----------------------------------------------------------------------------
+
+name        : asylum:component:SPI:0.1.0
+description : SPI Module
+
+#=========================================
+generate:
+#=========================================
+
+  #---------------------------------------
+  gen_csr:
+  #---------------------------------------
+    generator : regtool
+    parameters:
+      file         : src/csr/SPI.hjson
+      name         : SPI
+      copy         : src/csr
+      #logical_name : asylum
+
+#=========================================
+filesets:
+#=========================================
+
+  #---------------------------------------
+  hdl:
+  #---------------------------------------
+    files        :
+      - src/spi_master.vhd
+#      - src/pbi_SPI.vhd
+    file_type    : vhdlSource
+    #logical_name : asylum
+    depend       :
+      - asylum:utils:generators
+      - asylum:utils:pkg
+      - asylum:component:pbi_wrapper_target
+  #---------------------------------------
+  sim:
+  #---------------------------------------
+    files:
+      - sim/tb_SPI.vhd
+    file_type : vhdlSource-2008
+
+#=========================================
+targets:
+#=========================================
+
+  #---------------------------------------
+  default: &default
+  #---------------------------------------
+    description     : Default Target
+    filesets        :
+      - hdl
+    toplevel        : SPI
+    default_tool    : ghdl
+#    generate        :
+#      - gen_csr
+
+  #---------------------------------------
+  sim_testcase:
+  #---------------------------------------
+    << : *default
+    description     : Simulation of all cases
+    filesets_append :
+      - sim
+    toplevel        : tb
+    default_tool    : ghdl
+    tools :
+      ghdl :
+        run_options : ["--vcd=dut.vcd"]
+

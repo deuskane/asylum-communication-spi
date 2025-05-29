@@ -38,6 +38,11 @@ entity spi_master is
     tx_tvalid_i     : in  std_logic;
     tx_tready_o     : out std_logic;
 
+    -- Data From AXI Stream
+    rx_tdata_o      : out std_logic_vector(8-1 downto 0);
+    rx_tvalid_o     : out std_logic;
+    rx_tready_i     : in  std_logic;
+    
     -- Configuration
     cpol_i          : in  std_logic;
     cpha_i          : in  std_logic;
@@ -53,8 +58,8 @@ end entity spi_master;
  
 architecture rtl of spi_master is
  
-    type   state_type is (IDLE, LOAD, TRANSFER, DONE);
-    signal state_r         : state_type := IDLE;
+    type   state_t is (IDLE, START, TRANSFER, DONE);
+    signal state_r         : state_t;
                           
     signal clk_div_r       : std_logic;
     signal sclk_r          : std_logic;
@@ -67,6 +72,8 @@ architecture rtl of spi_master is
     signal bit_cnt_r       : unsigned(3 downto 0);
     signal data_r          : std_logic_vector(8-1 downto 0);
     signal tx_tready_r     : std_logic;
+    signal rx_tdata_r      : std_logic_vector(8-1 downto 0);
+    signal rx_tvalid_r     : std_logic;
  
 begin
 
@@ -135,6 +142,9 @@ begin
       mosi_r      <= '0';
       tx_tready_r <= '1'; -- Always Ready during reset
       bit_cnt_r   <= (others => '0');
+      rx_tdata_r  <= (others => '0');
+      rx_tvalid_r <= '0';
+
     elsif rising_edge(clk_i)
     then
       case state_r is
@@ -144,8 +154,8 @@ begin
         -- Wait New transaction from AXIS
         -----------------------------------------------------------------------
         when IDLE =>
-          cs_b_r      <= '1'; -- CS Inactive
-          tx_tready_r <= '1'; -- Ready
+          --cs_b_r      <= '1'; -- CS Inactive
+          --tx_tready_r <= '1'; -- Ready
 
           -- Wait to Receive new request
           if tx_tvalid_i = '1'
@@ -155,41 +165,54 @@ begin
 
             -- Ack the axistream transfert
             tx_tready_r <= '0';
-            state_r     <= LOAD;
+            state_r     <= START;
           end if;
           
-        when LOAD =>
+        -----------------------------------------------------------------------
+        -- START State
+        -- The set the CS_B
+        -----------------------------------------------------------------------
+        when START =>
           if (bit_sample = '1')
           then
-            cs_b_r        <= '0';
-            state_r <= TRANSFER;
+            cs_b_r    <= '0';
+            state_r   <= TRANSFER;
+            bit_cnt_r <= (others => '0');
           end if;
         when TRANSFER =>
-          if bit_cnt_r < 8
+          if (bit_cnt_r < 8)
           then
             if (bit_shift = '1')
             then
-              sclk_r         <= not sclk_r;
-              mosi_r <= data_r(7);
+              sclk_r    <= not sclk_r;
+              mosi_r    <= data_r(7);
             end if;
             
             if (bit_sample = '1')
             then
-              sclk_r     <= not sclk_r;
+              sclk_r    <= not sclk_r;
               data_r    <= data_r(6 downto 0) & miso_i;
               bit_cnt_r <= bit_cnt_r + 1;
             end if;
           else
-            state_r <= DONE;
+            rx_tdata_r  <= data_r;
+            rx_tvalid_r <= '1';
+            state_r     <= DONE;
           end if;
           
         when DONE =>
-          if (bit_sample = '1')
+          if (bit_shift = '1')
           then
-            cs_b_r  <= '1';
-            state_r <= IDLE;
-            end if;
+            cs_b_r      <= '1';
+            tx_tready_r <= '1'; -- Ready
+            state_r     <= IDLE;
+          end if;
       end case;
+
+      if (rx_tvalid_r = '1' and rx_tready_i = '1')
+      then
+        rx_tvalid_r <= '0';
+      end if;
     end if;
   end process;
 
@@ -201,5 +224,7 @@ begin
   cs_b_o      <= cs_b_r;
 
   tx_tready_o <= tx_tready_r;
+  rx_tdata_o  <= rx_tdata_r ;
+  rx_tvalid_o <= rx_tvalid_r;
 end architecture rtl;
  

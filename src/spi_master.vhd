@@ -94,7 +94,6 @@ begin
       cycle_phase_r    <= '0';
       cycle_phase0_r   <= '0';
       cycle_phase1_r   <= '0';
-
       
     elsif rising_edge(clk_i)
     then
@@ -129,9 +128,6 @@ begin
   
   prescaler_is_min <= '1' when unsigned(prescaler_cnt_r) = 0 else
                       '0';
-
-  -- CPHA 0 : sampled in first  edge
-  -- CPHA 1 : sampled in second edge
   
   bit_sample       <= cycle_phase0_r;
   bit_shift        <= cycle_phase1_r;
@@ -183,6 +179,11 @@ begin
             state_r   <= TRANSFER;
             bit_cnt_r <= (others => '0');
           end if;
+
+        -----------------------------------------------------------------------
+        -- TRANSFERT State
+        -- Send bit per bit the data
+        -----------------------------------------------------------------------
         when TRANSFER =>
           if (bit_cnt_r < 8)
           then
@@ -190,7 +191,8 @@ begin
             then
               mosi_r    <= data_r(7);
 
-
+              -- If CPHA = 0, then sample into the first clock edge
+              -- So shift the clock
               if not (cpha_i = '0' and bit_cnt_r = 0)
               then
                 sclk_r    <= not sclk_r;
@@ -205,18 +207,24 @@ begin
               bit_cnt_r <= bit_cnt_r + 1;
             end if;
           else
+
+            if (bit_shift = '1')
+            then
+
+              -- If CPHA = 0, then the clock is shifted, then missing one edge
+              if (cpha_i = '0')
+              then
+              
+              sclk_r    <= not sclk_r;
+              end if;
+
             rx_tdata_r  <= data_r;
             rx_tvalid_r <= '1';
             state_r     <= DONE;
+            end if;
           end if;
           
         when DONE =>
-          if (bit_shift = '1') and (cpha_i = '0')
-          then
-            sclk_r    <= not sclk_r;
-          end if;
-
-
           if (bit_sample = '1')
           then
             cs_b_r      <= '1';

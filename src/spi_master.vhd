@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-05-28
+-- Last update: 2025-05-30
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -59,22 +59,24 @@ end entity spi_master;
 architecture rtl of spi_master is
  
     type   state_t is (IDLE, START, TRANSFER, DONE);
-    signal state_r         : state_t;
-                          
-    signal clk_div_r       : std_logic;
-    signal sclk_r          : std_logic;
-    signal mosi_r          : std_logic;
-    signal cs_b_r          : std_logic;
-    signal prescaler_cnt_r : unsigned(PRESCALER_WIDTH-1 downto 0);
-    signal prescaler_is_min: std_logic;
-    signal bit_sample      : std_logic;
-    signal bit_shift       : std_logic;
-    signal bit_cnt_r       : unsigned(3 downto 0);
-    signal data_r          : std_logic_vector(8-1 downto 0);
-    signal tx_tready_r     : std_logic;
-    signal rx_tdata_r      : std_logic_vector(8-1 downto 0);
-    signal rx_tvalid_r     : std_logic;
- 
+    signal state_r            : state_t;
+
+    signal sclk_r             : std_logic;
+    signal mosi_r             : std_logic;
+    signal cs_b_r             : std_logic;
+    signal prescaler_cnt_r    : unsigned(PRESCALER_WIDTH-1 downto 0);
+    signal prescaler_is_min   : std_logic;
+    signal bit_sample         : std_logic;
+    signal bit_shift          : std_logic;
+    signal bit_cnt_r          : unsigned(3 downto 0);
+    signal data_r             : std_logic_vector(8-1 downto 0);
+    signal tx_tready_r        : std_logic;
+    signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
+    signal rx_tvalid_r        : std_logic;
+
+    signal cycle_phase_r      : std_logic;
+    signal cycle_phase0_r     : std_logic;
+    signal cycle_phase1_r     : std_logic;
 begin
 
   -----------------------------------------------------------------------------
@@ -88,13 +90,25 @@ begin
     if arst_b_i = '0'
     then
       prescaler_cnt_r  <= (others => '0');
-      clk_div_r           <= '0';
+
+      cycle_phase_r    <= '0';
+      cycle_phase0_r   <= '0';
+      cycle_phase1_r   <= '0';
+
+      
     elsif rising_edge(clk_i)
     then
+      cycle_phase0_r   <= '0';
+      cycle_phase1_r   <= '0';
+
       if prescaler_is_min = '1'
       then
         prescaler_cnt_r <= unsigned(prescaler_i);
-        clk_div_r          <= not clk_div_r;
+        cycle_phase_r   <= not cycle_phase_r;
+        cycle_phase0_r  <= '1' when cycle_phase_r='0' else
+                           '0';
+        cycle_phase1_r  <= '1' when cycle_phase_r='1' else
+                           '0';
       else
         prescaler_cnt_r <= prescaler_cnt_r - 1;
       end if;
@@ -119,16 +133,9 @@ begin
   -- CPHA 0 : sampled in first  edge
   -- CPHA 1 : sampled in second edge
   
-  bit_sample       <= '1' when (prescaler_is_min = '1'  and
-                                ((cpha_i = '0' and clk_div_r =     '0') or
-                                 (cpha_i = '1' and clk_div_r = not '0'))) else 
-                      '0';
-  bit_shift        <= '1' when (prescaler_is_min = '1'  and
-                                ((cpha_i = '0' and clk_div_r = not '0') or
-                                 (cpha_i = '1' and clk_div_r =     '0'))) else
-                      '0';
+  bit_sample       <= cycle_phase0_r;
+  bit_shift        <= cycle_phase1_r;
   
-
   -----------------------------------------------------------------------------
   -- FSM
   -----------------------------------------------------------------------------
@@ -154,9 +161,6 @@ begin
         -- Wait New transaction from AXIS
         -----------------------------------------------------------------------
         when IDLE =>
-          --cs_b_r      <= '1'; -- CS Inactive
-          --tx_tready_r <= '1'; -- Ready
-
           -- Wait to Receive new request
           if tx_tvalid_i = '1'
           then
@@ -184,8 +188,14 @@ begin
           then
             if (bit_shift = '1')
             then
-              sclk_r    <= not sclk_r;
               mosi_r    <= data_r(7);
+
+
+              if not (cpha_i = '0' and bit_cnt_r = 0)
+              then
+                sclk_r    <= not sclk_r;
+              end if;
+                
             end if;
             
             if (bit_sample = '1')
@@ -201,7 +211,13 @@ begin
           end if;
           
         when DONE =>
-          if (bit_shift = '1')
+          if (bit_shift = '1') and (cpha_i = '0')
+          then
+            sclk_r    <= not sclk_r;
+          end if;
+
+
+          if (bit_sample = '1')
           then
             cs_b_r      <= '1';
             tx_tready_r <= '1'; -- Ready

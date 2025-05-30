@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2017-03-25
--- Last update: 2025-05-28
+-- Last update: 2025-05-30
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -183,6 +183,64 @@ begin
     wait until tx_tready_o = '1';
 
     report "[TESTBENCH] (CPOL 0 - CPHA 1) Transmission de 2 bytes";
+    run(100);
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"F0";
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"0F";
+    wait until tx_tready_o = '1';
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '0';
+    tx_tdata_i  <= X"00";
+    wait until tx_tready_o = '1';
+
+    report "[TESTBENCH] (CPOL 1 - CPHA 0) Transmission d'1 byte ";
+    run(100);
+    arst_b_i    <= '0';
+    cpol_i      <= '1';
+    cpha_i      <= '0';
+    run(1);
+    arst_b_i    <= '1';
+    run(1);
+
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"3C";
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '0';
+    tx_tdata_i  <= X"00";
+    wait until tx_tready_o = '1';
+
+    report "[TESTBENCH] (CPOL 1 - CPHA 0) Transmission de 2 bytes";
+    run(100);
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"F0";
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"0F";
+    wait until tx_tready_o = '1';
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '0';
+    tx_tdata_i  <= X"00";
+    wait until tx_tready_o = '1';
+
+    report "[TESTBENCH] (CPOL 1 - CPHA 1) Transmission d'1 byte ";
+    run(100);
+    arst_b_i    <= '0';
+    cpol_i      <= '1';
+    cpha_i      <= '1';
+    run(1);
+    arst_b_i    <= '1';
+    run(1);
+
+    tx_tvalid_i <= '1';
+    tx_tdata_i  <= X"3C";
+    wait until tx_tready_o = '0';
+    tx_tvalid_i <= '0';
+    tx_tdata_i  <= X"00";
+    wait until tx_tready_o = '1';
+
+    report "[TESTBENCH] (CPOL 1 - CPHA 1) Transmission de 2 bytes";
     run(100);
     tx_tvalid_i <= '1';
     tx_tdata_i  <= X"F0";

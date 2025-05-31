@@ -52,7 +52,7 @@ filesets:
   sim:
   #---------------------------------------
     files:
-      - sim/tb_SPI.vhd
+      - sim/basic/tb_SPI.vhd
     file_type : vhdlSource-2008
 
 #=========================================
@@ -71,10 +71,10 @@ targets:
 #      - gen_csr
 
   #---------------------------------------
-  sim_testcase:
+  sim_basic:
   #---------------------------------------
     << : *default
-    description     : Simulation of all cases
+    description     : Simulation of basic unit tests
     filesets_append :
       - sim
     toplevel        : tb

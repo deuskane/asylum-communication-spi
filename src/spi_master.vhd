@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-05-30
+-- Last update: 2025-05-31
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -47,6 +47,7 @@ entity spi_master is
     cpol_i          : in  std_logic;
     cpha_i          : in  std_logic;
     prescaler_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+    disable_cs_i    : in  std_logic;
 
     -- SPI Interface
     sclk_o          : out std_logic;
@@ -158,13 +159,8 @@ begin
         -----------------------------------------------------------------------
         when IDLE =>
           -- Wait to Receive new request
-          if tx_tvalid_i = '1'
+          if tx_tready_r = '0'
           then
-            -- Load data in TX buffer
-            data_r      <= tx_tdata_i;
-
-            -- Ack the axistream transfert
-            tx_tready_r <= '0';
             state_r     <= START;
           end if;
           
@@ -214,25 +210,45 @@ begin
               -- If CPHA = 0, then the clock is shifted, then missing one edge
               if (cpha_i = '0')
               then
-              
-              sclk_r    <= not sclk_r;
+                sclk_r    <= not sclk_r;
               end if;
 
-            rx_tdata_r  <= data_r;
-            rx_tvalid_r <= '1';
-            state_r     <= DONE;
+              tx_tready_r <= '1'; -- Ready
+              rx_tdata_r  <= data_r;
+              rx_tvalid_r <= '1'; -- Valid
+
+              if (disable_cs_i = '1')
+              then
+                state_r     <= DONE;
+              else
+                state_r     <= IDLE;
+              end if;
             end if;
           end if;
           
+        -----------------------------------------------------------------------
+        -- TRANSFERT State
+        -- Unset the CS_B
+        -----------------------------------------------------------------------
         when DONE =>
           if (bit_sample = '1')
           then
             cs_b_r      <= '1';
-            tx_tready_r <= '1'; -- Ready
             state_r     <= IDLE;
           end if;
       end case;
 
+      -- TX FIFO Managment
+      if (tx_tvalid_i = '1' and tx_tready_r = '1')
+      then
+        -- Ack the axistream transfert
+        tx_tready_r <= '0';
+
+        -- Load data in TX buffer
+        data_r      <= tx_tdata_i;
+      end if;
+
+      -- RX FIFO Managment
       if (rx_tvalid_r = '1' and rx_tready_i = '1')
       then
         rx_tvalid_r <= '0';

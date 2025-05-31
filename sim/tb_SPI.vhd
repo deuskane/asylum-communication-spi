@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2017-03-25
--- Last update: 2025-05-30
+-- Last update: 2025-05-31
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -51,6 +51,7 @@ architecture sim of tb is
   signal cpol_i        :std_logic;
   signal cpha_i        :std_logic;
   signal prescaler_i   :std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+  signal disable_cs_i  : std_logic;
   signal sclk_o        :std_logic;
   signal cs_b_o        :std_logic;
   signal mosi_o        :std_logic;
@@ -107,6 +108,7 @@ begin
       ,cpol_i         => cpol_i     
       ,cpha_i         => cpha_i     
       ,prescaler_i    => prescaler_i
+      ,disable_cs_i   => disable_cs_i
       ,sclk_o         => sclk_o     
       ,cs_b_o         => cs_b_o     
       ,mosi_o         => mosi_o     
@@ -195,8 +197,9 @@ begin
 
     -- Réinitialisation
     run(10);
-    prescaler_i <= X"04";
-    rx_tready_i <= '1';
+    prescaler_i  <= X"00";
+    disable_cs_i <= '0';
+    rx_tready_i  <= '1';
 
     for cpol in 0 to 1 loop
       for cpha in 0 to 1 loop

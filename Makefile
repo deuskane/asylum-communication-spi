@@ -22,7 +22,7 @@ SHELL    	 = /bin/bash
 
 include mk/defs.mk
 
-FILE_TARGETS        = mk/targets.txt
+FILE_TARGETS     = mk/targets.txt
 
 CORE_NAME       := $(shell grep ^name $(FILE_CORE) | head -n1 | tr -d ' ')
 
@@ -55,6 +55,8 @@ help : $(FILE_TARGETS)
 	@echo ">>>>>>>  Makefile Help"
 	@echo ""
 	@echo "==============| Variables"
+	@echo "FILE_CORE     : Core File"
+	@echo "                $(FILE_CORE)"
 	@echo "VLNV          : Vendor/Library/Name/Version"
 	@echo "                $(VLNV)"
 	@echo "TARGET        : Specific Target for Fusesoc"

@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-04
+-- Last update: 2025-06-05
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -191,7 +191,6 @@ begin
 
     begin
       
-      
       report "[TESTBENCH] Configure CPOL "& std_logic'image(cpol) & " - CPHA "& std_logic'image(cpol);
       arst_b_i    <= '0';
       cpol_i      <= cpol;
@@ -201,7 +200,6 @@ begin
       run(1);
     end cfg;
 
-    
     -------------------------------------------------------
     -- tx_1byte
     -------------------------------------------------------
@@ -220,14 +218,13 @@ begin
       wait until tx_tready_o = '1';
     end tx_1byte;
 
-
   begin  -- process tb_gen
-    report "[TESTBENCH] Test Begin";
+    report "[TESTBENCH] Test begin";
 
     -- Réinitialisation
     run(10);
     prescaler_i  <= X"0F";
-    rx_tready_i  <= '1';
+    tx_tvalid_i  <= '0';
 
     cfg('0','0');
 
@@ -239,7 +236,7 @@ begin
     -- SFDP Address
     tx_1byte(X"00");
     tx_1byte(X"00");
-    tx_1byte(X"00");
+    tx_1byte(X"05");
     -- SFDP Data
     tx_1byte(X"00");
     tx_1byte(X"00");
@@ -253,6 +250,47 @@ begin
     wait;
   end process;
 
+  p_rx: process is
+    -------------------------------------------------------
+    -- rx_1byte
+    -------------------------------------------------------
+    procedure rx_1byte
+      (constant byte0   : in std_logic_vector(8-1 downto 0)
+       ) is
+      
+    begin
+      report "[TESTBENCH] TX 1 byte";
+
+      rx_tready_i <= '1';
+      wait until rx_tvalid_o = '1';
+      wait for 1 ps;
+      assert rx_tdata_o = byte0 report "[TESTBENCH] Invalid Rx data " & to_hstring(rx_tdata_o) & " != " & to_hstring(byte0) severity note;
+
+      wait until rx_tvalid_o = '0';
+    end rx_1byte;
+
+
+  begin  -- process tb_gen
+    report "[TESTBENCH] RX Test Begin";
+
+    rx_tready_i  <= '0';
+
+    rx_1byte(X"ZZ");
+
+    rx_1byte(X"ZZ");
+    rx_1byte(X"ZZ");
+    rx_1byte(X"ZZ");
+    
+    rx_1byte(X"06");
+    rx_1byte(X"07");
+    rx_1byte(X"08");
+    rx_1byte(X"09");
+    
+    report "[TESTBENCH] RX Test End";
+    wait;
+  end process;
+
+  
     gen_test_done: process (test_done) is
     begin  -- process gen_test_done
       if test_done'event and test_done = '1' then  -- rising clock edge

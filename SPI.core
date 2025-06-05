@@ -54,6 +54,7 @@ filesets:
   #---------------------------------------
     files:
       - sim/basic/tb_SPI.vhd
+    logical_name : work
     file_type : vhdlSource-2008
 
   #---------------------------------------
@@ -100,7 +101,7 @@ targets:
     description     : Simulation of basic unit tests
     filesets_append :
       - sim_basic
-    toplevel        : tb
+    toplevel        : work.tb
     default_tool    : ghdl
     tools :
       ghdl :

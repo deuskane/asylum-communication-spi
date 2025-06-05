@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-04
+-- Last update: 2025-06-05
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ architecture sim of tb is
   procedure xrun
     (constant n     : in positive;           -- nb cycle
      constant pol   : in string;
-     signal   clk_i : in std_logic
+     signal   clk   : in std_logic
      ) is
     
   begin
@@ -71,9 +71,9 @@ architecture sim of tb is
     loop
       if (pol="pos")
       then
-        wait until rising_edge(clk_i);
+        wait until rising_edge(clk);
       else
-        wait until falling_edge(clk_i);
+        wait until falling_edge(clk);
       end if;
       
     end loop;  -- i

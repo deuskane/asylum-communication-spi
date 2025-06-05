@@ -216,12 +216,14 @@ begin
               
               tx_tready_r <= '1'; -- Ready
 
+              -- Push in fifo rx 
               if (disable_rx_i = '0')
               then
                 rx_tvalid_r <= '1'; -- Valid
                 rx_tdata_r  <= data_r;
               end if;
-              
+
+              -- After byte disable cs or not
               if (disable_cs_i = '1')
               then
                 state_r     <= DONE;

@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-05-31
+-- Last update: 2025-06-05
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -48,6 +48,7 @@ entity spi_master is
     cpha_i          : in  std_logic;
     prescaler_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
     disable_cs_i    : in  std_logic;
+    disable_rx_i    : in  std_logic;
 
     -- SPI Interface
     sclk_o          : out std_logic;
@@ -212,11 +213,15 @@ begin
               then
                 sclk_r    <= not sclk_r;
               end if;
-
+              
               tx_tready_r <= '1'; -- Ready
-              rx_tdata_r  <= data_r;
-              rx_tvalid_r <= '1'; -- Valid
 
+              if (disable_rx_i = '0')
+              then
+                rx_tvalid_r <= '1'; -- Valid
+                rx_tdata_r  <= data_r;
+              end if;
+              
               if (disable_cs_i = '1')
               then
                 state_r     <= DONE;

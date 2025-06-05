@@ -51,6 +51,7 @@ architecture sim of tb is
   signal cpha_i        :std_logic;
   signal prescaler_i   :std_logic_vector(PRESCALER_WIDTH-1 downto 0);
   signal disable_cs_i  : std_logic;
+  signal disable_rx_i  : std_logic;
   signal sclk_o        :std_logic;
   signal cs_b_o        :std_logic;
   signal mosi_o        :std_logic;
@@ -112,6 +113,7 @@ begin
     ,cpha_i         => cpha_i     
     ,prescaler_i    => prescaler_i
     ,disable_cs_i   => disable_cs_i
+    ,disable_rx_i   => disable_rx_i
     ,sclk_o         => sclk_o     
     ,cs_b_o         => cs_b_o     
     ,mosi_o         => mosi_o     
@@ -230,14 +232,16 @@ begin
 
     wait for 800 us;
     
-    -- SFDP Instruction
+    -- Read Instruction
     disable_cs_i <= '0';
+    disable_rx_i <= '1';
     tx_1byte(X"03");
-    -- SFDP Address
+    -- Read Address
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"05");
-    -- SFDP Data
+    -- Read Data
+    disable_rx_i <= '0';
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"00");
@@ -275,12 +279,6 @@ begin
 
     rx_tready_i  <= '0';
 
-    rx_1byte(X"ZZ");
-
-    rx_1byte(X"ZZ");
-    rx_1byte(X"ZZ");
-    rx_1byte(X"ZZ");
-    
     rx_1byte(X"06");
     rx_1byte(X"07");
     rx_1byte(X"08");

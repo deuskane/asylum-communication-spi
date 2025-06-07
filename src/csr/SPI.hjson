@@ -1,0 +1,135 @@
+{
+    name      : "SPI",
+    width     : 8,
+    desc      : "CSR for SPI"
+    interface : "pbi"
+
+    parameters : [
+    	{
+	    name         : "USER_DEFINE_PRESCALER"
+	    desc         : "Parameters to use the enable the User define Prescaler"
+	    type         : "boolean"
+	}
+    	{
+	    name         : "PRESCALER_RATIO"
+	    desc         : "Default value for prescaler ratio"
+	    type         : "std_logic_vector(7 downto 0)"
+	}
+    ]
+
+    registers : [
+        {
+            name         : "data",
+            address      : "x0",
+            desc         : "Write : data to tansmit, Read : data to receive",
+            swaccess     : "rw",
+            hwaccess     : "rw",
+            hwtype       : "fifo",
+
+            params: {
+                BLOCKING_READ  : "True", 
+                BLOCKING_WRITE : "True",
+            }
+
+            fields: [
+                {
+                    name: "value",
+                    bits: "7:0",
+                    desc: "Data TX or Data RX"
+                },
+            ]
+        },
+
+        {
+            name         : "cmd",
+            address      : "x1",
+            desc         : "Command FIFO",
+            swaccess     : "wo",
+            hwaccess     : "wo",
+            hwtype       : "fifo",
+
+            params: {
+                BLOCKING_READ  : "True", 
+                BLOCKING_WRITE : "True",
+            }
+
+            fields: [
+                {
+                    name: "nb_byte",
+                    bits: "4:0",
+                    desc: "NB Byte to TX/RX"
+                },
+                {
+                    name: "last",
+                    bits: "5",
+                    desc: "Last packet to transfer"
+                },
+                {
+                    name: "enable_rx",
+                    bits: "6",
+                    desc: "if 1 then push receive byte into rx fifo else not"
+                },
+                {
+                    name: "enable_tx",
+                    bits: "7",
+                    desc: "if 1 then mosi_oe_o is 1 else mosi_oe_o = 0"
+                },
+            ]
+        },
+
+	{
+            name         : "cfg",
+            address      : "x2",
+            desc         : "SPI Configuration Register",
+            swaccess     : "rw",
+            hwaccess     : "ro",
+
+            fields: [
+                {
+                    name: "spi_enable",
+                    bits: "0",
+                    desc: "0 : Parity is even, 1 : Parity is odd"
+                },
+                {
+                    name: "cpol",
+                    bits: "1",
+                    desc: "Clock Polarity"
+                },
+                {
+                    name: "cpha",
+                    bits: "2",
+                    desc: "Clock Phase"
+                },
+                {
+                    name: "loopback",
+                    bits: "3",
+                    desc: "0 : MISO is connected to SPI MISO, 1 MISO is connected to MOSI"
+                },
+                {
+                    name: "cs",
+                    bits: "7:4",
+                    desc: "Chip Select"
+                },
+            ]
+        },
+
+	{
+            name         : "prescaler",
+            address      : "x3",
+            desc         : "SPI Clock Prescaler. SCLK Frequency is CLK / 2*(prescaler+1)"
+            swaccess     : "rw",
+            hwaccess     : "ro",
+            hwtype       : "reg",
+	    enable       : "USER_DEFINE_PRESCALER",
+
+            fields: [
+                {
+                    name: "ratio",
+                    bits: "7:0",
+                    desc: "Baud Tick Counter Max"
+		    expr: "PRESCALER_RATIO"
+                },
+            ]
+        },
+]
+}

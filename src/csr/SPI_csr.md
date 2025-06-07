@@ -44,9 +44,6 @@ Clock Phase
 ### [3:3] loopback
 0 : MISO is connected to SPI MISO, 1 MISO is connected to MOSI
 
-### [7:4] cs
-Chip Select
-
 ## 0x3 prescaler
 SPI Clock Prescaler. SCLK Frequency is CLK / 2*(prescaler+1)
 

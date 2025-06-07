@@ -54,6 +54,7 @@ filesets:
   #---------------------------------------
     files:
       - sim/basic/tb_SPI.vhd
+      - sim/basic/tb_SPI_pkg.vhd
     logical_name : work
     file_type : vhdlSource-2008
 
@@ -70,6 +71,7 @@ filesets:
   models:
   #---------------------------------------
     files:
+      - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
       - sim/models/m25p40.vhd
       - sim/models/m45pe80.vhd

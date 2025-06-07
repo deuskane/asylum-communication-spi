@@ -22,6 +22,7 @@
 library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
+use     work.tb_SPI_pkg.all;
  
 entity tb is
 end tb;
@@ -30,68 +31,26 @@ architecture sim of tb is
   -----------------------------------------------------
   -- Test signals
   -----------------------------------------------------
-  signal test_en             : boolean   := false;
-  signal test_done           : std_logic := '0';
-  signal test_ok             : std_logic := '0';
+  signal test_en                 : boolean   := false;
+  signal test_done               : std_logic := '0';
+  signal test_ok                 : std_logic := '0';
+                                 
+  constant PRESCALER_WIDTH       : integer := 8;
+                                 
+                                 
+  -- Déclaration des signaux     
+  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0));
+  signal  RSTNeg                : std_logic;
+  signal  WPNeg                 : std_logic;
+  signal  HOLDNeg               : std_logic;
 
-  constant PRESCALER_WIDTH   : integer := 8;
-
-  
-  -- Déclaration des signaux
-  signal clk_i               : std_logic := '0';
-  signal arst_b_i            : std_logic := '1';
-                             
-  signal tx_tdata_i          : std_logic_vector(7 downto 0);
-  signal tx_tvalid_i         : std_logic;
-  signal tx_tready_o         : std_logic;
-  signal rx_tdata_o          : std_logic_vector(7 downto 0);
-  signal rx_tvalid_o         : std_logic;
-  signal rx_tready_i         : std_logic;
-  signal cpol_i              : std_logic;
-  signal cpha_i              : std_logic;
-  signal prescaler_ratio_i   : std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-  signal last_transfer_i     : std_logic;
-  signal enable_rx_i         : std_logic;
-  signal sclk_o              : std_logic;
-  signal cs_b_o              : std_logic;
-  signal mosi_o              : std_logic;
-  signal miso_i              : std_logic;
-  signal RSTNeg              : std_logic;
-  signal WPNeg               : std_logic;
-  signal HOLDNeg             : std_logic;
-  
-  -------------------------------------------------------
-  -- xrun
-  -------------------------------------------------------
-  procedure xrun
-    (constant n     : in positive;           -- nb cycle
-     constant pol   : in string;
-     signal   clk_i : in std_logic
-     ) is
-    
-  begin
-    for i in 0 to n-1
-    loop
-      if (pol="pos")
-      then
-        wait until rising_edge(clk_i);
-      else
-        wait until falling_edge(clk_i);
-      end if;
-      
-    end loop;  -- i
-  end xrun;
-
-  -------------------------------------------------------
-  -- run
-  -------------------------------------------------------
   procedure run
     (constant n     : in positive;          -- nb cycle
      constant pol   : in string := "pos"
      ) is
     
   begin
-    xrun(n,"pos",clk_i);
+    run(n,pol,dut_if.clk_i);
   end run;
   
 begin
@@ -101,23 +60,23 @@ begin
   -- Instanciation du contrôleur SPI_master
   dut: entity work.spi_master(rtl)
     port map
-    (clk_i                => clk_i
-    ,arst_b_i             => arst_b_i
-    ,tx_tdata_i           => tx_tdata_i 
-    ,tx_tvalid_i          => tx_tvalid_i
-    ,tx_tready_o          => tx_tready_o
-    ,rx_tdata_o           => rx_tdata_o 
-    ,rx_tvalid_o          => rx_tvalid_o
-    ,rx_tready_i          => rx_tready_i
-    ,cpol_i               => cpol_i     
-    ,cpha_i               => cpha_i     
-    ,prescaler_ratio_i    => prescaler_ratio_i
-    ,last_transfer_i      => last_transfer_i
-    ,enable_rx_i          => enable_rx_i
-    ,sclk_o               => sclk_o     
-    ,cs_b_o               => cs_b_o     
-    ,mosi_o               => mosi_o     
-    ,miso_i               => miso_i
+    (clk_i                => dut_if.clk_i
+    ,arst_b_i             => dut_if.arst_b_i
+    ,tx_tdata_i           => dut_if.tx_tdata_i 
+    ,tx_tvalid_i          => dut_if.tx_tvalid_i
+    ,tx_tready_o          => dut_if.tx_tready_o
+    ,rx_tdata_o           => dut_if.rx_tdata_o 
+    ,rx_tvalid_o          => dut_if.rx_tvalid_o
+    ,rx_tready_i          => dut_if.rx_tready_i
+    ,cfg_cpol_i           => dut_if.cfg_cpol_i     
+    ,cfg_cpha_i           => dut_if.cfg_cpha_i     
+    ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
+    ,last_transfer_i      => dut_if.last_transfer_i
+    ,enable_rx_i          => dut_if.enable_rx_i
+    ,sclk_o               => dut_if.sclk_o     
+    ,cs_b_o               => dut_if.cs_b_o     
+    ,mosi_o               => dut_if.mosi_o     
+    ,miso_i               => dut_if.miso_i
     );
 
   ------------------------------------------------
@@ -159,10 +118,10 @@ begin
       ,XOn               => True
        )
       port map
-      (D             => mosi_o -- serial data input/IO0
-      ,Q             => miso_i -- serial data output/IO1
-      ,C             => sclk_o -- serial clock input
-      ,SNeg          => cs_b_o -- chip select input
+      (D             => dut_if.mosi_o -- serial data input/IO0
+      ,Q             => dut_if.miso_i -- serial data output/IO1
+      ,C             => dut_if.sclk_o -- serial clock input
+      ,SNeg          => dut_if.cs_b_o -- chip select input
       ,WNeg          => WPNeg  -- write protect input/IO2
       ,HOLDNeg       => HOLDNeg-- hold input/IO3
        );
@@ -171,7 +130,19 @@ begin
   ------------------------------------------------
   -- Clock process
   ------------------------------------------------
-  clk_i <= not test_done and not clk_i after 10 ns;
+  gen_clk: process is
+    begin  -- process gen_clk
+      dut_if.clk_i <= '0';
+
+      while test_done = '0'
+      loop
+        wait for 5 ns;
+
+        dut_if.clk_i <= not dut_if.clk_i;
+      end loop;
+
+      wait; -- end process
+    end process gen_clk;  
   
   ------------------------------------------------
   -- Test process
@@ -188,18 +159,20 @@ begin
     -------------------------------------------------------
     procedure cfg
       (constant cpol   : in std_logic;
-       constant cpha   : in std_logic
+       constant cpha   : in std_logic;
+       constant prescaler_ratio_i : in std_logic_vector
        ) is
 
     begin
       
-      report "[TESTBENCH] Configure CPOL "& std_logic'image(cpol) & " - CPHA "& std_logic'image(cpol);
-      arst_b_i    <= '0';
-      cpol_i      <= cpol;
-      cpha_i      <= cpha;
-      run(1);
-      arst_b_i    <= '1';
-      run(1);
+      report "[TESTBENCH] Configure CPOL "& std_logic'image(cpol) & " - CPHA "& std_logic'image(cpol) & " - Prescaler Ratio 0x" & to_hstring(prescaler_ratio_i);
+      dut_if.arst_b_i    <= '0';
+      dut_if.cfg_cpol_i  <= cpol;
+      dut_if.cfg_cpha_i  <= cpha;
+      dut_if.cfg_prescaler_ratio_i <= prescaler_ratio_i;
+      run(1,"pos",dut_if.clk_i);
+      dut_if.arst_b_i    <= '1';
+      run(1,"pos",dut_if.clk_i);
     end cfg;
 
     -------------------------------------------------------
@@ -212,12 +185,12 @@ begin
     begin
       report "[TESTBENCH] TX 1 byte";
 
-      tx_tvalid_i <= '1';
-      tx_tdata_i  <= byte0;
-      wait until tx_tready_o = '0';
-      tx_tvalid_i <= '0';
-      tx_tdata_i  <= X"00";
-      wait until tx_tready_o = '1';
+      dut_if.tx_tvalid_i <= '1';
+      dut_if.tx_tdata_i  <= byte0;
+      wait until dut_if.tx_tready_o = '0';
+      dut_if.tx_tvalid_i <= '0';
+      dut_if.tx_tdata_i  <= X"00";
+      wait until dut_if.tx_tready_o = '1';
     end tx_1byte;
 
   begin  -- process tb_gen
@@ -225,27 +198,26 @@ begin
 
     -- Réinitialisation
     run(10);
-    prescaler_ratio_i  <= X"0F";
-    tx_tvalid_i        <= '0';
+    dut_if.tx_tvalid_i            <= '0';
 
-    cfg('0','0');
+    cfg('0','0',X"0F");
 
     wait for 800 us;
     
     -- Read Instruction
-    last_transfer_i <= '0';
-    enable_rx_i  <= '0';
+    dut_if.last_transfer_i <= '0';
+    dut_if.enable_rx_i  <= '0';
     tx_1byte(X"03");
     -- Read Address
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"05");
     -- Read Data
-    enable_rx_i <= '1';
+    dut_if.enable_rx_i <= '1';
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"00");
-    last_transfer_i <= '1';
+    dut_if.last_transfer_i <= '1';
     tx_1byte(X"00");
     
     wait;
@@ -262,19 +234,19 @@ begin
     begin
       report "[TESTBENCH] TX 1 byte";
 
-      rx_tready_i <= '1';
-      wait until rx_tvalid_o = '1';
+      dut_if.rx_tready_i <= '1';
+      wait until dut_if.rx_tvalid_o = '1';
       wait for 1 ps;
-      assert rx_tdata_o = byte0 report "[TESTBENCH] Invalid Rx data " & to_hstring(rx_tdata_o) & " != " & to_hstring(byte0) severity note;
+      assert dut_if.rx_tdata_o = byte0 report "[TESTBENCH] Invalid Rx data " & to_hstring(dut_if.rx_tdata_o) & " != " & to_hstring(byte0) severity note;
 
-      wait until rx_tvalid_o = '0';
+      wait until dut_if.rx_tvalid_o = '0';
     end rx_1byte;
 
 
   begin  -- process tb_gen
     report "[TESTBENCH] RX Test Begin";
 
-    rx_tready_i  <= '0';
+    dut_if.rx_tready_i  <= '0';
 
     rx_1byte(X"06");
     rx_1byte(X"07");

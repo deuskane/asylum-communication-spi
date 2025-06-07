@@ -86,25 +86,24 @@ architecture rtl of SPI_registers is
   signal   cmd_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   cmd_rbusy     : std_logic;
 
-  constant INIT_cfg : std_logic_vector(8-1 downto 0) :=
+  constant INIT_cfg : std_logic_vector(4-1 downto 0) :=
              "0" -- spi_enable
            & "0" -- cpol
            & "0" -- cpha
            & "0" -- loopback
-           & "0000" -- cs
            ;
   signal   cfg_wcs       : std_logic;
   signal   cfg_we        : std_logic;
   signal   cfg_wdata     : std_logic_vector(8-1 downto 0);
-  signal   cfg_wdata_sw  : std_logic_vector(8-1 downto 0);
-  signal   cfg_wdata_hw  : std_logic_vector(8-1 downto 0);
+  signal   cfg_wdata_sw  : std_logic_vector(4-1 downto 0);
+  signal   cfg_wdata_hw  : std_logic_vector(4-1 downto 0);
   signal   cfg_wbusy     : std_logic;
 
   signal   cfg_rcs       : std_logic;
   signal   cfg_re        : std_logic;
   signal   cfg_rdata     : std_logic_vector(8-1 downto 0);
-  signal   cfg_rdata_sw  : std_logic_vector(8-1 downto 0);
-  signal   cfg_rdata_hw  : std_logic_vector(8-1 downto 0);
+  signal   cfg_rdata_sw  : std_logic_vector(4-1 downto 0);
+  signal   cfg_rdata_hw  : std_logic_vector(4-1 downto 0);
   signal   cfg_rbusy     : std_logic;
 
   constant INIT_prescaler : std_logic_vector(8-1 downto 0) :=
@@ -311,7 +310,7 @@ begin  -- architecture rtl
   -- Register    : cfg
   -- Description : SPI Configuration Register
   -- Address     : 0x2
-  -- Width       : 8
+  -- Width       : 4
   -- Sw Access   : rw
   -- Hw Access   : ro
   -- Hw Type     : reg
@@ -340,12 +339,6 @@ begin  -- architecture rtl
   -- Width       : 1
   --==================================
 
-  --==================================
-  -- Field       : cs
-  -- Description : Chip Select
-  -- Width       : 4
-  --==================================
-
 
     cfg_rcs     <= '1' when     (sig_raddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(2,SPI_ADDR_WIDTH))) else '0';
     cfg_re      <= sig_rcs and sig_re and cfg_rcs;
@@ -354,10 +347,6 @@ begin  -- architecture rtl
       1 => cfg_rdata_sw(1), -- cpol(0)
       2 => cfg_rdata_sw(2), -- cpha(0)
       3 => cfg_rdata_sw(3), -- loopback(0)
-      4 => cfg_rdata_sw(4), -- cs(0)
-      5 => cfg_rdata_sw(5), -- cs(1)
-      6 => cfg_rdata_sw(6), -- cs(2)
-      7 => cfg_rdata_sw(7), -- cs(3)
       others => '0');
 
     cfg_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(2,SPI_ADDR_WIDTH)))   else '0';
@@ -367,16 +356,14 @@ begin  -- architecture rtl
     cfg_wdata_sw(1 downto 1) <= cfg_wdata(1 downto 1); -- cpol
     cfg_wdata_sw(2 downto 2) <= cfg_wdata(2 downto 2); -- cpha
     cfg_wdata_sw(3 downto 3) <= cfg_wdata(3 downto 3); -- loopback
-    cfg_wdata_sw(7 downto 4) <= cfg_wdata(7 downto 4); -- cs
     sw2hw_o.cfg.spi_enable <= cfg_rdata_hw(0 downto 0); -- spi_enable
     sw2hw_o.cfg.cpol <= cfg_rdata_hw(1 downto 1); -- cpol
     sw2hw_o.cfg.cpha <= cfg_rdata_hw(2 downto 2); -- cpha
     sw2hw_o.cfg.loopback <= cfg_rdata_hw(3 downto 3); -- loopback
-    sw2hw_o.cfg.cs <= cfg_rdata_hw(7 downto 4); -- cs
 
     ins_cfg : entity work.csr_reg(rtl)
       generic map
-        (WIDTH         => 8
+        (WIDTH         => 4
         ,INIT          => INIT_cfg
         ,MODEL         => "rw"
         )
@@ -409,7 +396,6 @@ begin  -- architecture rtl
     sw2hw_o.cfg.cpol <= "0";
     sw2hw_o.cfg.cpha <= "0";
     sw2hw_o.cfg.loopback <= "0";
-    sw2hw_o.cfg.cs <= "0000";
     sw2hw_o.cfg.re <= '0';
     sw2hw_o.cfg.we <= '0';
   end generate gen_cfg_b;

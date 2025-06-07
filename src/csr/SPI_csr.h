@@ -82,12 +82,6 @@
 #define SPI_CFG_LOOPBACK      3
 #define SPI_CFG_LOOPBACK_MASK 1
 
-// Field       : cfg.cs
-// Description : Chip Select
-// Range       : [7:4]
-#define SPI_CFG_CS      4
-#define SPI_CFG_CS_MASK 15
-
 //==================================
 // Register    : prescaler
 // Description : SPI Clock Prescaler. SCLK Frequency is CLK / 2*(prescaler+1)

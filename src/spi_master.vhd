@@ -33,22 +33,24 @@ entity spi_master is
     clk_i                : in  std_logic;
     arst_b_i             : in  std_logic;
 
-    -- Data From AXI Stream
+    -- Data From AXI Stream To SPI
     tx_tdata_i           : in  std_logic_vector(8-1 downto 0);
     tx_tvalid_i          : in  std_logic;
     tx_tready_o          : out std_logic;
 
-    -- Data From AXI Stream
+    -- Data From SPI To AXI Stream
     rx_tdata_o           : out std_logic_vector(8-1 downto 0);
     rx_tvalid_o          : out std_logic;
     rx_tready_i          : in  std_logic;
     
-    -- Configuration
-    cpol_i               : in  std_logic;
-    cpha_i               : in  std_logic;
-    prescaler_ratio_i    : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+    -- Command
     last_transfer_i      : in  std_logic;
     enable_rx_i          : in  std_logic;
+
+    -- Configuration
+    cfg_cpol_i           : in  std_logic;
+    cfg_cpha_i           : in  std_logic;
+    cfg_prescaler_ratio_i: in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
 
     -- SPI Interface
     sclk_o               : out std_logic;
@@ -90,7 +92,7 @@ begin
   -----------------------------------------------------------------------------
   -- Prescaler
   -----------------------------------------------------------------------------
-  -- SCLK is divide by 2*(prescaler_ratio_i+1)
+  -- SCLK is divide by 2*(cfg_prescaler_ratio_i+1)
   -- SCLK is the ouput of Register
   
   process(clk_i,arst_b_i)
@@ -110,7 +112,7 @@ begin
 
       if prescaler_is_min = '1'
       then
-        prescaler_cnt_r <= unsigned(prescaler_ratio_i);
+        prescaler_cnt_r <= unsigned(cfg_prescaler_ratio_i);
         cycle_phase_r   <= not cycle_phase_r;
         cycle_phase0_r  <= '1' when cycle_phase_r='0' else
                            '0';
@@ -203,7 +205,7 @@ begin
 
               -- If CPHA = 0, then sample into the first clock edge
               -- So shift the clock
-              if not (cpha_i = '0' and bit_cnt_r = 0)
+              if not (cfg_cpha_i = '0' and bit_cnt_r = 0)
               then
                 sclk_r    <= not sclk_r;
               end if;
@@ -222,7 +224,7 @@ begin
             then
 
               -- If CPHA = 0, then the clock is shifted, then missing one edge
-              if (cpha_i = '0')
+              if (cfg_cpha_i = '0')
               then
                 sclk_r    <= not sclk_r;
               end if;
@@ -280,7 +282,7 @@ begin
   -----------------------------------------------------------------------------
   -- Output assignments
   -----------------------------------------------------------------------------
-  sclk_o      <= sclk_r xor cpol_i; -- need cgate
+  sclk_o      <= sclk_r xor cfg_cpol_i; -- need cgate
   mosi_o      <= mosi_r;
   cs_b_o      <= cs_b_r;
 

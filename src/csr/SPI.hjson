@@ -105,11 +105,11 @@
                     bits: "3",
                     desc: "0 : MISO is connected to SPI MISO, 1 MISO is connected to MOSI"
                 },
-                {
-                    name: "cs",
-                    bits: "7:4",
-                    desc: "Chip Select"
-                },
+                //{
+                //    name: "cs",
+                //    bits: "7:4",
+                //    desc: "Chip Select"
+                //},
             ]
         },
 

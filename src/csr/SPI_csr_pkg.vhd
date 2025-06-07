@@ -88,7 +88,7 @@ package SPI_csr_pkg is
   -- Register    : cfg
   -- Description : SPI Configuration Register
   -- Address     : 0x2
-  -- Width       : 8
+  -- Width       : 4
   -- Sw Access   : rw
   -- Hw Access   : ro
   -- Hw Type     : reg
@@ -120,12 +120,6 @@ package SPI_csr_pkg is
   -- Width       : 1
   --==================================
     loopback : std_logic_vector(1-1 downto 0);
-  --==================================
-  -- Field       : cs
-  -- Description : Chip Select
-  -- Width       : 4
-  --==================================
-    cs : std_logic_vector(4-1 downto 0);
   end record SPI_cfg_sw2hw_t;
 
   --==================================

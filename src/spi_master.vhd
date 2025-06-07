@@ -26,38 +26,38 @@ use     IEEE.numeric_std.ALL;
  
 entity spi_master is
   generic (
-    PRESCALER_WIDTH : integer := 8
+    PRESCALER_WIDTH      : integer := 8
     );
   port (
     -- Clock & Reset
-    clk_i           : in  std_logic;
-    arst_b_i        : in  std_logic;
+    clk_i                : in  std_logic;
+    arst_b_i             : in  std_logic;
 
     -- Data From AXI Stream
-    tx_tdata_i      : in  std_logic_vector(8-1 downto 0);
-    tx_tvalid_i     : in  std_logic;
-    tx_tready_o     : out std_logic;
+    tx_tdata_i           : in  std_logic_vector(8-1 downto 0);
+    tx_tvalid_i          : in  std_logic;
+    tx_tready_o          : out std_logic;
 
     -- Data From AXI Stream
-    rx_tdata_o      : out std_logic_vector(8-1 downto 0);
-    rx_tvalid_o     : out std_logic;
-    rx_tready_i     : in  std_logic;
+    rx_tdata_o           : out std_logic_vector(8-1 downto 0);
+    rx_tvalid_o          : out std_logic;
+    rx_tready_i          : in  std_logic;
     
     -- Configuration
-    cpol_i          : in  std_logic;
-    cpha_i          : in  std_logic;
-    prescaler_ratio_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-    last_transfer_i : in  std_logic;
-    enable_rx_i     : in  std_logic;
+    cpol_i               : in  std_logic;
+    cpha_i               : in  std_logic;
+    prescaler_ratio_i    : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+    last_transfer_i      : in  std_logic;
+    enable_rx_i          : in  std_logic;
 
     -- SPI Interface
-    sclk_o          : out std_logic;
-    sclk_oe_o       : out std_logic;
-    cs_b_o          : out std_logic;
-    cs_b_oe_o       : out std_logic;
-    mosi_o          : out std_logic;
-    mosi_oe_o       : out std_logic;
-    miso_i          : in  std_logic
+    sclk_o               : out std_logic;
+    sclk_oe_o            : out std_logic;
+    cs_b_o               : out std_logic;
+    cs_b_oe_o            : out std_logic;
+    mosi_o               : out std_logic;
+    mosi_oe_o            : out std_logic;
+    miso_i               : in  std_logic
     );
 end entity spi_master;
  

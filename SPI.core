@@ -93,6 +93,8 @@ targets:
       - hdl
     toplevel        : SPI
     default_tool    : ghdl
+    generate        :
+      - gen_csr
 
   #---------------------------------------
   sim_basic:
@@ -119,6 +121,6 @@ targets:
     default_tool    : ghdl
     tools :
       ghdl :
-        analyze_options : ["-frelaxed","--no-vital-checks"]
-        run_options     : ["--vcd=dut.vcd"]
+        analyze_options : ["-frelaxed","--no-vital-checks","-Wall"]
+        run_options     : ["--vcd=dut.vcd","--ieee-asserts=disable"]
 

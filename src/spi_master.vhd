@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-05
+-- Last update: 2025-06-07
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ begin
     then
       state_r     <= IDLE;
       cs_b_r      <= '1'; -- CS Inactive
-      sclk_r       <= cpol_i;
+      sclk_r      <= '0';
       mosi_r      <= '0';
       tx_tready_r <= '1'; -- Always Ready during reset
       bit_cnt_r   <= (others => '0');
@@ -266,7 +266,7 @@ begin
   -----------------------------------------------------------------------------
   -- Output assignments
   -----------------------------------------------------------------------------
-  sclk_o      <= sclk_r;
+  sclk_o      <= sclk_r xor cpol_i; -- need cgate
   mosi_o      <= mosi_r;
   cs_b_o      <= cs_b_r;
 

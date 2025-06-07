@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-05
+-- Last update: 2025-06-07
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -108,6 +108,7 @@ begin
       ,cpha_i         => cpha_i     
       ,prescaler_i    => prescaler_i
       ,disable_cs_i   => disable_cs_i
+      ,disable_rx_i   => '0'
       ,sclk_o         => sclk_o     
       ,cs_b_o         => cs_b_o     
       ,mosi_o         => mosi_o     

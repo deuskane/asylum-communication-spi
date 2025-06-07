@@ -34,7 +34,7 @@
 #define SPI_CMD_NB_BYTE_MASK 31
 
 // Field       : cmd.last
-// Description : Last packet to transfer
+// Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer
 // Range       : [5]
 #define SPI_CMD_LAST      5
 #define SPI_CMD_LAST_MASK 1

@@ -30,31 +30,31 @@ architecture sim of tb is
   -----------------------------------------------------
   -- Test signals
   -----------------------------------------------------
-  signal test_en   : boolean   := false;
-  signal test_done : std_logic := '0';
-  signal test_ok   : std_logic := '0';
+  signal test_en          : boolean   := false;
+  signal test_done        : std_logic := '0';
+  signal test_ok          : std_logic := '0';
 
   constant PRESCALER_WIDTH : integer := 8;
 
   
   -- Déclaration des signaux
-  signal clk_i         : std_logic := '0';
-  signal arst_b_i      : std_logic := '1';
-
-  signal tx_tdata_i    :std_logic_vector(7 downto 0);
-  signal tx_tvalid_i   :std_logic;
-  signal tx_tready_o   :std_logic;
-  signal rx_tdata_o    :std_logic_vector(7 downto 0);
-  signal rx_tvalid_o   :std_logic;
-  signal rx_tready_i   :std_logic;
-  signal cpol_i        :std_logic;
-  signal cpha_i        :std_logic;
-  signal prescaler_i   :std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-  signal disable_cs_i  : std_logic;
-  signal sclk_o        :std_logic;
-  signal cs_b_o        :std_logic;
-  signal mosi_o        :std_logic;
-  signal miso_i        :std_logic;
+  signal clk_i            : std_logic := '0';
+  signal arst_b_i         : std_logic := '1';
+                          
+  signal tx_tdata_i       : std_logic_vector(7 downto 0);
+  signal tx_tvalid_i      : std_logic;
+  signal tx_tready_o      : std_logic;
+  signal rx_tdata_o       : std_logic_vector(7 downto 0);
+  signal rx_tvalid_o      : std_logic;
+  signal rx_tready_i      : std_logic;
+  signal cpol_i           : std_logic;
+  signal cpha_i           : std_logic;
+  signal prescaler_i      : std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+  signal last_transfer_i  : std_logic;
+  signal sclk_o           : std_logic;
+  signal cs_b_o           : std_logic;
+  signal mosi_o           : std_logic;
+  signal miso_i           : std_logic;
 
 
   -------------------------------------------------------
@@ -107,8 +107,8 @@ begin
       ,cpol_i         => cpol_i     
       ,cpha_i         => cpha_i     
       ,prescaler_i    => prescaler_i
-      ,disable_cs_i   => disable_cs_i
-      ,disable_rx_i   => '0'
+      ,last_transfer_i=> last_transfer_i
+      ,enable_rx_i    => '1'
       ,sclk_o         => sclk_o     
       ,cs_b_o         => cs_b_o     
       ,mosi_o         => mosi_o     
@@ -197,9 +197,9 @@ begin
 
     -- Réinitialisation
     run(10);
-    prescaler_i  <= X"00";
-    disable_cs_i <= '0';
-    rx_tready_i  <= '1';
+    prescaler_i     <= X"00";
+    last_transfer_i <= '0';
+    rx_tready_i     <= '1';
 
     for cpol in 0 to 1 loop
       for cpha in 0 to 1 loop

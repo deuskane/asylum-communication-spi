@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-05
+-- Last update: 2025-06-07
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -50,8 +50,8 @@ architecture sim of tb is
   signal cpol_i        :std_logic;
   signal cpha_i        :std_logic;
   signal prescaler_i   :std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-  signal disable_cs_i  : std_logic;
-  signal disable_rx_i  : std_logic;
+  signal last_transfer_i  : std_logic;
+  signal enable_rx_i   : std_logic;
   signal sclk_o        :std_logic;
   signal cs_b_o        :std_logic;
   signal mosi_o        :std_logic;
@@ -112,8 +112,8 @@ begin
     ,cpol_i         => cpol_i     
     ,cpha_i         => cpha_i     
     ,prescaler_i    => prescaler_i
-    ,disable_cs_i   => disable_cs_i
-    ,disable_rx_i   => disable_rx_i
+    ,last_transfer_i   => last_transfer_i
+    ,enable_rx_i    => enable_rx_i
     ,sclk_o         => sclk_o     
     ,cs_b_o         => cs_b_o     
     ,mosi_o         => mosi_o     
@@ -233,24 +233,21 @@ begin
     wait for 800 us;
     
     -- Read Instruction
-    disable_cs_i <= '0';
-    disable_rx_i <= '1';
+    last_transfer_i <= '0';
+    enable_rx_i  <= '0';
     tx_1byte(X"03");
     -- Read Address
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"05");
     -- Read Data
-    disable_rx_i <= '0';
+    enable_rx_i <= '1';
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"00");
-    disable_cs_i <= '1';
+    last_transfer_i <= '1';
     tx_1byte(X"00");
     
-    test_ok   <= '1';
-    run(100);
-    test_done <= '1';
     wait;
   end process;
 
@@ -285,6 +282,9 @@ begin
     rx_1byte(X"09");
     
     report "[TESTBENCH] RX Test End";
+    test_ok   <= '1';
+    run(100);
+    test_done <= '1';
     wait;
   end process;
 

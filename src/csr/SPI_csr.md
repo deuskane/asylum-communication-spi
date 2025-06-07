@@ -21,7 +21,7 @@ Command FIFO
 NB Byte to TX/RX
 
 ### [5:5] last
-Last packet to transfer
+0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer
 
 ### [6:6] enable_rx
 if 1 then push receive byte into rx fifo else not

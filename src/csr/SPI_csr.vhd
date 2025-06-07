@@ -236,7 +236,7 @@ begin  -- architecture rtl
 
   --==================================
   -- Field       : last
-  -- Description : Last packet to transfer
+  -- Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer
   -- Width       : 1
   --==================================
 

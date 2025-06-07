@@ -62,7 +62,7 @@
                 {
                     name: "last",
                     bits: "5",
-                    desc: "Last packet to transfer"
+                    desc: "0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer"
                 },
                 {
                     name: "enable_rx",

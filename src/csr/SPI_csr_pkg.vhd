@@ -66,7 +66,7 @@ package SPI_csr_pkg is
     nb_byte : std_logic_vector(5-1 downto 0);
   --==================================
   -- Field       : last
-  -- Description : Last packet to transfer
+  -- Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer
   -- Width       : 1
   --==================================
     last : std_logic_vector(1-1 downto 0);

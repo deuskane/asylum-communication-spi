@@ -47,13 +47,16 @@ entity spi_master is
     cpol_i          : in  std_logic;
     cpha_i          : in  std_logic;
     prescaler_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-    disable_cs_i    : in  std_logic;
-    disable_rx_i    : in  std_logic;
+    last_transfer_i : in  std_logic;
+    enable_rx_i     : in  std_logic;
 
     -- SPI Interface
     sclk_o          : out std_logic;
+    sclk_oe_o       : out std_logic;
     cs_b_o          : out std_logic;
+    cs_b_oe_o       : out std_logic;
     mosi_o          : out std_logic;
+    mosi_oe_o       : out std_logic;
     miso_i          : in  std_logic
     );
 end entity spi_master;
@@ -64,8 +67,11 @@ architecture rtl of spi_master is
     signal state_r            : state_t;
 
     signal sclk_r             : std_logic;
+    signal sclk_oe_r          : std_logic;
     signal mosi_r             : std_logic;
+    signal mosi_oe_r          : std_logic;
     signal cs_b_r             : std_logic;
+    signal cs_b_oe_r          : std_logic;
     signal prescaler_cnt_r    : unsigned(PRESCALER_WIDTH-1 downto 0);
     signal prescaler_is_min   : std_logic;
     signal bit_sample         : std_logic;
@@ -143,8 +149,11 @@ begin
     then
       state_r     <= IDLE;
       cs_b_r      <= '1'; -- CS Inactive
+      cs_b_oe_r   <= '0'; -- Inactive pad
       sclk_r      <= '0';
+      sclk_oe_r   <= '0'; -- Inactive pad
       mosi_r      <= '0';
+      mosi_oe_r   <= '0'; -- Inactive pad
       tx_tready_r <= '1'; -- Always Ready during reset
       bit_cnt_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
@@ -152,6 +161,9 @@ begin
 
     elsif rising_edge(clk_i)
     then
+      cs_b_oe_r   <= '1'; -- Active pad
+      sclk_oe_r   <= '1'; -- Active pad
+
       case state_r is
         -----------------------------------------------------------------------
         -- IDLE State
@@ -173,6 +185,7 @@ begin
           if (bit_sample = '1')
           then
             cs_b_r    <= '0';
+            mosi_oe_r <= '1'; -- Active pad
             state_r   <= TRANSFER;
             bit_cnt_r <= (others => '0');
           end if;
@@ -217,14 +230,14 @@ begin
               tx_tready_r <= '1'; -- Ready
 
               -- Push in fifo rx 
-              if (disable_rx_i = '0')
+              if (enable_rx_i = '1')
               then
                 rx_tvalid_r <= '1'; -- Valid
                 rx_tdata_r  <= data_r;
               end if;
 
               -- After byte disable cs or not
-              if (disable_cs_i = '1')
+              if (last_transfer_i = '1')
               then
                 state_r     <= DONE;
               else
@@ -241,6 +254,7 @@ begin
           if (bit_sample = '1')
           then
             cs_b_r      <= '1';
+            mosi_oe_r   <= '0';
             state_r     <= IDLE;
           end if;
       end case;
@@ -270,6 +284,10 @@ begin
   mosi_o      <= mosi_r;
   cs_b_o      <= cs_b_r;
 
+  sclk_oe_o   <= sclk_oe_r;
+  mosi_oe_o   <= mosi_oe_r;
+  cs_b_oe_o   <= cs_b_oe_r;
+  
   tx_tready_o <= tx_tready_r;
   rx_tdata_o  <= rx_tdata_r ;
   rx_tvalid_o <= rx_tvalid_r;

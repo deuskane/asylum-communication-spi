@@ -46,7 +46,7 @@ entity spi_master is
     -- Configuration
     cpol_i          : in  std_logic;
     cpha_i          : in  std_logic;
-    prescaler_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+    prescaler_ratio_i     : in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
     last_transfer_i : in  std_logic;
     enable_rx_i     : in  std_logic;
 
@@ -90,7 +90,7 @@ begin
   -----------------------------------------------------------------------------
   -- Prescaler
   -----------------------------------------------------------------------------
-  -- SCLK is divide by 2*(prescaler_i+1)
+  -- SCLK is divide by 2*(prescaler_ratio_i+1)
   -- SCLK is the ouput of Register
   
   process(clk_i,arst_b_i)
@@ -110,7 +110,7 @@ begin
 
       if prescaler_is_min = '1'
       then
-        prescaler_cnt_r <= unsigned(prescaler_i);
+        prescaler_cnt_r <= unsigned(prescaler_ratio_i);
         cycle_phase_r   <= not cycle_phase_r;
         cycle_phase0_r  <= '1' when cycle_phase_r='0' else
                            '0';

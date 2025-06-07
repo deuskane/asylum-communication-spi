@@ -30,35 +30,35 @@ architecture sim of tb is
   -----------------------------------------------------
   -- Test signals
   -----------------------------------------------------
-  signal test_en   : boolean   := false;
-  signal test_done : std_logic := '0';
-  signal test_ok   : std_logic := '0';
+  signal test_en             : boolean   := false;
+  signal test_done           : std_logic := '0';
+  signal test_ok             : std_logic := '0';
 
-  constant PRESCALER_WIDTH : integer := 8;
+  constant PRESCALER_WIDTH   : integer := 8;
 
   
   -- Déclaration des signaux
-  signal clk_i         : std_logic := '0';
-  signal arst_b_i      : std_logic := '1';
-
-  signal tx_tdata_i    :std_logic_vector(7 downto 0);
-  signal tx_tvalid_i   :std_logic;
-  signal tx_tready_o   :std_logic;
-  signal rx_tdata_o    :std_logic_vector(7 downto 0);
-  signal rx_tvalid_o   :std_logic;
-  signal rx_tready_i   :std_logic;
-  signal cpol_i        :std_logic;
-  signal cpha_i        :std_logic;
-  signal prescaler_i   :std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-  signal last_transfer_i  : std_logic;
-  signal enable_rx_i   : std_logic;
-  signal sclk_o        :std_logic;
-  signal cs_b_o        :std_logic;
-  signal mosi_o        :std_logic;
-  signal miso_i        :std_logic;
-  signal RSTNeg         : std_logic;
-  signal WPNeg         : std_logic;
-  signal HOLDNeg       : std_logic;
+  signal clk_i               : std_logic := '0';
+  signal arst_b_i            : std_logic := '1';
+                             
+  signal tx_tdata_i          : std_logic_vector(7 downto 0);
+  signal tx_tvalid_i         : std_logic;
+  signal tx_tready_o         : std_logic;
+  signal rx_tdata_o          : std_logic_vector(7 downto 0);
+  signal rx_tvalid_o         : std_logic;
+  signal rx_tready_i         : std_logic;
+  signal cpol_i              : std_logic;
+  signal cpha_i              : std_logic;
+  signal prescaler_ratio_i   : std_logic_vector(PRESCALER_WIDTH-1 downto 0);
+  signal last_transfer_i     : std_logic;
+  signal enable_rx_i         : std_logic;
+  signal sclk_o              : std_logic;
+  signal cs_b_o              : std_logic;
+  signal mosi_o              : std_logic;
+  signal miso_i              : std_logic;
+  signal RSTNeg              : std_logic;
+  signal WPNeg               : std_logic;
+  signal HOLDNeg             : std_logic;
   
   -------------------------------------------------------
   -- xrun
@@ -101,23 +101,23 @@ begin
   -- Instanciation du contrôleur SPI_master
   dut: entity work.spi_master(rtl)
     port map
-    (clk_i          => clk_i
-    ,arst_b_i       => arst_b_i
-    ,tx_tdata_i     => tx_tdata_i 
-    ,tx_tvalid_i    => tx_tvalid_i
-    ,tx_tready_o    => tx_tready_o
-    ,rx_tdata_o     => rx_tdata_o 
-    ,rx_tvalid_o    => rx_tvalid_o
-    ,rx_tready_i    => rx_tready_i
-    ,cpol_i         => cpol_i     
-    ,cpha_i         => cpha_i     
-    ,prescaler_i    => prescaler_i
-    ,last_transfer_i   => last_transfer_i
-    ,enable_rx_i    => enable_rx_i
-    ,sclk_o         => sclk_o     
-    ,cs_b_o         => cs_b_o     
-    ,mosi_o         => mosi_o     
-    ,miso_i         => miso_i
+    (clk_i                => clk_i
+    ,arst_b_i             => arst_b_i
+    ,tx_tdata_i           => tx_tdata_i 
+    ,tx_tvalid_i          => tx_tvalid_i
+    ,tx_tready_o          => tx_tready_o
+    ,rx_tdata_o           => rx_tdata_o 
+    ,rx_tvalid_o          => rx_tvalid_o
+    ,rx_tready_i          => rx_tready_i
+    ,cpol_i               => cpol_i     
+    ,cpha_i               => cpha_i     
+    ,prescaler_ratio_i    => prescaler_ratio_i
+    ,last_transfer_i      => last_transfer_i
+    ,enable_rx_i          => enable_rx_i
+    ,sclk_o               => sclk_o     
+    ,cs_b_o               => cs_b_o     
+    ,mosi_o               => mosi_o     
+    ,miso_i               => miso_i
     );
 
   ------------------------------------------------
@@ -225,8 +225,8 @@ begin
 
     -- Réinitialisation
     run(10);
-    prescaler_i  <= X"0F";
-    tx_tvalid_i  <= '0';
+    prescaler_ratio_i  <= X"0F";
+    tx_tvalid_i        <= '0';
 
     cfg('0','0');
 

@@ -27,11 +27,11 @@
 //==================================
 #define SPI_CMD 0x1
 
-// Field       : cmd.nb_byte
-// Description : NB Byte to TX/RX
+// Field       : cmd.nb_bytes
+// Description : Transfert Length in bytes
 // Range       : [4:0]
-#define SPI_CMD_NB_BYTE      0
-#define SPI_CMD_NB_BYTE_MASK 31
+#define SPI_CMD_NB_BYTES      0
+#define SPI_CMD_NB_BYTES_MASK 31
 
 // Field       : cmd.last
 // Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer

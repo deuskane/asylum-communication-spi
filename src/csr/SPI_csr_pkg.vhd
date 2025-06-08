@@ -59,11 +59,11 @@ package SPI_csr_pkg is
   type SPI_cmd_hw2sw_t is record
     valid : std_logic;
   --==================================
-  -- Field       : nb_byte
-  -- Description : NB Byte to TX/RX
+  -- Field       : nb_bytes
+  -- Description : Transfert Length in bytes
   -- Width       : 5
   --==================================
-    nb_byte : std_logic_vector(5-1 downto 0);
+    nb_bytes : std_logic_vector(5-1 downto 0);
   --==================================
   -- Field       : last
   -- Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer

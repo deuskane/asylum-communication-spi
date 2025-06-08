@@ -67,7 +67,7 @@ architecture rtl of SPI_registers is
   signal   data_rbusy     : std_logic;
 
   constant INIT_cmd : std_logic_vector(8-1 downto 0) :=
-             "00000" -- nb_byte
+             "00000" -- nb_bytes
            & "0" -- last
            & "0" -- enable_rx
            & "0" -- enable_tx
@@ -228,8 +228,8 @@ begin  -- architecture rtl
   -- Hw Type     : fifo
   --==================================
   --==================================
-  -- Field       : nb_byte
-  -- Description : NB Byte to TX/RX
+  -- Field       : nb_bytes
+  -- Description : Transfert Length in bytes
   -- Width       : 5
   --==================================
 
@@ -260,11 +260,11 @@ begin  -- architecture rtl
     cmd_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(1,SPI_ADDR_WIDTH)))   else '0';
     cmd_we      <= sig_wcs and sig_we and cmd_wcs;
     cmd_wdata   <= sig_wdata;
-    cmd_wdata_sw(4 downto 0) <= cmd_wdata(4 downto 0); -- nb_byte
+    cmd_wdata_sw(4 downto 0) <= cmd_wdata(4 downto 0); -- nb_bytes
     cmd_wdata_sw(5 downto 5) <= cmd_wdata(5 downto 5); -- last
     cmd_wdata_sw(6 downto 6) <= cmd_wdata(6 downto 6); -- enable_rx
     cmd_wdata_sw(7 downto 7) <= cmd_wdata(7 downto 7); -- enable_tx
-    cmd_wdata_hw(4 downto 0) <= hw2sw_i.cmd.nb_byte; -- nb_byte
+    cmd_wdata_hw(4 downto 0) <= hw2sw_i.cmd.nb_bytes; -- nb_bytes
     cmd_wdata_hw(5 downto 5) <= hw2sw_i.cmd.last; -- last
     cmd_wdata_hw(6 downto 6) <= hw2sw_i.cmd.enable_rx; -- enable_rx
     cmd_wdata_hw(7 downto 7) <= hw2sw_i.cmd.enable_tx; -- enable_tx

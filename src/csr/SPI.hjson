@@ -55,9 +55,9 @@
 
             fields: [
                 {
-                    name: "nb_byte",
+                    name: "nb_bytes",
                     bits: "4:0",
-                    desc: "NB Byte to TX/RX"
+                    desc: "Transfert Length in bytes"
                 },
                 {
                     name: "last",

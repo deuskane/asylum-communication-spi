@@ -34,8 +34,10 @@ package tb_SPI_pkg is
     rx_tdata_o           : std_logic_vector(8-1 downto 0);
     rx_tvalid_o          : std_logic;
     rx_tready_i          : std_logic;
-    last_transfer_i      : std_logic;
-    enable_rx_i          : std_logic;
+    cmd_last_transfer_i  : std_logic;
+    cmd_enable_tx_i      : std_logic;
+    cmd_enable_rx_i      : std_logic;
+    cmd_nb_bytes_i       : std_logic_vector;
     cfg_cpol_i           : std_logic;
     cfg_cpha_i           : std_logic;
     cfg_prescaler_ratio_i: std_logic_vector;

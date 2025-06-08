@@ -39,7 +39,8 @@ architecture sim of tb is
 
   
   -- Déclaration des signaux
-  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0));
+  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0),
+                                                  cmd_nb_bytes_i       (3 downto 0));
 
   procedure run
     (constant n     : in positive;          -- nb cycle
@@ -66,8 +67,10 @@ begin
       ,cfg_cpol_i           => dut_if.cfg_cpol_i     
       ,cfg_cpha_i           => dut_if.cfg_cpha_i     
       ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
-      ,last_transfer_i      => dut_if.last_transfer_i
-      ,enable_rx_i          => dut_if.enable_rx_i
+      ,cmd_last_transfer_i  => dut_if.cmd_last_transfer_i
+      ,cmd_enable_tx_i      => dut_if.cmd_enable_tx_i
+      ,cmd_enable_rx_i      => dut_if.cmd_enable_rx_i
+      ,cmd_nb_bytes_i       => dut_if.cmd_nb_bytes_i
       ,sclk_o               => dut_if.sclk_o     
       ,cs_b_o               => dut_if.cs_b_o     
       ,mosi_o               => dut_if.mosi_o     
@@ -125,6 +128,35 @@ begin
     end cfg;
    
     -------------------------------------------------------
+    -- cmd
+    -------------------------------------------------------
+    procedure cmd
+      (constant cmd_last_transfer_i  : in  std_logic;
+       constant cmd_enable_rx_i      : in  std_logic;
+       constant cmd_enable_tx_i      : in  std_logic;
+       constant cmd_nb_bytes_i       : in  std_logic_vector
+       ) is
+      
+    begin
+      report "[TESTBENCH] Command";
+
+--dut_if.cmd_tvalid_i <= '1';
+--dut_if.cmd_tdata_i  <= byte0;
+
+      report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " - #bytes " & to_hstring(cmd_nb_bytes_i);
+
+      
+    dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
+    dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
+    dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
+    dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
+--wait until dut_if.cmd_tready_o = '0';
+--dut_if.cmd_tvalid_i <= '0';
+--dut_if.cmd_tdata_i  <= X"00";
+--wait until dut_if.cmd_tready_o = '1';
+    end cmd;
+
+    -------------------------------------------------------
     -- tx_1byte
     -------------------------------------------------------
     procedure tx_1byte
@@ -169,8 +201,7 @@ begin
 
     -- Réinitialisation
     run(10);
-    dut_if.enable_rx_i           <= '1';
-    dut_if.last_transfer_i       <= '0';
+    cmd('1','1','1',X"0");
     dut_if.rx_tready_i           <= '1';
 
     for cpol in 0 to 1 loop

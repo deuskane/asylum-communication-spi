@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-07
+-- Last update: 2025-06-08
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -23,6 +23,8 @@
 library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
+library work;
+use     work.math_pkg.all;
  
 entity spi_master is
   generic (
@@ -34,18 +36,20 @@ entity spi_master is
     arst_b_i             : in  std_logic;
 
     -- Data From AXI Stream To SPI
-    tx_tdata_i           : in  std_logic_vector(8-1 downto 0);
     tx_tvalid_i          : in  std_logic;
     tx_tready_o          : out std_logic;
+    tx_tdata_i           : in  std_logic_vector(8-1 downto 0);
 
     -- Data From SPI To AXI Stream
-    rx_tdata_o           : out std_logic_vector(8-1 downto 0);
     rx_tvalid_o          : out std_logic;
     rx_tready_i          : in  std_logic;
+    rx_tdata_o           : out std_logic_vector(8-1 downto 0);
     
     -- Command
-    last_transfer_i      : in  std_logic;
-    enable_rx_i          : in  std_logic;
+    cmd_last_transfer_i  : in  std_logic;
+    cmd_enable_rx_i      : in  std_logic;
+    cmd_enable_tx_i      : in  std_logic;
+    cmd_nb_bytes_i       : in  std_logic_vector;
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;
@@ -78,7 +82,8 @@ architecture rtl of spi_master is
     signal prescaler_is_min   : std_logic;
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
-    signal bit_cnt_r          : unsigned(3 downto 0);
+    signal cnt_bit_r          : unsigned(3 downto 0);
+    signal cnt_byte_r         : unsigned(clog2(cmd_nb_bytes_i'length)-1 downto 0);
     signal data_r             : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
@@ -157,7 +162,7 @@ begin
       mosi_r      <= '0';
       mosi_oe_r   <= '0'; -- Inactive pad
       tx_tready_r <= '1'; -- Always Ready during reset
-      bit_cnt_r   <= (others => '0');
+      cnt_bit_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
       rx_tvalid_r <= '0';
 
@@ -189,7 +194,7 @@ begin
             cs_b_r    <= '0';
             mosi_oe_r <= '1'; -- Active pad
             state_r   <= TRANSFER;
-            bit_cnt_r <= (others => '0');
+            cnt_bit_r <= (others => '0');
           end if;
 
         -----------------------------------------------------------------------
@@ -197,7 +202,7 @@ begin
         -- Send bit per bit the data
         -----------------------------------------------------------------------
         when TRANSFER =>
-          if (bit_cnt_r < 8)
+          if (cnt_bit_r < 8)
           then
             if (bit_shift = '1')
             then
@@ -205,7 +210,7 @@ begin
 
               -- If CPHA = 0, then sample into the first clock edge
               -- So shift the clock
-              if not (cfg_cpha_i = '0' and bit_cnt_r = 0)
+              if not (cfg_cpha_i = '0' and cnt_bit_r = 0)
               then
                 sclk_r    <= not sclk_r;
               end if;
@@ -216,7 +221,7 @@ begin
             then
               sclk_r    <= not sclk_r;
               data_r    <= data_r(6 downto 0) & miso_i;
-              bit_cnt_r <= bit_cnt_r + 1;
+              cnt_bit_r <= cnt_bit_r + 1;
             end if;
           else
 
@@ -232,14 +237,14 @@ begin
               tx_tready_r <= '1'; -- Ready
 
               -- Push in fifo rx 
-              if (enable_rx_i = '1')
+              if (cmd_enable_rx_i = '1')
               then
                 rx_tvalid_r <= '1'; -- Valid
                 rx_tdata_r  <= data_r;
               end if;
 
               -- After byte disable cs or not
-              if (last_transfer_i = '1')
+              if (cmd_last_transfer_i = '1')
               then
                 state_r     <= DONE;
               else

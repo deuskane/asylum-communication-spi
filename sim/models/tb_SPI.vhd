@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-07
+-- Last update: 2025-06-08
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -39,7 +39,8 @@ architecture sim of tb is
                                  
                                  
   -- Déclaration des signaux     
-  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0));
+  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0),
+                                                  cmd_nb_bytes_i       (3 downto 0));
   signal  RSTNeg                : std_logic;
   signal  WPNeg                 : std_logic;
   signal  HOLDNeg               : std_logic;
@@ -71,8 +72,10 @@ begin
     ,cfg_cpol_i           => dut_if.cfg_cpol_i     
     ,cfg_cpha_i           => dut_if.cfg_cpha_i     
     ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
-    ,last_transfer_i      => dut_if.last_transfer_i
-    ,enable_rx_i          => dut_if.enable_rx_i
+    ,cmd_last_transfer_i  => dut_if.cmd_last_transfer_i
+    ,cmd_enable_tx_i      => dut_if.cmd_enable_tx_i
+    ,cmd_enable_rx_i      => dut_if.cmd_enable_rx_i
+    ,cmd_nb_bytes_i       => dut_if.cmd_nb_bytes_i
     ,sclk_o               => dut_if.sclk_o     
     ,cs_b_o               => dut_if.cs_b_o     
     ,mosi_o               => dut_if.mosi_o     
@@ -176,6 +179,35 @@ begin
     end cfg;
 
     -------------------------------------------------------
+    -- cmd
+    -------------------------------------------------------
+    procedure cmd
+      (constant cmd_last_transfer_i  : in  std_logic;
+       constant cmd_enable_rx_i      : in  std_logic;
+       constant cmd_enable_tx_i      : in  std_logic;
+       constant cmd_nb_bytes_i       : in  std_logic_vector
+       ) is
+      
+    begin
+      report "[TESTBENCH] Command";
+
+--dut_if.cmd_tvalid_i <= '1';
+--dut_if.cmd_tdata_i  <= byte0;
+
+      report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " nb bytes " & to_hstring(cmd_nb_bytes_i);
+
+      
+    dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
+    dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
+    dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
+    dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
+--wait until dut_if.cmd_tready_o = '0';
+--dut_if.cmd_tvalid_i <= '0';
+--dut_if.cmd_tdata_i  <= X"00";
+--wait until dut_if.cmd_tready_o = '1';
+    end cmd;
+
+    -------------------------------------------------------
     -- tx_1byte
     -------------------------------------------------------
     procedure tx_1byte
@@ -193,6 +225,7 @@ begin
       wait until dut_if.tx_tready_o = '1';
     end tx_1byte;
 
+    
   begin  -- process tb_gen
     report "[TESTBENCH] Test begin";
 
@@ -205,19 +238,19 @@ begin
     wait for 800 us;
     
     -- Read Instruction
-    dut_if.last_transfer_i <= '0';
-    dut_if.enable_rx_i  <= '0';
+    cmd('1','0','0',X"3");
+    dut_if.cmd_last_transfer_i <= '0';
+    dut_if.cmd_enable_rx_i     <= '0';
     tx_1byte(X"03");
     -- Read Address
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"05");
     -- Read Data
-    dut_if.enable_rx_i <= '1';
+    cmd('0','1','1',X"3");
     tx_1byte(X"00");
     tx_1byte(X"00");
     tx_1byte(X"00");
-    dut_if.last_transfer_i <= '1';
     tx_1byte(X"00");
     
     wait;

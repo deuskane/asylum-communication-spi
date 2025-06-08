@@ -17,8 +17,8 @@ Data TX or Data RX
 ## 0x1 cmd
 Command FIFO
 
-### [4:0] nb_byte
-NB Byte to TX/RX
+### [4:0] nb_bytes
+Transfert Length in bytes
 
 ### [5:5] last
 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer

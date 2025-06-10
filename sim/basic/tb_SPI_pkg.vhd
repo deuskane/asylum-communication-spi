@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-07
+-- Last update: 2025-06-10
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -34,6 +34,8 @@ package tb_SPI_pkg is
     rx_tdata_o           : std_logic_vector(8-1 downto 0);
     rx_tvalid_o          : std_logic;
     rx_tready_i          : std_logic;
+    cmd_tvalid_i         : std_logic;
+    cmd_tready_o         : std_logic;
     cmd_last_transfer_i  : std_logic;
     cmd_enable_tx_i      : std_logic;
     cmd_enable_rx_i      : std_logic;

@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-08
+-- Last update: 2025-06-10
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -72,6 +72,8 @@ begin
     ,cfg_cpol_i           => dut_if.cfg_cpol_i     
     ,cfg_cpha_i           => dut_if.cfg_cpha_i     
     ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
+    ,cmd_tvalid_i         => dut_if.cmd_tvalid_i
+    ,cmd_tready_o         => dut_if.cmd_tready_o
     ,cmd_last_transfer_i  => dut_if.cmd_last_transfer_i
     ,cmd_enable_tx_i      => dut_if.cmd_enable_tx_i
     ,cmd_enable_rx_i      => dut_if.cmd_enable_rx_i
@@ -182,29 +184,35 @@ begin
     -- cmd
     -------------------------------------------------------
     procedure cmd
-      (constant cmd_last_transfer_i  : in  std_logic;
+      (constant cmd_enable_tx_i      : in  std_logic;
        constant cmd_enable_rx_i      : in  std_logic;
-       constant cmd_enable_tx_i      : in  std_logic;
+       constant cmd_last_transfer_i  : in  std_logic;
        constant cmd_nb_bytes_i       : in  std_logic_vector
        ) is
       
     begin
       report "[TESTBENCH] Command";
 
---dut_if.cmd_tvalid_i <= '1';
---dut_if.cmd_tdata_i  <= byte0;
+      while dut_if.cmd_tready_o = '0'
+      loop
+        run(1);
+      end loop;
+      
+      dut_if.cmd_tvalid_i <= '1';
 
       report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " nb bytes " & to_hstring(cmd_nb_bytes_i);
 
       
-    dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
-    dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
-    dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
-    dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
---wait until dut_if.cmd_tready_o = '0';
---dut_if.cmd_tvalid_i <= '0';
---dut_if.cmd_tdata_i  <= X"00";
---wait until dut_if.cmd_tready_o = '1';
+      dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
+      dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
+      dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
+      dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
+      wait until dut_if.cmd_tready_o = '0';
+      dut_if.cmd_tvalid_i <= '0';
+      dut_if.cmd_last_transfer_i  <= '0';
+      dut_if.cmd_enable_rx_i      <= '0';
+      dut_if.cmd_enable_tx_i      <= '0';
+      dut_if.cmd_nb_bytes_i       <= (others => '0')     ;
     end cmd;
 
     -------------------------------------------------------
@@ -215,14 +223,13 @@ begin
        ) is
       
     begin
-      report "[TESTBENCH] TX 1 byte";
+      report "[TESTBENCH] TX 1 byte " & to_hstring(byte0);
 
       dut_if.tx_tvalid_i <= '1';
       dut_if.tx_tdata_i  <= byte0;
       wait until dut_if.tx_tready_o = '0';
       dut_if.tx_tvalid_i <= '0';
       dut_if.tx_tdata_i  <= X"00";
-      wait until dut_if.tx_tready_o = '1';
     end tx_1byte;
 
     
@@ -239,8 +246,6 @@ begin
     
     -- Read Instruction
     cmd('1','0','0',X"3");
-    dut_if.cmd_last_transfer_i <= '0';
-    dut_if.cmd_enable_rx_i     <= '0';
     tx_1byte(X"03");
     -- Read Address
     tx_1byte(X"00");
@@ -248,10 +253,10 @@ begin
     tx_1byte(X"05");
     -- Read Data
     cmd('0','1','1',X"3");
-    tx_1byte(X"00");
-    tx_1byte(X"00");
-    tx_1byte(X"00");
-    tx_1byte(X"00");
+--    tx_1byte(X"00");
+--    tx_1byte(X"00");
+--    tx_1byte(X"00");
+--    tx_1byte(X"00");
     
     wait;
   end process;
@@ -265,14 +270,16 @@ begin
        ) is
       
     begin
-      report "[TESTBENCH] TX 1 byte";
+      report "[TESTBENCH] RX 1 byte";
 
       dut_if.rx_tready_i <= '1';
-      wait until dut_if.rx_tvalid_o = '1';
-      wait for 1 ps;
+      while dut_if.rx_tvalid_o = '0'
+      loop
+        run(1);
+      end loop;
       assert dut_if.rx_tdata_o = byte0 report "[TESTBENCH] Invalid Rx data " & to_hstring(dut_if.rx_tdata_o) & " != " & to_hstring(byte0) severity note;
 
-      wait until dut_if.rx_tvalid_o = '0';
+      run(1);
     end rx_1byte;
 
 
@@ -280,7 +287,8 @@ begin
     report "[TESTBENCH] RX Test Begin";
 
     dut_if.rx_tready_i  <= '0';
-
+    run(100);
+ 
     rx_1byte(X"06");
     rx_1byte(X"07");
     rx_1byte(X"08");

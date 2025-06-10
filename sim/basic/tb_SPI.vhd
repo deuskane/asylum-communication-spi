@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-07
+-- Last update: 2025-06-10
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -67,6 +67,8 @@ begin
       ,cfg_cpol_i           => dut_if.cfg_cpol_i     
       ,cfg_cpha_i           => dut_if.cfg_cpha_i     
       ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
+      ,cmd_tvalid_i         => dut_if.cmd_tvalid_i
+      ,cmd_tready_o         => dut_if.cmd_tready_o
       ,cmd_last_transfer_i  => dut_if.cmd_last_transfer_i
       ,cmd_enable_tx_i      => dut_if.cmd_enable_tx_i
       ,cmd_enable_rx_i      => dut_if.cmd_enable_rx_i
@@ -74,7 +76,7 @@ begin
       ,sclk_o               => dut_if.sclk_o     
       ,cs_b_o               => dut_if.cs_b_o     
       ,mosi_o               => dut_if.mosi_o     
-      ,miso_i               => dut_if.miso_i
+      ,miso_i               => dut_if.mosi_o
       );
 
   ------------------------------------------------
@@ -131,29 +133,35 @@ begin
     -- cmd
     -------------------------------------------------------
     procedure cmd
-      (constant cmd_last_transfer_i  : in  std_logic;
+      (constant cmd_enable_tx_i      : in  std_logic;
        constant cmd_enable_rx_i      : in  std_logic;
-       constant cmd_enable_tx_i      : in  std_logic;
+       constant cmd_last_transfer_i  : in  std_logic;
        constant cmd_nb_bytes_i       : in  std_logic_vector
        ) is
       
     begin
       report "[TESTBENCH] Command";
 
---dut_if.cmd_tvalid_i <= '1';
---dut_if.cmd_tdata_i  <= byte0;
+      while dut_if.cmd_tready_o = '0'
+      loop
+        run(1);
+      end loop;
+      
+      dut_if.cmd_tvalid_i <= '1';
 
       report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " - #bytes " & to_hstring(cmd_nb_bytes_i);
 
       
-    dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
-    dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
-    dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
-    dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
---wait until dut_if.cmd_tready_o = '0';
---dut_if.cmd_tvalid_i <= '0';
---dut_if.cmd_tdata_i  <= X"00";
---wait until dut_if.cmd_tready_o = '1';
+      dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
+      dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
+      dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
+      dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
+      wait until dut_if.cmd_tready_o = '0';
+      dut_if.cmd_tvalid_i <= '0';
+      dut_if.cmd_last_transfer_i  <= '0';
+      dut_if.cmd_enable_rx_i      <= '0';
+      dut_if.cmd_enable_tx_i      <= '0';
+      dut_if.cmd_nb_bytes_i       <= (others => '0')     ;
     end cmd;
 
     -------------------------------------------------------
@@ -168,10 +176,15 @@ begin
 
       dut_if.tx_tvalid_i <= '1';
       dut_if.tx_tdata_i  <= byte0;
-      wait until dut_if.tx_tready_o = '0';
+
+      while dut_if.tx_tready_o = '0'
+      loop
+        run(1);
+      end loop;
+      run(1);
       dut_if.tx_tvalid_i <= '0';
       dut_if.tx_tdata_i  <= X"00";
-      wait until dut_if.tx_tready_o = '1';
+      
     end tx_1byte;
 
     procedure tx_2byte
@@ -184,11 +197,18 @@ begin
 
       dut_if.tx_tvalid_i <= '1';
       dut_if.tx_tdata_i  <= byte0;
-      wait until dut_if.tx_tready_o = '0';
+      while dut_if.tx_tready_o = '0'
+      loop
+        run(1);
+      end loop;
+      run(1);
       dut_if.tx_tvalid_i <= '1';
       dut_if.tx_tdata_i  <= byte1;
-      wait until dut_if.tx_tready_o = '1';
-      wait until dut_if.tx_tready_o = '0';
+      while dut_if.tx_tready_o = '0'
+      loop
+        run(1);
+      end loop;
+      run(1);
       dut_if.tx_tvalid_i <= '0';
       dut_if.tx_tdata_i  <= X"00";
       wait until dut_if.tx_tready_o = '1';
@@ -201,13 +221,14 @@ begin
 
     -- Réinitialisation
     run(10);
-    cmd('1','1','1',X"0");
     dut_if.rx_tready_i           <= '1';
 
     for cpol in 0 to 1 loop
       for cpha in 0 to 1 loop
         run(100);
         cfg(x(cpol),x(cpha),X"00");
+        run(100);
+        cmd('1','1','1',X"3");
         run(100);
         tx_1byte(X"55");
         run(100);

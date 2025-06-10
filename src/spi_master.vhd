@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-08
+-- Last update: 2025-06-10
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -46,6 +46,8 @@ entity spi_master is
     rx_tdata_o           : out std_logic_vector(8-1 downto 0);
     
     -- Command
+    cmd_tvalid_i         : in  std_logic;
+    cmd_tready_o         : out std_logic;
     cmd_last_transfer_i  : in  std_logic;
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
@@ -83,11 +85,16 @@ architecture rtl of spi_master is
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
     signal cnt_bit_r          : unsigned(3 downto 0);
-    signal cnt_byte_r         : unsigned(clog2(cmd_nb_bytes_i'length)-1 downto 0);
+    signal cnt_byte_r         : unsigned(cmd_nb_bytes_i'range);
     signal data_r             : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
     signal rx_tvalid_r        : std_logic;
+    signal cmd_tready_r       : std_logic;
+    signal cmd_last_transfer_r: std_logic;
+    signal cmd_enable_rx_r    : std_logic;
+    signal cmd_enable_tx_r    : std_logic;
+    signal cmd_nb_bytes_r     : unsigned(cmd_nb_bytes_i'range);
 
     signal cycle_phase_r      : std_logic;
     signal cycle_phase0_r     : std_logic;
@@ -161,8 +168,10 @@ begin
       sclk_oe_r   <= '0'; -- Inactive pad
       mosi_r      <= '0';
       mosi_oe_r   <= '0'; -- Inactive pad
-      tx_tready_r <= '1'; -- Always Ready during reset
+      tx_tready_r <= '0'; -- Always Ready during reset
+      cmd_tready_r<= '1'; -- Always Ready during reset
       cnt_bit_r   <= (others => '0');
+      cnt_byte_r  <= (others => '0');
       rx_tdata_r  <= (others => '0');
       rx_tvalid_r <= '0';
 
@@ -175,13 +184,19 @@ begin
         -----------------------------------------------------------------------
         -- IDLE State
         -- In IDLE State, no SPI transmision (CS_B = 1)
-        -- Wait New transaction from AXIS
+        -- Wait New Command from AXIS
         -----------------------------------------------------------------------
         when IDLE =>
-          -- Wait to Receive new request
-          if tx_tready_r = '0'
+          -- Wait to Receive new command
+          if cmd_tready_r = '0'
           then
-            state_r     <= START;
+            state_r <= START;
+            -- Need TX ?
+            if cmd_enable_tx_r = '1'
+            then
+              tx_tready_r <= '1';              
+            end if;
+            
           end if;
           
         -----------------------------------------------------------------------
@@ -192,9 +207,26 @@ begin
           if (bit_sample = '1')
           then
             cs_b_r    <= '0';
-            mosi_oe_r <= '1'; -- Active pad
-            state_r   <= TRANSFER;
             cnt_bit_r <= (others => '0');
+
+            -- Need TX ? Active MOSI oe pad
+            if cmd_enable_tx_r = '1'
+            then
+              -- Need TX
+              
+              mosi_oe_r <= '1'; -- Active pad
+
+              -- Wait TX Data
+              if tx_tready_r = '0'
+              then
+                state_r   <= TRANSFER;
+              end if;
+            else
+              -- Don't Need TX
+              
+              mosi_oe_r <= '0'; -- Inactive pad
+              state_r   <= TRANSFER;
+            end if;
           end if;
 
         -----------------------------------------------------------------------
@@ -234,22 +266,31 @@ begin
                 sclk_r    <= not sclk_r;
               end if;
               
-              tx_tready_r <= '1'; -- Ready
-
               -- Push in fifo rx 
-              if (cmd_enable_rx_i = '1')
+              if (cmd_enable_rx_r = '1')
               then
                 rx_tvalid_r <= '1'; -- Valid
                 rx_tdata_r  <= data_r;
               end if;
 
-              -- After byte disable cs or not
-              if (cmd_last_transfer_i = '1')
+              if (cnt_byte_r          = cmd_nb_bytes_r)
               then
-                state_r     <= DONE;
+                cmd_tready_r <= '1';
+                cnt_byte_r   <= (others => '0');
+
+                -- After byte disable cs or not
+                if (cmd_last_transfer_r = '1')
+                then
+                  state_r      <= DONE;
+                else
+                  state_r      <= IDLE;
+                end if;
+
               else
+                cnt_byte_r  <= cnt_byte_r+1;
                 state_r     <= IDLE;
               end if;
+
             end if;
           end if;
           
@@ -266,6 +307,20 @@ begin
           end if;
       end case;
 
+      -- Command FIFO Managment
+      if (cmd_tvalid_i = '1' and cmd_tready_r = '1')
+      then
+        -- Ack the axistream transfert
+        cmd_tready_r <= '0';
+
+        cmd_last_transfer_r <= cmd_last_transfer_i;
+        cmd_enable_rx_r     <= cmd_enable_rx_i    ;
+        cmd_enable_tx_r     <= cmd_enable_tx_i    ;
+        cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
+
+      end if;
+
+      
       -- TX FIFO Managment
       if (tx_tvalid_i = '1' and tx_tready_r = '1')
       then
@@ -287,16 +342,17 @@ begin
   -----------------------------------------------------------------------------
   -- Output assignments
   -----------------------------------------------------------------------------
-  sclk_o      <= sclk_r xor cfg_cpol_i; -- need cgate
-  mosi_o      <= mosi_r;
-  cs_b_o      <= cs_b_r;
-
-  sclk_oe_o   <= sclk_oe_r;
-  mosi_oe_o   <= mosi_oe_r;
-  cs_b_oe_o   <= cs_b_oe_r;
-  
-  tx_tready_o <= tx_tready_r;
-  rx_tdata_o  <= rx_tdata_r ;
-  rx_tvalid_o <= rx_tvalid_r;
+  sclk_o       <= sclk_r xor cfg_cpol_i; -- need cgate
+  mosi_o       <= mosi_r;
+  cs_b_o       <= cs_b_r;
+               
+  sclk_oe_o    <= sclk_oe_r;
+  mosi_oe_o    <= mosi_oe_r;
+  cs_b_oe_o    <= cs_b_oe_r;
+               
+  tx_tready_o  <= tx_tready_r;
+  rx_tdata_o   <= rx_tdata_r ;
+  rx_tvalid_o  <= rx_tvalid_r;
+  cmd_tready_o <= cmd_tready_r;
 end architecture rtl;
  

@@ -71,7 +71,7 @@ end entity spi_master;
  
 architecture rtl of spi_master is
  
-    type   state_t is (IDLE, START, TRANSFER, DONE);
+    type   state_t is (IDLE, CMD, START, PREAMBLE, TRANSFER, POSTAMBLE, DONE);
     signal state_r            : state_t;
 
     signal sclk_r             : std_logic;
@@ -84,7 +84,7 @@ architecture rtl of spi_master is
     signal prescaler_is_min   : std_logic;
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
-    signal cnt_bit_r          : unsigned(3 downto 0);
+    signal cnt_bit_r          : unsigned(2 downto 0);
     signal cnt_byte_r         : unsigned(cmd_nb_bytes_i'range);
     signal data_r             : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
@@ -141,12 +141,12 @@ begin
   --                                  ___             ___
   -- Prescaler min      _____________/   \___________/   \______
   --                                      ________________
-  -- SCLK                   _____________/                \_____
-  --                                                  ___
-  -- Bit Sample         _____________________________/   \______
-  --                                  ___                
-  -- Bit Shift          _____________/   \______________________
-
+  -- cycle_phase_r          _____________/                \_____
+  --                                     ___                
+  -- cycle_phase0_r        _____________/   \______________________
+  --                                                     ___
+  -- cycle_phase1_r        _____________________________/   \______
+  
   
   prescaler_is_min <= '1' when unsigned(prescaler_cnt_r) = 0 else
                       '0';
@@ -168,17 +168,19 @@ begin
       sclk_oe_r   <= '0'; -- Inactive pad
       mosi_r      <= '0';
       mosi_oe_r   <= '0'; -- Inactive pad
-      tx_tready_r <= '0'; -- Always Ready during reset
-      cmd_tready_r<= '1'; -- Always Ready during reset
+      tx_tready_r <= '0'; -- Never Ready during reset
+      rx_tvalid_r <= '0'; -- Never Valid during reset (compliance with AXI-STREAM Protocol Specification)
+      cmd_tready_r<= '0'; -- Never Ready during reset
       cnt_bit_r   <= (others => '0');
       cnt_byte_r  <= (others => '0');
       rx_tdata_r  <= (others => '0');
-      rx_tvalid_r <= '0';
-
+      
     elsif rising_edge(clk_i)
     then
       cs_b_oe_r   <= '1'; -- Active pad
       sclk_oe_r   <= '1'; -- Active pad
+      cmd_tready_r<= '0';
+      tx_tready_r <= '0'; 
 
       case state_r is
         -----------------------------------------------------------------------
@@ -187,43 +189,57 @@ begin
         -- Wait New Command from AXIS
         -----------------------------------------------------------------------
         when IDLE =>
+                                         
           -- Wait to Receive new command
-          if cmd_tready_r = '0'
+          if cmd_tvalid_i = '1'
           then
-            state_r <= START;
-            -- Need TX ?
-            if cmd_enable_tx_r = '1'
-            then
-              tx_tready_r <= '1';              
-            end if;
-            
+            state_r            <= START;
+
+           -- Ack the axistream transfert
+           cmd_tready_r        <= '1';
+           -- Save the Command
+           cmd_last_transfer_r <= cmd_last_transfer_i;
+           cmd_enable_rx_r     <= cmd_enable_rx_i    ;
+           cmd_enable_tx_r     <= cmd_enable_tx_i    ;
+           cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
           end if;
-          
+                                         
         -----------------------------------------------------------------------
         -- START State
         -- The set the CS_B
+        -- Depending the Command, Active the MOSI and the Wait the TX FIFO
         -----------------------------------------------------------------------
         when START =>
           if (bit_sample = '1')
           then
+            -- CS_B is active
             cs_b_r    <= '0';
+            -- Reset the counter bit
             cnt_bit_r <= (others => '0');
 
             -- Need TX ? Active MOSI oe pad
             if cmd_enable_tx_r = '1'
             then
               -- Need TX
+              --  * Active PAD
+              --  * Wait Data
               
               mosi_oe_r <= '1'; -- Active pad
-
+                                         
               -- Wait TX Data
-              if tx_tready_r = '0'
+              if tx_tvalid_i = '1'
               then
                 state_r   <= TRANSFER;
+                
+                -- Ack the axistream transfert
+                tx_tready_r <= '1';              
+                -- Save the Data
+                data_r      <= tx_tdata_i;
               end if;
             else
               -- Don't Need TX
-              
+              --  * Disable PAD
+                                         
               mosi_oe_r <= '0'; -- Inactive pad
               state_r   <= TRANSFER;
             end if;
@@ -231,15 +247,17 @@ begin
 
         -----------------------------------------------------------------------
         -- TRANSFERT State
-        -- Send bit per bit the data
+        -- Send bit per bit the data (MSB First)
+        -- 
         -----------------------------------------------------------------------
         when TRANSFER =>
-          if (cnt_bit_r < 8)
-          then
+            -- Bit Shift Phase
             if (bit_shift = '1')
             then
+              -- MSB First
               mosi_r    <= data_r(7);
 
+              -- Special Case :
               -- If CPHA = 0, then sample into the first clock edge
               -- So shift the clock
               if not (cfg_cpha_i = '0' and cnt_bit_r = 0)
@@ -249,14 +267,26 @@ begin
                 
             end if;
             
+            -- Bit Sample Phase
             if (bit_sample = '1')
             then
               sclk_r    <= not sclk_r;
               data_r    <= data_r(6 downto 0) & miso_i;
               cnt_bit_r <= cnt_bit_r + 1;
-            end if;
-          else
 
+              if (cnt_bit_r = 7)
+              then
+                state_r   <= POSTAMBLE;
+              end if;
+                                         
+            end if;
+
+        -----------------------------------------------------------------------
+        -- POSTAMBLE State
+        -- Send bit per bit the data (MSB First)
+        -----------------------------------------------------------------------
+        when POSTAMBLE =>
+            -- Bit Shift Phase
             if (bit_shift = '1')
             then
 
@@ -267,13 +297,15 @@ begin
               end if;
               
               -- Push in fifo rx 
+              -- WARNING : OVERWRITE FIFO
               if (cmd_enable_rx_r = '1')
               then
                 rx_tvalid_r <= '1'; -- Valid
                 rx_tdata_r  <= data_r;
               end if;
 
-              if (cnt_byte_r          = cmd_nb_bytes_r)
+               -- Last BYTE ?
+              if (cnt_byte_r = cmd_nb_bytes_r)
               then
                 cmd_tready_r <= '1';
                 cnt_byte_r   <= (others => '0');
@@ -281,21 +313,24 @@ begin
                 -- After byte disable cs or not
                 if (cmd_last_transfer_r = '1')
                 then
+                  -- Finish Transaction, CS go to inactive
                   state_r      <= DONE;
                 else
+                  -- Finish Transfer, continue transaction (CS is again active) and wait Command
                   state_r      <= IDLE;
                 end if;
 
               else
+                -- Not Last Byte, continue transfert
                 cnt_byte_r  <= cnt_byte_r+1;
-                state_r     <= IDLE;
+                state_r     <= START;
               end if;
 
             end if;
           end if;
           
         -----------------------------------------------------------------------
-        -- TRANSFERT State
+        -- DONE State
         -- Unset the CS_B
         -----------------------------------------------------------------------
         when DONE =>
@@ -306,30 +341,6 @@ begin
             state_r     <= IDLE;
           end if;
       end case;
-
-      -- Command FIFO Managment
-      if (cmd_tvalid_i = '1' and cmd_tready_r = '1')
-      then
-        -- Ack the axistream transfert
-        cmd_tready_r <= '0';
-
-        cmd_last_transfer_r <= cmd_last_transfer_i;
-        cmd_enable_rx_r     <= cmd_enable_rx_i    ;
-        cmd_enable_tx_r     <= cmd_enable_tx_i    ;
-        cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
-
-      end if;
-
-      
-      -- TX FIFO Managment
-      if (tx_tvalid_i = '1' and tx_tready_r = '1')
-      then
-        -- Ack the axistream transfert
-        tx_tready_r <= '0';
-
-        -- Load data in TX buffer
-        data_r      <= tx_tdata_i;
-      end if;
 
       -- RX FIFO Managment
       if (rx_tvalid_r = '1' and rx_tready_i = '1')

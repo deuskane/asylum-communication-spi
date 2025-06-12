@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-10
+-- Last update: 2025-06-12
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -31,16 +31,17 @@ architecture sim of tb is
   -----------------------------------------------------
   -- Test signals
   -----------------------------------------------------
-  signal test_en               : boolean   := false;
-  signal test_done             : std_logic := '0';
-  signal test_ok               : std_logic := '0';
+  signal   test_en             : boolean   := false;
+  signal   test_done           : std_logic := '0';
+  signal   test_ok             : std_logic := '0';
                               
   constant PRESCALER_WIDTH     : integer := 8;
-
   
   -- Déclaration des signaux
-  signal  dut_if                : spi_master_if_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0),
-                                                  cmd_nb_bytes_i       (3 downto 0));
+  signal  clk_i                  : std_logic;
+  signal  dut_ifi                : spi_master_ifi_t(cfg_prescaler_ratio_i(PRESCALER_WIDTH-1 downto 0),
+                                                   cmd_nb_bytes_i       (3 downto 0));
+  signal  dut_ifo                : spi_master_ifo_t;
 
   procedure run
     (constant n     : in positive;          -- nb cycle
@@ -48,35 +49,34 @@ architecture sim of tb is
      ) is
     
   begin
-    run(n,pol,dut_if.clk_i);
+    run(n,pol,clk_i);
   end run;
-
   
 begin
     -- Instanciation du contrôleur SPI_master
     dut: entity work.spi_master(rtl)
       port map
-      (clk_i                => dut_if.clk_i
-      ,arst_b_i             => dut_if.arst_b_i
-      ,tx_tdata_i           => dut_if.tx_tdata_i 
-      ,tx_tvalid_i          => dut_if.tx_tvalid_i
-      ,tx_tready_o          => dut_if.tx_tready_o
-      ,rx_tdata_o           => dut_if.rx_tdata_o 
-      ,rx_tvalid_o          => dut_if.rx_tvalid_o
-      ,rx_tready_i          => dut_if.rx_tready_i
-      ,cfg_cpol_i           => dut_if.cfg_cpol_i     
-      ,cfg_cpha_i           => dut_if.cfg_cpha_i     
-      ,cfg_prescaler_ratio_i=> dut_if.cfg_prescaler_ratio_i
-      ,cmd_tvalid_i         => dut_if.cmd_tvalid_i
-      ,cmd_tready_o         => dut_if.cmd_tready_o
-      ,cmd_last_transfer_i  => dut_if.cmd_last_transfer_i
-      ,cmd_enable_tx_i      => dut_if.cmd_enable_tx_i
-      ,cmd_enable_rx_i      => dut_if.cmd_enable_rx_i
-      ,cmd_nb_bytes_i       => dut_if.cmd_nb_bytes_i
-      ,sclk_o               => dut_if.sclk_o     
-      ,cs_b_o               => dut_if.cs_b_o     
-      ,mosi_o               => dut_if.mosi_o     
-      ,miso_i               => dut_if.mosi_o
+      (clk_i                => clk_i
+      ,arst_b_i             => dut_ifi.arst_b_i
+      ,tx_tdata_i           => dut_ifi.tx_tdata_i 
+      ,tx_tvalid_i          => dut_ifi.tx_tvalid_i
+      ,tx_tready_o          => dut_ifo.tx_tready_o
+      ,rx_tdata_o           => dut_ifo.rx_tdata_o 
+      ,rx_tvalid_o          => dut_ifo.rx_tvalid_o
+      ,rx_tready_i          => dut_ifi.rx_tready_i
+      ,cfg_cpol_i           => dut_ifi.cfg_cpol_i     
+      ,cfg_cpha_i           => dut_ifi.cfg_cpha_i     
+      ,cfg_prescaler_ratio_i=> dut_ifi.cfg_prescaler_ratio_i
+      ,cmd_tvalid_i         => dut_ifi.cmd_tvalid_i
+      ,cmd_tready_o         => dut_ifo.cmd_tready_o
+      ,cmd_last_transfer_i  => dut_ifi.cmd_last_transfer_i
+      ,cmd_enable_tx_i      => dut_ifi.cmd_enable_tx_i
+      ,cmd_enable_rx_i      => dut_ifi.cmd_enable_rx_i
+      ,cmd_nb_bytes_i       => dut_ifi.cmd_nb_bytes_i
+      ,sclk_o               => dut_ifo.sclk_o     
+      ,cs_b_o               => dut_ifo.cs_b_o     
+      ,mosi_o               => dut_ifo.mosi_o     
+      ,miso_i               => dut_ifo.mosi_o
       );
 
   ------------------------------------------------
@@ -84,13 +84,13 @@ begin
   ------------------------------------------------
   gen_clk: process is
     begin  -- process gen_clk
-      dut_if.clk_i <= '0';
+      clk_i <= '0';
 
       while test_done = '0'
       loop
         wait for 5 ns;
 
-        dut_if.clk_i <= not dut_if.clk_i;
+        clk_i <= not clk_i;
       end loop;
 
       wait; -- end process
@@ -102,137 +102,35 @@ begin
   -- purpose: Testbench process
   -- type   : combinational
   -- inputs : 
-    -- outputs: All dut design with clk
+  -- outputs: All dut design with clk
     
   tb_gen: process is
 
     variable x : std_logic_vector(1 downto 0) := "10";
-    
-    -------------------------------------------------------
-    -- cfg
-    -------------------------------------------------------
-    procedure cfg
-      (constant cpol   : in std_logic;
-       constant cpha   : in std_logic;
-       constant prescaler_ratio_i : in std_logic_vector
-       ) is
-
-    begin
-      
-      report "[TESTBENCH] Configure CPOL "& std_logic'image(cpol) & " - CPHA "& std_logic'image(cpol) & " - Prescaler Ratio 0x" & to_hstring(prescaler_ratio_i);
-      dut_if.arst_b_i    <= '0';
-      dut_if.cfg_cpol_i  <= cpol;
-      dut_if.cfg_cpha_i  <= cpha;
-      dut_if.cfg_prescaler_ratio_i <= prescaler_ratio_i;
-      run(1,"pos",dut_if.clk_i);
-      dut_if.arst_b_i    <= '1';
-      run(1,"pos",dut_if.clk_i);
-    end cfg;
    
-    -------------------------------------------------------
-    -- cmd
-    -------------------------------------------------------
-    procedure cmd
-      (constant cmd_enable_tx_i      : in  std_logic;
-       constant cmd_enable_rx_i      : in  std_logic;
-       constant cmd_last_transfer_i  : in  std_logic;
-       constant cmd_nb_bytes_i       : in  std_logic_vector
-       ) is
-      
-    begin
-      report "[TESTBENCH] Command";
-
-      while dut_if.cmd_tready_o = '0'
-      loop
-        run(1);
-      end loop;
-      
-      dut_if.cmd_tvalid_i <= '1';
-
-      report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " - #bytes " & to_hstring(cmd_nb_bytes_i);
-
-      
-      dut_if.cmd_last_transfer_i  <= cmd_last_transfer_i;
-      dut_if.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
-      dut_if.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
-      dut_if.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
-      wait until dut_if.cmd_tready_o = '0';
-      dut_if.cmd_tvalid_i <= '0';
-      dut_if.cmd_last_transfer_i  <= '0';
-      dut_if.cmd_enable_rx_i      <= '0';
-      dut_if.cmd_enable_tx_i      <= '0';
-      dut_if.cmd_nb_bytes_i       <= (others => '0')     ;
-    end cmd;
-
-    -------------------------------------------------------
-    -- tx_1byte
-    -------------------------------------------------------
-    procedure tx_1byte
-      (constant byte0   : in std_logic_vector(8-1 downto 0)
-       ) is
-      
-    begin
-      report "[TESTBENCH] TX 1 byte";
-
-      dut_if.tx_tvalid_i <= '1';
-      dut_if.tx_tdata_i  <= byte0;
-
-      while dut_if.tx_tready_o = '0'
-      loop
-        run(1);
-      end loop;
-      run(1);
-      dut_if.tx_tvalid_i <= '0';
-      dut_if.tx_tdata_i  <= X"00";
-      
-    end tx_1byte;
-
-    procedure tx_2byte
-      (constant byte0   : in std_logic_vector(8-1 downto 0);
-       constant byte1   : in std_logic_vector(8-1 downto 0)
-       ) is
-      
-    begin
-      report "[TESTBENCH] TX 2 bytes in burst";
-
-      dut_if.tx_tvalid_i <= '1';
-      dut_if.tx_tdata_i  <= byte0;
-      while dut_if.tx_tready_o = '0'
-      loop
-        run(1);
-      end loop;
-      run(1);
-      dut_if.tx_tvalid_i <= '1';
-      dut_if.tx_tdata_i  <= byte1;
-      while dut_if.tx_tready_o = '0'
-      loop
-        run(1);
-      end loop;
-      run(1);
-      dut_if.tx_tvalid_i <= '0';
-      dut_if.tx_tdata_i  <= X"00";
-      wait until dut_if.tx_tready_o = '1';
-    end tx_2byte;
-
 
   begin  -- process tb_gen
+             
     report "[TESTBENCH] Test Begin";
-    dut_if.arst_b_i              <= '1';
+    dut_ifi.arst_b_i              <= '1';
 
     -- Réinitialisation
     run(10);
-    dut_if.rx_tready_i           <= '1';
+    dut_ifi.rx_tready_i           <= '1';
+    dut_ifi.tx_tvalid_i           <= '0';
+    dut_ifi.cmd_tvalid_i          <= '0';
 
     for cpol in 0 to 1 loop
       for cpha in 0 to 1 loop
         run(100);
-        cfg(x(cpol),x(cpha),X"00");
+        cfg(clk_i,dut_ifi,dut_ifo,x(cpol),x(cpha),X"00");
         run(100);
-        cmd('1','1','1',X"3");
+        cmd(clk_i,dut_ifi,dut_ifo,'1','1','1',X"3");
         run(100);
-        tx_1byte(X"55");
+        tx(clk_i,dut_ifi,dut_ifo,X"55");
         run(100);
-        tx_2byte(X"0F",X"F0");
+        tx(clk_i,dut_ifi,dut_ifo,X"0F");
+        tx(clk_i,dut_ifi,dut_ifo,X"F0");
         
       end loop;  -- cpha
     end loop;  -- cpol

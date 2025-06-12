@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-10
+-- Last update: 2025-06-12
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ end entity spi_master;
  
 architecture rtl of spi_master is
  
-    type   state_t is (IDLE, CMD, START, PREAMBLE, TRANSFER, POSTAMBLE, DONE);
+    type   state_t is (IDLE, START, TRANSFER, POSTAMBLE, DONE);
     signal state_r            : state_t;
 
     signal sclk_r             : std_logic;
@@ -195,15 +195,15 @@ begin
           then
             state_r            <= START;
 
-           -- Ack the axistream transfert
-           cmd_tready_r        <= '1';
-           -- Save the Command
-           cmd_last_transfer_r <= cmd_last_transfer_i;
-           cmd_enable_rx_r     <= cmd_enable_rx_i    ;
-           cmd_enable_tx_r     <= cmd_enable_tx_i    ;
-           cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
+            -- Ack the axistream transfert
+            cmd_tready_r        <= '1';
+            -- Save the Command
+            cmd_last_transfer_r <= cmd_last_transfer_i;
+            cmd_enable_rx_r     <= cmd_enable_rx_i    ;
+            cmd_enable_tx_r     <= cmd_enable_tx_i    ;
+            cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
           end if;
-                                         
+          
         -----------------------------------------------------------------------
         -- START State
         -- The set the CS_B
@@ -225,7 +225,7 @@ begin
               --  * Wait Data
               
               mosi_oe_r <= '1'; -- Active pad
-                                         
+              
               -- Wait TX Data
               if tx_tvalid_i = '1'
               then
@@ -239,7 +239,7 @@ begin
             else
               -- Don't Need TX
               --  * Disable PAD
-                                         
+              
               mosi_oe_r <= '0'; -- Inactive pad
               state_r   <= TRANSFER;
             end if;
@@ -251,82 +251,81 @@ begin
         -- 
         -----------------------------------------------------------------------
         when TRANSFER =>
-            -- Bit Shift Phase
-            if (bit_shift = '1')
-            then
-              -- MSB First
-              mosi_r    <= data_r(7);
+          -- Bit Shift Phase
+          if (bit_shift = '1')
+          then
+            -- MSB First
+            mosi_r    <= data_r(7);
 
-              -- Special Case :
-              -- If CPHA = 0, then sample into the first clock edge
-              -- So shift the clock
-              if not (cfg_cpha_i = '0' and cnt_bit_r = 0)
-              then
-                sclk_r    <= not sclk_r;
-              end if;
-                
-            end if;
-            
-            -- Bit Sample Phase
-            if (bit_sample = '1')
+            -- Special Case :
+            -- If CPHA = 0, then sample into the first clock edge
+            -- So shift the clock
+            if not (cfg_cpha_i = '0' and cnt_bit_r = 0)
             then
               sclk_r    <= not sclk_r;
-              data_r    <= data_r(6 downto 0) & miso_i;
-              cnt_bit_r <= cnt_bit_r + 1;
-
-              if (cnt_bit_r = 7)
-              then
-                state_r   <= POSTAMBLE;
-              end if;
-                                         
             end if;
+            
+          end if;
+          
+          -- Bit Sample Phase
+          if (bit_sample = '1')
+          then
+            sclk_r    <= not sclk_r;
+            data_r    <= data_r(6 downto 0) & miso_i;
+            cnt_bit_r <= cnt_bit_r + 1;
+
+            if (cnt_bit_r = 7)
+            then
+              state_r   <= POSTAMBLE;
+            end if;
+            
+          end if;
 
         -----------------------------------------------------------------------
         -- POSTAMBLE State
         -- Send bit per bit the data (MSB First)
         -----------------------------------------------------------------------
         when POSTAMBLE =>
-            -- Bit Shift Phase
-            if (bit_shift = '1')
+          -- Bit Shift Phase
+          if (bit_shift = '1')
+          then
+
+            -- If CPHA = 0, then the clock is shifted, then missing one edge
+            if (cfg_cpha_i = '0')
             then
-
-              -- If CPHA = 0, then the clock is shifted, then missing one edge
-              if (cfg_cpha_i = '0')
-              then
-                sclk_r    <= not sclk_r;
-              end if;
-              
-              -- Push in fifo rx 
-              -- WARNING : OVERWRITE FIFO
-              if (cmd_enable_rx_r = '1')
-              then
-                rx_tvalid_r <= '1'; -- Valid
-                rx_tdata_r  <= data_r;
-              end if;
-
-               -- Last BYTE ?
-              if (cnt_byte_r = cmd_nb_bytes_r)
-              then
-                cmd_tready_r <= '1';
-                cnt_byte_r   <= (others => '0');
-
-                -- After byte disable cs or not
-                if (cmd_last_transfer_r = '1')
-                then
-                  -- Finish Transaction, CS go to inactive
-                  state_r      <= DONE;
-                else
-                  -- Finish Transfer, continue transaction (CS is again active) and wait Command
-                  state_r      <= IDLE;
-                end if;
-
-              else
-                -- Not Last Byte, continue transfert
-                cnt_byte_r  <= cnt_byte_r+1;
-                state_r     <= START;
-              end if;
-
+              sclk_r    <= not sclk_r;
             end if;
+            
+            -- Push in fifo rx 
+            -- WARNING : OVERWRITE FIFO
+            if (cmd_enable_rx_r = '1')
+            then
+              rx_tvalid_r <= '1'; -- Valid
+              rx_tdata_r  <= data_r;
+            end if;
+
+            -- Last BYTE ?
+            if (cnt_byte_r = cmd_nb_bytes_r)
+            then
+              cmd_tready_r <= '1';
+              cnt_byte_r   <= (others => '0');
+
+              -- After byte disable cs or not
+              if (cmd_last_transfer_r = '1')
+              then
+                -- Finish Transaction, CS go to inactive
+                state_r      <= DONE;
+              else
+                -- Finish Transfer, continue transaction (CS is again active) and wait Command
+                state_r      <= IDLE;
+              end if;
+
+            else
+              -- Not Last Byte, continue transfert
+              cnt_byte_r  <= cnt_byte_r+1;
+              state_r     <= START;
+            end if;
+
           end if;
           
         -----------------------------------------------------------------------

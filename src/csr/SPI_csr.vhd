@@ -254,7 +254,6 @@ begin  -- architecture rtl
 
     cmd_rcs     <= '0';
     cmd_re      <= '0';
-    cmd_rbusy   <= '0';
     cmd_rdata   <= (others=>'0');
 
     cmd_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(1,SPI_ADDR_WIDTH)))   else '0';

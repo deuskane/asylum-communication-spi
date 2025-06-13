@@ -74,16 +74,10 @@ filesets:
     files:
       - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
-      - sim/models/m25p40.vhd
-      - sim/models/m45pe80.vhd
-      - sim/models/s25fl064p.vhd
-      - sim/models/s25fl512s.vhd
-      - sim/models/s35hl256t.vhd
-      - sim/models/memory.mem         : {file_type : user, copyto : memory.mem}
-      - sim/models/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
 #    logical_name : work
     file_type    : vhdlSource-2008
-
+    depend       :
+      - fmf:memory:flash_nor
 #=========================================
 targets:
 #=========================================
@@ -110,7 +104,8 @@ targets:
     default_tool    : ghdl
     tools :
       ghdl :
-        run_options : ["--vcd=dut.vcd"]
+        analyze_options : ["-Wall","--dump-drivers"]
+        run_options     : ["--vcd=dut.vcd", "--disp-tree"]
 
   #---------------------------------------
   sim_m25p40:

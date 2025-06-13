@@ -49,14 +49,10 @@ package SPI_csr_pkg is
   -- Address     : 0x1
   -- Width       : 8
   -- Sw Access   : wo
-  -- Hw Access   : wo
+  -- Hw Access   : ro
   -- Hw Type     : fifo
   --==================================
   type SPI_cmd_sw2hw_t is record
-    valid : std_logic;
-  end record SPI_cmd_sw2hw_t;
-
-  type SPI_cmd_hw2sw_t is record
     valid : std_logic;
   --==================================
   -- Field       : nb_bytes
@@ -82,6 +78,10 @@ package SPI_csr_pkg is
   -- Width       : 1
   --==================================
     enable_tx : std_logic_vector(1-1 downto 0);
+  end record SPI_cmd_sw2hw_t;
+
+  type SPI_cmd_hw2sw_t is record
+    ready : std_logic;
   end record SPI_cmd_hw2sw_t;
 
   --==================================

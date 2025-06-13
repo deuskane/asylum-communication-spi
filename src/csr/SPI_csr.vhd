@@ -224,7 +224,7 @@ begin  -- architecture rtl
   -- Address     : 0x1
   -- Width       : 8
   -- Sw Access   : wo
-  -- Hw Access   : wo
+  -- Hw Access   : ro
   -- Hw Type     : fifo
   --==================================
   --==================================
@@ -264,10 +264,10 @@ begin  -- architecture rtl
     cmd_wdata_sw(5 downto 5) <= cmd_wdata(5 downto 5); -- last
     cmd_wdata_sw(6 downto 6) <= cmd_wdata(6 downto 6); -- enable_rx
     cmd_wdata_sw(7 downto 7) <= cmd_wdata(7 downto 7); -- enable_tx
-    cmd_wdata_hw(4 downto 0) <= hw2sw_i.cmd.nb_bytes; -- nb_bytes
-    cmd_wdata_hw(5 downto 5) <= hw2sw_i.cmd.last; -- last
-    cmd_wdata_hw(6 downto 6) <= hw2sw_i.cmd.enable_rx; -- enable_rx
-    cmd_wdata_hw(7 downto 7) <= hw2sw_i.cmd.enable_tx; -- enable_tx
+    sw2hw_o.cmd.nb_bytes <= cmd_rdata_hw(4 downto 0); -- nb_bytes
+    sw2hw_o.cmd.last <= cmd_rdata_hw(5 downto 5); -- last
+    sw2hw_o.cmd.enable_rx <= cmd_rdata_hw(6 downto 6); -- enable_rx
+    sw2hw_o.cmd.enable_tx <= cmd_rdata_hw(7 downto 7); -- enable_tx
 
     ins_cmd : entity work.csr_fifo(rtl)
       generic map
@@ -284,12 +284,12 @@ begin  -- architecture rtl
         ,sw_re_i       => cmd_re
         ,sw_rbusy_o    => cmd_rbusy
         ,sw_wbusy_o    => cmd_wbusy
-        ,hw_tx_valid_i => hw2sw_i.cmd.valid
+        ,hw_tx_valid_i => '0'
         ,hw_tx_ready_o => open
-        ,hw_tx_data_i  => cmd_wdata_hw
+        ,hw_tx_data_i  => (others => '0')
         ,hw_rx_valid_o => sw2hw_o.cmd.valid
-        ,hw_rx_ready_i => '1'
-        ,hw_rx_data_o  => open
+        ,hw_rx_ready_i => hw2sw_i.cmd.ready
+        ,hw_rx_data_o  => cmd_rdata_hw
         );
 
   end generate gen_cmd;
@@ -301,6 +301,10 @@ begin  -- architecture rtl
     cmd_rdata   <= (others => '0');
     cmd_wcs      <= '0';
     cmd_wbusy    <= '0';
+    sw2hw_o.cmd.nb_bytes <= "00000";
+    sw2hw_o.cmd.last <= "0";
+    sw2hw_o.cmd.enable_rx <= "0";
+    sw2hw_o.cmd.enable_tx <= "0";
     sw2hw_o.cmd.valid <= '0';
   end generate gen_cmd_b;
 

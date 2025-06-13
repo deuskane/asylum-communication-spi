@@ -45,7 +45,7 @@
             address      : "x1",
             desc         : "Command FIFO",
             swaccess     : "wo",
-            hwaccess     : "wo",
+            hwaccess     : "ro",
             hwtype       : "fifo",
 
             params: {

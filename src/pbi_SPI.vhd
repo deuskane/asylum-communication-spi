@@ -57,6 +57,8 @@ architecture rtl of pbi_SPI is
   signal sw2hw                  : SPI_sw2hw_t;
   signal hw2sw                  : SPI_hw2sw_t;
 
+  signal miso                   : std_logic;
+  signal mosi                   : std_logic;
 begin  -- architecture rtl
 
   ins_csr : entity work.SPI_registers(rtl)
@@ -66,7 +68,7 @@ begin  -- architecture rtl
     )
   port map(
     clk_i     => clk_i           ,
-    arst_b_i  => arstn_i         ,
+    arst_b_i  => arst_b_i        ,
     pbi_ini_i => pbi_ini_i       ,
     pbi_tgt_o => pbi_tgt_o       ,
     sw2hw_o   => sw2hw           ,
@@ -79,7 +81,7 @@ begin  -- architecture rtl
       )
     port map
     ( clk_i                 => clk_i
-     ,arst_b_i              => sw2hw.cfg.spi_enable
+     ,arst_b_i              => sw2hw.cfg.spi_enable(0)
      ,tx_tvalid_i           => sw2hw.data.valid
      ,tx_tready_o           => hw2sw.data.ready
      ,tx_tdata_i            => sw2hw.data.value
@@ -88,20 +90,25 @@ begin  -- architecture rtl
      ,rx_tdata_o            => hw2sw.data.value
      ,cmd_tvalid_i          => sw2hw.cmd.valid
      ,cmd_tready_o          => hw2sw.cmd.ready
-     ,cmd_last_transfer_i   => sw2hw.cmd.last
-     ,cmd_enable_rx_i       => sw2hw.cmd.enable_rx
-     ,cmd_enable_tx_i       => sw2hw.cmd.enable_tx
+     ,cmd_last_transfer_i   => sw2hw.cmd.last(0)
+     ,cmd_enable_rx_i       => sw2hw.cmd.enable_rx(0)
+     ,cmd_enable_tx_i       => sw2hw.cmd.enable_tx(0)
      ,cmd_nb_bytes_i        => sw2hw.cmd.nb_bytes
-     ,cfg_cpol_i            => sw2hw.cfg.cpol
-     ,cfg_cpha_i            => sw2hw.cfg.cpha
+     ,cfg_cpol_i            => sw2hw.cfg.cpol(0)
+     ,cfg_cpha_i            => sw2hw.cfg.cpha(0)
      ,cfg_prescaler_ratio_i => sw2hw.prescaler.ratio
      ,sclk_o                => sclk_o   
      ,sclk_oe_o             => sclk_oe_o
      ,cs_b_o                => cs_b_o   
      ,cs_b_oe_o             => cs_b_oe_o
-     ,mosi_o                => mosi_o   
+     ,mosi_o                => mosi   
      ,mosi_oe_o             => mosi_oe_o
-     ,miso_i                => miso_i   
+     ,miso_i                => miso   
     );
-  
+
+  -- Loopback
+  miso   <= mosi when sw2hw.cfg.loopback = "1" else
+            miso_i;
+
+  mosi_o <= mosi;
 end architecture rtl;

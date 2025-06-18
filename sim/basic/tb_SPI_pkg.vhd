@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-12
+-- Last update: 2025-06-18
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -257,6 +257,8 @@ package body tb_SPI_pkg is
         run(1,"pos",clk_i);
       end loop;
 
+      report "[TESTBENCH] RX 1 byte ... "&to_hstring(dut_ifo.rx_tdata_o);
+      
       assert dut_ifo.rx_tdata_o = byte0 report "[TESTBENCH] Invalid Rx data " & to_hstring(dut_ifo.rx_tdata_o) & " != " & to_hstring(byte0) severity error;
 
       run(1,"pos",clk_i);

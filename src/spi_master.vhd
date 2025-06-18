@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-12
+-- Last update: 2025-06-18
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -74,18 +74,24 @@ architecture rtl of spi_master is
     type   state_t is (IDLE, START, TRANSFER, POSTAMBLE, DONE);
     signal state_r            : state_t;
 
+    signal state_is_IDLE      : std_logic;
+    signal state_is_START     : std_logic;
+    signal state_is_TRANSFER  : std_logic;
+    signal state_is_POSTAMBLE : std_logic;
+    signal state_is_DONE      : std_logic;
+
     signal sclk_r             : std_logic;
     signal sclk_oe_r          : std_logic;
     signal mosi_r             : std_logic;
     signal mosi_oe_r          : std_logic;
     signal cs_b_r             : std_logic;
     signal cs_b_oe_r          : std_logic;
-    signal prescaler_cnt_r    : unsigned(PRESCALER_WIDTH-1 downto 0);
+    signal prescaler_cnt_r    : unsigned (PRESCALER_WIDTH-1 downto 0);
     signal prescaler_is_min   : std_logic;
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
-    signal cnt_bit_r          : unsigned(2 downto 0);
-    signal cnt_byte_r         : unsigned(cmd_nb_bytes_i'range);
+    signal cnt_bit_r          : unsigned (3 downto 0);
+    signal cnt_byte_r         : unsigned (cmd_nb_bytes_i'range);
     signal data_r             : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
@@ -94,7 +100,7 @@ architecture rtl of spi_master is
     signal cmd_last_transfer_r: std_logic;
     signal cmd_enable_rx_r    : std_logic;
     signal cmd_enable_tx_r    : std_logic;
-    signal cmd_nb_bytes_r     : unsigned(cmd_nb_bytes_i'range);
+    signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
 
     signal cycle_phase_r      : std_logic;
     signal cycle_phase0_r     : std_logic;
@@ -182,6 +188,13 @@ begin
       cmd_tready_r<= '0';
       tx_tready_r <= '0'; 
 
+      -- RX FIFO Managment
+      if (rx_tvalid_r = '1' and rx_tready_i = '1')
+      then
+        rx_tvalid_r <= '0';
+      end if;
+
+      
       case state_r is
         -----------------------------------------------------------------------
         -- IDLE State
@@ -264,6 +277,14 @@ begin
             then
               sclk_r    <= not sclk_r;
             end if;
+
+            -- If CPHA = 0, then the clock is shifted, then missing one edge
+            if ((cfg_cpha_i = '0') and (cnt_bit_r = 8))
+            then
+              sclk_r    <= not sclk_r;
+              state_r   <= POSTAMBLE;
+            end if;
+
             
           end if;
           
@@ -274,7 +295,7 @@ begin
             data_r    <= data_r(6 downto 0) & miso_i;
             cnt_bit_r <= cnt_bit_r + 1;
 
-            if (cnt_bit_r = 7)
+            if ((cfg_cpha_i = '1') and (cnt_bit_r = 7))
             then
               state_r   <= POSTAMBLE;
             end if;
@@ -283,20 +304,13 @@ begin
 
         -----------------------------------------------------------------------
         -- POSTAMBLE State
-        -- Send bit per bit the data (MSB First)
+        -- Write in RX fifo (if possible)
+        -- Check if last word or stop transfert  
         -----------------------------------------------------------------------
         when POSTAMBLE =>
-          -- Bit Shift Phase
-          if (bit_shift = '1')
+          -- Push in fifo rx
+          if not ((cmd_enable_rx_r = '1') and rx_tvalid_r = '1')
           then
-
-            -- If CPHA = 0, then the clock is shifted, then missing one edge
-            if (cfg_cpha_i = '0')
-            then
-              sclk_r    <= not sclk_r;
-            end if;
-            
-            -- Push in fifo rx 
             -- WARNING : OVERWRITE FIFO
             if (cmd_enable_rx_r = '1')
             then
@@ -325,9 +339,7 @@ begin
               cnt_byte_r  <= cnt_byte_r+1;
               state_r     <= START;
             end if;
-
-          end if;
-          
+          end if;     
         -----------------------------------------------------------------------
         -- DONE State
         -- Unset the CS_B
@@ -341,13 +353,17 @@ begin
           end if;
       end case;
 
-      -- RX FIFO Managment
-      if (rx_tvalid_r = '1' and rx_tready_i = '1')
-      then
-        rx_tvalid_r <= '0';
-      end if;
     end if;
   end process;
+
+  -----------------------------------------------------------------------------
+  -- Debug State
+  -----------------------------------------------------------------------------
+  state_is_IDLE      <= '1' when state_r = IDLE      else '0';
+  state_is_START     <= '1' when state_r = START     else '0';
+  state_is_TRANSFER  <= '1' when state_r = TRANSFER  else '0';
+  state_is_POSTAMBLE <= '1' when state_r = POSTAMBLE else '0';
+  state_is_DONE      <= '1' when state_r = DONE      else '0';
 
   -----------------------------------------------------------------------------
   -- Output assignments

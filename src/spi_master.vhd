@@ -110,9 +110,22 @@ begin
   -----------------------------------------------------------------------------
   -- Prescaler
   -----------------------------------------------------------------------------
-  -- SCLK is divide by 2*(cfg_prescaler_ratio_i+1)
-  -- SCLK is the ouput of Register
-  
+  --                     
+  -- Prescaler counter   X 3 X 2 X 1 X 0 X 3 X 2 X 1 X 0 X 3 X 2
+  --                                  ___             ___
+  -- Prescaler min      _____________/   \___________/   \______
+  --                                      ________________
+  -- cycle_phase_r          _____________/                \_____
+  --                                     ___                
+  -- cycle_phase0_r        _____________/   \______________________
+  --                                                     ___
+  -- cycle_phase1_r        _____________________________/   \______
+                                          
+  -- In this architecture, SAMPLE & SHIFT phase is fix.
+  -- SCLK Depend of this signals
+
+  -- The prescaler is "free-running".
+  -- TODO : reduce the power cumsoption if active only during transfert
   process(clk_i,arst_b_i)
   begin
     if arst_b_i = '0'
@@ -142,21 +155,9 @@ begin
     end if;
   end process;
 
-  --                     
-  -- Prescaler counter   X 3 X 2 X 1 X 0 X 3 X 2 X 1 X 0 X 3 X 2
-  --                                  ___             ___
-  -- Prescaler min      _____________/   \___________/   \______
-  --                                      ________________
-  -- cycle_phase_r          _____________/                \_____
-  --                                     ___                
-  -- cycle_phase0_r        _____________/   \______________________
-  --                                                     ___
-  -- cycle_phase1_r        _____________________________/   \______
-  
-  
   prescaler_is_min <= '1' when unsigned(prescaler_cnt_r) = 0 else
                       '0';
-  
+                                          
   bit_sample       <= cycle_phase0_r;
   bit_shift        <= cycle_phase1_r;
   
@@ -185,16 +186,15 @@ begin
     then
       cs_b_oe_r   <= '1'; -- Active pad
       sclk_oe_r   <= '1'; -- Active pad
-      cmd_tready_r<= '0';
-      tx_tready_r <= '0'; 
+      cmd_tready_r<= '0'; -- tready is always reset because tready is set to 1 when tvalid is 1
+      tx_tready_r <= '0'; -- tready is always reset because tready is set to 1 when tvalid is 1
 
       -- RX FIFO Managment
       if (rx_tvalid_r = '1' and rx_tready_i = '1')
       then
         rx_tvalid_r <= '0';
       end if;
-
-      
+                                          
       case state_r is
         -----------------------------------------------------------------------
         -- IDLE State
@@ -206,6 +206,7 @@ begin
           -- Wait to Receive new command
           if cmd_tvalid_i = '1'
           then
+            -- START SPI Transaction
             state_r            <= START;
 
             -- Ack the axistream transfert
@@ -284,7 +285,6 @@ begin
               sclk_r    <= not sclk_r;
               state_r   <= POSTAMBLE;
             end if;
-
             
           end if;
           

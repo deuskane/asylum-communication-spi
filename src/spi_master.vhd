@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-18
+-- Last update: 2025-06-19
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -321,7 +321,6 @@ begin
             -- Last BYTE ?
             if (cnt_byte_r = cmd_nb_bytes_r)
             then
-              cmd_tready_r <= '1';
               cnt_byte_r   <= (others => '0');
 
               -- After byte disable cs or not

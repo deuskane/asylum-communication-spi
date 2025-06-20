@@ -756,8 +756,8 @@ END PROCESS WriteTime;
             seo := tdevice_SE;
             beo := tdevice_BE;
         ELSE
-            seo := tdevice_SE / 100;
-            beo := tdevice_BE / 100;
+            seo := tdevice_SE / 1000;
+            beo := tdevice_BE / 1000;
         END IF;
         IF rising_edge(ESTART) AND EDONE = '1' THEN
             IF Instruct = BE THEN

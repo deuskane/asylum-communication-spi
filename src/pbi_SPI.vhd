@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-06-13
+-- Last update: 2025-06-21
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -22,15 +22,22 @@
 library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
-library work;
+use     ieee.std_logic_textio.all;
+use     std.textio.all;
+
 library work;
 use     work.pbi_pkg.all;
 use     work.SPI_csr_pkg.all;
 
 entity pbi_SPI is
   generic(
-    USER_DEFINE_PRESCALER : boolean; -- Parameters to use the enable the User define Prescaler
-    PRESCALER_RATIO       : std_logic_vector(8-1 downto 0) -- Default value for prescaler ratio
+    USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
+    PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
+
+    FILENAME_CMD          : string  := "dump_spi_cmd.txt";
+    FILENAME_TX           : string  := "dump_spi_tx.txt";
+    FILENAME_RX           : string  := "dump_spi_rx.txt"
+
     );
   port   (
     clk_i            : in    std_logic;
@@ -54,11 +61,34 @@ end entity pbi_SPI;
 
 architecture rtl of pbi_SPI is
 
-  signal sw2hw                  : SPI_sw2hw_t;
-  signal hw2sw                  : SPI_hw2sw_t;
+-- synthesis translate_off
+  file     file_cmd               : text open write_mode is FILENAME_CMD;
+  file     file_tx                : text open write_mode is FILENAME_TX;
+  file     file_rx                : text open write_mode is FILENAME_RX;
+-- synthesis translate_on
 
-  signal miso                   : std_logic;
-  signal mosi                   : std_logic;
+  signal   sw2hw                  : SPI_sw2hw_t;
+  signal   hw2sw                  : SPI_hw2sw_t;
+           
+  signal   miso                   : std_logic;
+  signal   mosi                   : std_logic;
+
+  alias    tx_tvalid              : std_logic        is sw2hw.data.valid;
+  alias    tx_tready              : std_logic        is hw2sw.data.ready;
+  alias    tx_tdata               : std_logic_vector is sw2hw.data.value;
+                                                     
+  alias    rx_tvalid              : std_logic        is hw2sw.data.valid;
+  alias    rx_tready              : std_logic        is sw2hw.data.ready;
+  alias    rx_tdata               : std_logic_vector is hw2sw.data.value;
+
+  alias    cmd_tvalid             : std_logic        is sw2hw.cmd.valid;
+  alias    cmd_tready             : std_logic        is hw2sw.cmd.ready;
+  alias    cmd_last               : std_logic        is sw2hw.cmd.last(0)     ;
+  alias    cmd_enable_rx          : std_logic        is sw2hw.cmd.enable_rx(0);
+  alias    cmd_enable_tx          : std_logic        is sw2hw.cmd.enable_tx(0);
+  alias    cmd_nb_bytes           : std_logic_vector is sw2hw.cmd.nb_bytes    ;
+
+  
 begin  -- architecture rtl
 
   ins_csr : entity work.SPI_registers(rtl)
@@ -111,4 +141,50 @@ begin  -- architecture rtl
             miso_i;
 
   mosi_o <= mosi;
+
+-- synthesis translate_off
+  process (clk_i) is
+    variable line_buffer : line;
+
+    
+  begin  -- process
+
+    if rising_edge(clk_i)
+    then
+     
+      if (tx_tvalid and tx_tready)
+      then
+        write    (line_buffer, tx_tdata);
+        write    (line_buffer, string'(" - 0x"));
+        write    (line_buffer, to_hstring(tx_tdata));
+        write    (line_buffer, string'(" - "));
+        write    (line_buffer, character'val(to_integer(unsigned(tx_tdata))));
+        writeline(file_tx, line_buffer);
+      end if;
+      
+      if (rx_tvalid and rx_tready)
+      then
+        write    (line_buffer, rx_tdata);
+        write    (line_buffer, string'(" - 0x"));
+        write    (line_buffer, to_hstring(rx_tdata));
+        write    (line_buffer, string'(" - "));
+        write    (line_buffer, character'val(to_integer(unsigned(rx_tdata))));
+        writeline(file_rx, line_buffer);
+      end if;
+
+     if (cmd_tvalid and cmd_tready)
+     then
+       write    (line_buffer, cmd_enable_tx);
+       write    (line_buffer, string'(" - "));
+       write    (line_buffer, cmd_enable_rx);
+       write    (line_buffer, string'(" - "));
+       write    (line_buffer, cmd_last);
+       write    (line_buffer, string'(" - 0x"));
+       write    (line_buffer, to_hstring(cmd_nb_bytes));
+       writeline(file_cmd, line_buffer);
+     end if;
+      
+    end if;
+  end process;
+-- synthesis translate_on
 end architecture rtl;

@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-12
+-- Last update: 2025-06-22
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ begin
       ,cfg_prescaler_ratio_i=> dut_ifi.cfg_prescaler_ratio_i
       ,cmd_tvalid_i         => dut_ifi.cmd_tvalid_i
       ,cmd_tready_o         => dut_ifo.cmd_tready_o
-      ,cmd_last_transfer_i  => dut_ifi.cmd_last_transfer_i
+      ,cmd_tlast_i          => dut_ifi.cmd_tlast_i
       ,cmd_enable_tx_i      => dut_ifi.cmd_enable_tx_i
       ,cmd_enable_rx_i      => dut_ifi.cmd_enable_rx_i
       ,cmd_nb_bytes_i       => dut_ifi.cmd_nb_bytes_i

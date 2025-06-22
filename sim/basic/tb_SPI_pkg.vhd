@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-18
+-- Last update: 2025-06-22
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ package tb_SPI_pkg is
     tx_tvalid_i          : std_logic;
     rx_tready_i          : std_logic;
     cmd_tvalid_i         : std_logic;
-    cmd_last_transfer_i  : std_logic;
+    cmd_tlast_i          : std_logic;
     cmd_enable_tx_i      : std_logic;
     cmd_enable_rx_i      : std_logic;
     cmd_nb_bytes_i       : std_logic_vector;
@@ -79,10 +79,10 @@ package tb_SPI_pkg is
     (signal   clk_i             : in    std_logic;
      signal   dut_ifi           : out   spi_master_ifi_t;
      signal   dut_ifo           : in    spi_master_ifo_t;
-     constant cmd_enable_tx_i      : in    std_logic;
-     constant cmd_enable_rx_i      : in    std_logic;
-     constant cmd_last_transfer_i  : in    std_logic;
-     constant cmd_nb_bytes_i       : in    std_logic_vector
+     constant cmd_enable_tx_i   : in    std_logic;
+     constant cmd_enable_rx_i   : in    std_logic;
+     constant cmd_tlast_i       : in    std_logic;
+     constant cmd_nb_bytes_i    : in    std_logic_vector
      );
 
   procedure tx
@@ -170,20 +170,20 @@ package body tb_SPI_pkg is
     (signal   clk_i             : in    std_logic;
      signal   dut_ifi           : out   spi_master_ifi_t;
      signal   dut_ifo           : in    spi_master_ifo_t;
-     constant cmd_enable_tx_i      : in    std_logic;
-     constant cmd_enable_rx_i      : in    std_logic;
-     constant cmd_last_transfer_i  : in    std_logic;
-     constant cmd_nb_bytes_i       : in    std_logic_vector
+     constant cmd_enable_tx_i   : in    std_logic;
+     constant cmd_enable_rx_i   : in    std_logic;
+     constant cmd_tlast_i       : in    std_logic;
+     constant cmd_nb_bytes_i    : in    std_logic_vector
      ) is
     
   begin
     report "[TESTBENCH] Command";
 
-    report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_last_transfer_i) & " - #bytes " & to_hstring(cmd_nb_bytes_i);
+    report "[TESTBENCH] Command TX "& std_logic'image(cmd_enable_tx_i) & " - RX "& std_logic'image(cmd_enable_rx_i) & " - Last " & std_logic'image(cmd_tlast_i) & " - #bytes " & to_hstring(cmd_nb_bytes_i);
 
     
     dut_ifi.cmd_tvalid_i         <= '1';
-    dut_ifi.cmd_last_transfer_i  <= cmd_last_transfer_i;
+    dut_ifi.cmd_tlast_i          <= cmd_tlast_i;
     dut_ifi.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
     dut_ifi.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
     dut_ifi.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
@@ -197,7 +197,7 @@ package body tb_SPI_pkg is
     end loop;
       
     dut_ifi.cmd_tvalid_i         <= '0';
-    dut_ifi.cmd_last_transfer_i  <= '0';
+    dut_ifi.cmd_tlast_i          <= '0';
     dut_ifi.cmd_enable_rx_i      <= '0';
     dut_ifi.cmd_enable_tx_i      <= '0';
     --dut_ifi.cmd_nb_bytes_i       <= (others => '0')     ;

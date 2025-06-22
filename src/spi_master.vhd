@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-19
+-- Last update: 2025-06-22
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ entity spi_master is
     -- Command
     cmd_tvalid_i         : in  std_logic;
     cmd_tready_o         : out std_logic;
-    cmd_last_transfer_i  : in  std_logic;
+    cmd_tlast_i          : in  std_logic;
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
@@ -97,7 +97,7 @@ architecture rtl of spi_master is
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
     signal rx_tvalid_r        : std_logic;
     signal cmd_tready_r       : std_logic;
-    signal cmd_last_transfer_r: std_logic;
+    signal cmd_tlast_r        : std_logic;
     signal cmd_enable_rx_r    : std_logic;
     signal cmd_enable_tx_r    : std_logic;
     signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
@@ -212,7 +212,7 @@ begin
             -- Ack the axistream transfert
             cmd_tready_r        <= '1';
             -- Save the Command
-            cmd_last_transfer_r <= cmd_last_transfer_i;
+            cmd_tlast_r         <= cmd_tlast_i        ;
             cmd_enable_rx_r     <= cmd_enable_rx_i    ;
             cmd_enable_tx_r     <= cmd_enable_tx_i    ;
             cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
@@ -324,7 +324,7 @@ begin
               cnt_byte_r   <= (others => '0');
 
               -- After byte disable cs or not
-              if (cmd_last_transfer_r = '1')
+              if (cmd_tlast_r = '1')
               then
                 -- Finish Transaction, CS go to inactive
                 state_r      <= DONE;

@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-06-21
+-- Last update: 2025-06-22
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ begin  -- architecture rtl
      ,rx_tdata_o            => hw2sw.data.value
      ,cmd_tvalid_i          => sw2hw.cmd.valid
      ,cmd_tready_o          => hw2sw.cmd.ready
-     ,cmd_last_transfer_i   => sw2hw.cmd.last(0)
+     ,cmd_tlast_i           => sw2hw.cmd.last(0)
      ,cmd_enable_rx_i       => sw2hw.cmd.enable_rx(0)
      ,cmd_enable_tx_i       => sw2hw.cmd.enable_tx(0)
      ,cmd_nb_bytes_i        => sw2hw.cmd.nb_bytes

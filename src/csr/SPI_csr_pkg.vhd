@@ -62,19 +62,19 @@ package SPI_csr_pkg is
     nb_bytes : std_logic_vector(5-1 downto 0);
   --==================================
   -- Field       : last
-  -- Description : 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer
+  -- Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
   -- Width       : 1
   --==================================
     last : std_logic_vector(1-1 downto 0);
   --==================================
   -- Field       : enable_rx
-  -- Description : if 1 then push receive byte into rx fifo else not
+  -- Description : Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte
   -- Width       : 1
   --==================================
     enable_rx : std_logic_vector(1-1 downto 0);
   --==================================
   -- Field       : enable_tx
-  -- Description : if 1 then mosi_oe_o is 1 else mosi_oe_o = 0
+  -- Description : POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert
   -- Width       : 1
   --==================================
     enable_tx : std_logic_vector(1-1 downto 0);

@@ -15,9 +15,10 @@ CAPI=2:
 # Date        Version  Author   Description
 # 13/06/2025  1.0.0    mrosiere First Release
 # 21/06/2025  1.0.1    mrosiere Dump FIFO activity in file
+# 25/06/2025  1.1.0    mrosiere Add STOP special case
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:1.0.1
+name        : asylum:communication:SPI:1.1.0
 description : SPI Module
 
 #=========================================
@@ -105,8 +106,8 @@ targets:
     default_tool    : ghdl
     tools :
       ghdl :
-        analyze_options : ["-Wall","--dump-drivers"]
-        run_options     : ["--vcd=dut.vcd", "--disp-tree"]
+        analyze_options : ["-Wall"]
+        run_options     : ["--fst=dut.fst"]
 
   #---------------------------------------
   sim_m25p40:
@@ -121,5 +122,5 @@ targets:
     tools :
       ghdl :
         analyze_options : ["-frelaxed","--no-vital-checks","-Wall"]
-        run_options     : ["--vcd=dut.vcd","--ieee-asserts=disable"]
+        run_options     : ["--fst=dut.fst","--ieee-asserts=disable"]
 

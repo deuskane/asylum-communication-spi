@@ -62,17 +62,17 @@
                 {
                     name: "last",
                     bits: "5",
-                    desc: "0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer"
+                    desc: "Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert"
                 },
                 {
                     name: "enable_rx",
                     bits: "6",
-                    desc: "if 1 then push receive byte into rx fifo else not"
+                    desc: "Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte"
                 },
                 {
                     name: "enable_tx",
                     bits: "7",
-                    desc: "if 1 then mosi_oe_o is 1 else mosi_oe_o = 0"
+                    desc: "POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert"
                 },
             ]
         },

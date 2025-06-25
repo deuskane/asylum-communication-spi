@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-06-22
+-- Last update: 2025-06-24
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -106,16 +106,15 @@ begin
 --    ,XOn               => True
 --     )
 --    port map
---    (SI            => mosi_o -- serial data input/IO0
---    ,SO            => miso_i -- serial data output/IO1
---    ,SCK           => sclk_o -- serial clock input
---    ,CSNeg         => cs_b_o -- chip select input
---    ,RSTNeg        => RSTNeg -- hardware reset pin
---    ,WPNeg         => WPNeg  -- write protect input/IO2
---    ,HOLDNeg       => HOLDNeg-- hold input/IO3
+--    (SI            => dut_ifo.mosi_o -- serial data input  /IO0
+--    ,SO            => miso_i         -- serial data output /IO1
+--    ,SCK           => dut_ifo.sclk_o -- serial clock input     
+--    ,CSNeg         => dut_ifo.cs_b_o -- chip select input      
+--    ,RSTNeg        => RSTNeg
+--    ,WPNeg         => WPNeg          -- write protect input/IO2
+--    ,HOLDNeg       => HOLDNeg        -- hold input         /IO3
 --     );
 --
-
 
   mem : entity work.m25p40(vhdl_behavioral)
       generic map
@@ -127,12 +126,12 @@ begin
       ,XOn               => True
        )
       port map
-      (D             => dut_ifo.mosi_o -- serial data input/IO0
-      ,Q             => miso_i -- serial data output/IO1
+      (D             => dut_ifo.mosi_o -- serial data input  /IO0
+      ,Q             => miso_i         -- serial data output /IO1
       ,C             => dut_ifo.sclk_o -- serial clock input
       ,SNeg          => dut_ifo.cs_b_o -- chip select input
-      ,WNeg          => WPNeg  -- write protect input/IO2
-      ,HOLDNeg       => HOLDNeg-- hold input/IO3
+      ,WNeg          => WPNeg          -- write protect input/IO2
+      ,HOLDNeg       => HOLDNeg        -- hold input         /IO3
        );
     
   

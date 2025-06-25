@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-22
+-- Last update: 2025-06-25
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -206,9 +206,6 @@ begin
           -- Wait to Receive new command
           if cmd_tvalid_i = '1'
           then
-            -- START SPI Transaction
-            state_r            <= START;
-
             -- Ack the axistream transfert
             cmd_tready_r        <= '1';
             -- Save the Command
@@ -216,6 +213,17 @@ begin
             cmd_enable_rx_r     <= cmd_enable_rx_i    ;
             cmd_enable_tx_r     <= cmd_enable_tx_i    ;
             cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
+
+            if (cmd_tlast_i     = '1' and
+                cmd_enable_rx_i = '0' and
+                cmd_enable_tx_i = '0')
+            then
+              -- STOP SPI Transaction
+              state_r            <= DONE;
+            else
+              -- START SPI Transaction
+              state_r            <= START;
+            end if;
           end if;
           
         -----------------------------------------------------------------------

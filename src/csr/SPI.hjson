@@ -15,6 +15,21 @@
 	    desc         : "Default value for prescaler ratio"
 	    type         : "std_logic_vector(7 downto 0)"
 	}
+	{
+	    name         : "DEPTH_TX"
+	    desc         : "Depth of FIFO TX (SW2HW)"
+	    type         : "natural"
+	}
+	{
+	    name         : "DEPTH_RX"
+	    desc         : "Depth of FIFO RX (HW2SW)"
+	    type         : "natural"
+	}
+	{
+	    name         : "DEPTH_CMD"
+	    desc         : "Depth of FIFO Command (SW2HW)"
+	    type         : "natural"
+	}
     ]
 
     registers : [
@@ -29,6 +44,8 @@
             params: {
                 BLOCKING_READ  : "True", 
                 BLOCKING_WRITE : "True",
+		DEPTH_SW2HW    : "DEPTH_TX"
+		DEPTH_HW2SW    : "DEPTH_RX"
             }
 
             fields: [
@@ -51,6 +68,7 @@
             params: {
                 BLOCKING_READ  : "True", 
                 BLOCKING_WRITE : "True",
+		DEPTH_SW2HW    : "DEPTH_CMD"
             }
 
             fields: [

@@ -19,6 +19,9 @@ entity SPI_registers is
   generic (
     USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
    ;PRESCALER_RATIO : std_logic_vector(7 downto 0) -- Default value for prescaler ratio
+   ;DEPTH_TX : natural -- Depth of FIFO TX (SW2HW)
+   ;DEPTH_RX : natural -- Depth of FIFO RX (HW2SW)
+   ;DEPTH_CMD : natural -- Depth of FIFO Command (SW2HW)
   );
   port (
     -- Clock and Reset
@@ -184,6 +187,8 @@ begin  -- architecture rtl
         (WIDTH         => 8
         ,BLOCKING_READ => True
         ,BLOCKING_WRITE => True
+        ,DEPTH_SW2HW => DEPTH_TX
+        ,DEPTH_HW2SW => DEPTH_RX
         )
       port map
         (clk_i         => clk_i
@@ -277,6 +282,7 @@ begin  -- architecture rtl
         (WIDTH         => 8
         ,BLOCKING_READ => True
         ,BLOCKING_WRITE => True
+        ,DEPTH_SW2HW => DEPTH_CMD
         )
       port map
         (clk_i         => clk_i

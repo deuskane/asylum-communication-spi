@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-06-22
+-- Last update: 2025-07-09
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -33,6 +33,9 @@ entity pbi_SPI is
   generic(
     USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
     PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
+    DEPTH_CMD             : natural := 0;
+    DEPTH_TX              : natural := 0;
+    DEPTH_RX              : natural := 0;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -94,7 +97,10 @@ begin  -- architecture rtl
   ins_csr : entity work.SPI_registers(rtl)
   generic map(
     USER_DEFINE_PRESCALER => USER_DEFINE_PRESCALER,
-    PRESCALER_RATIO       => PRESCALER_RATIO      
+    PRESCALER_RATIO       => PRESCALER_RATIO,
+    DEPTH_CMD             => DEPTH_CMD,
+    DEPTH_TX              => DEPTH_TX,
+    DEPTH_RX              => DEPTH_RX
     )
   port map(
     clk_i     => clk_i           ,

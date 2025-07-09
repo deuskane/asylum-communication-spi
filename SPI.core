@@ -13,12 +13,13 @@ CAPI=2:
 #-----------------------------------------------------------------------------
 # Revisions  :
 # Date        Version  Author   Description
-# 13/06/2025  1.0.0    mrosiere First Release
-# 21/06/2025  1.0.1    mrosiere Dump FIFO activity in file
-# 25/06/2025  1.1.0    mrosiere Add STOP special case
+# 2025/06/13  1.0.0    mrosiere First Release
+# 2025/06/21  1.0.1    mrosiere Dump FIFO activity in file
+# 2025/06/25  1.1.0    mrosiere Add STOP special case
+# 2025/07/09  1.2.0    mrosiere Configure FIFO Depth
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:1.1.0
+name        : asylum:communication:SPI:1.2.0
 description : SPI Module
 
 #=========================================

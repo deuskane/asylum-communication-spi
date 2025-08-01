@@ -31,9 +31,9 @@ generate:
   #---------------------------------------
     generator : regtool
     parameters:
-      file         : src/csr/SPI.hjson
+      file         : hdl/csr/SPI.hjson
       name         : SPI
-      copy         : src/csr
+      copy         : hdl/csr
       #logical_name : asylum
 
 #=========================================
@@ -44,8 +44,8 @@ filesets:
   hdl:
   #---------------------------------------
     files        :
-      - src/spi_master.vhd
-      - src/pbi_SPI.vhd
+      - hdl/spi_master.vhd
+      - hdl/pbi_SPI.vhd
     file_type    : vhdlSource
 #    logical_name : work
     depend       :

@@ -8,6 +8,8 @@ use     IEEE.NUMERIC_STD.ALL;
 library work;
 use     work.SPI_csr_pkg.ALL;
 library work;
+use     work.csr_pkg.ALL;
+library work;
 use     work.pbi_pkg.all;
 
 --==================================
@@ -182,7 +184,7 @@ begin  -- architecture rtl
     data_wdata_hw(7 downto 0) <= hw2sw_i.data.value; -- value
     sw2hw_o.data.value <= data_rdata_hw(7 downto 0); -- value
 
-    ins_data : entity work.csr_fifo(rtl)
+    ins_data : csr_fifo
       generic map
         (WIDTH         => 8
         ,BLOCKING_READ => True
@@ -277,7 +279,7 @@ begin  -- architecture rtl
     sw2hw_o.cmd.enable_rx <= cmd_rdata_hw(6 downto 6); -- enable_rx
     sw2hw_o.cmd.enable_tx <= cmd_rdata_hw(7 downto 7); -- enable_tx
 
-    ins_cmd : entity work.csr_fifo(rtl)
+    ins_cmd : csr_fifo
       generic map
         (WIDTH         => 8
         ,BLOCKING_READ => True
@@ -378,7 +380,7 @@ begin  -- architecture rtl
     sw2hw_o.cfg.cpha <= cfg_rdata_hw(2 downto 2); -- cpha
     sw2hw_o.cfg.loopback <= cfg_rdata_hw(3 downto 3); -- loopback
 
-    ins_cfg : entity work.csr_reg(rtl)
+    ins_cfg : csr_reg
       generic map
         (WIDTH         => 4
         ,INIT          => INIT_cfg
@@ -454,7 +456,7 @@ begin  -- architecture rtl
     prescaler_wdata_sw(7 downto 0) <= prescaler_wdata(7 downto 0); -- ratio
     sw2hw_o.prescaler.ratio <= prescaler_rdata_hw(7 downto 0); -- ratio
 
-    ins_prescaler : entity work.csr_reg(rtl)
+    ins_prescaler : csr_reg
       generic map
         (WIDTH         => 8
         ,INIT          => INIT_prescaler

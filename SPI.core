@@ -45,7 +45,7 @@ filesets:
   hdl:
   #---------------------------------------
     files        :
-     #- hdl/spi_pkg.vhd
+      - hdl/spi_pkg.vhd
       - hdl/spi_master.vhd
       - hdl/pbi_SPI.vhd
     file_type    : vhdlSource

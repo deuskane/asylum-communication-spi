@@ -4,6 +4,8 @@ library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.NUMERIC_STD.ALL;
 
+library work;
+use     work.pbi_pkg.all;
 --==================================
 -- Module      : SPI
 -- Description : CSR for SPI
@@ -165,5 +167,30 @@ package SPI_csr_pkg is
 
   constant SPI_ADDR_WIDTH : natural := 2;
   constant SPI_DATA_WIDTH : natural := 8;
+
+  ------------------------------------
+  -- Component
+  ------------------------------------
+component SPI_registers is
+  generic (
+    USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
+   ;PRESCALER_RATIO : std_logic_vector(7 downto 0) -- Default value for prescaler ratio
+   ;DEPTH_TX : natural -- Depth of FIFO TX (SW2HW)
+   ;DEPTH_RX : natural -- Depth of FIFO RX (HW2SW)
+   ;DEPTH_CMD : natural -- Depth of FIFO Command (SW2HW)
+  );
+  port (
+    -- Clock and Reset
+    clk_i      : in  std_logic;
+    arst_b_i   : in  std_logic;
+    -- Bus
+    pbi_ini_i  : in  pbi_ini_t;
+    pbi_tgt_o  : out pbi_tgt_t;
+    -- CSR
+    sw2hw_o    : out SPI_sw2hw_t;
+    hw2sw_i    : in  SPI_hw2sw_t
+  );
+end component SPI_registers;
+
 
 end package SPI_csr_pkg;

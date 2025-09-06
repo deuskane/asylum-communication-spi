@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-07-09
+-- Last update: 2025-09-06
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -27,6 +27,7 @@ use     std.textio.all;
 
 library work;
 use     work.pbi_pkg.all;
+use     work.spi_pkg.all;
 use     work.SPI_csr_pkg.all;
 
 entity pbi_SPI is
@@ -94,7 +95,7 @@ architecture rtl of pbi_SPI is
   
 begin  -- architecture rtl
 
-  ins_csr : entity work.SPI_registers(rtl)
+  ins_csr : SPI_registers
   generic map(
     USER_DEFINE_PRESCALER => USER_DEFINE_PRESCALER,
     PRESCALER_RATIO       => PRESCALER_RATIO,
@@ -111,7 +112,7 @@ begin  -- architecture rtl
     hw2sw_i   => hw2sw   
   );
 
-  ins_spi_master : entity work.spi_master(rtl)
+  ins_spi_master : spi_master
     generic map(
       PRESCALER_WIDTH      => 8
       )

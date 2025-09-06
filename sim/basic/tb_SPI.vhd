@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-22
+-- Last update: 2025-09-06
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -23,6 +23,7 @@ library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
 use     work.tb_SPI_pkg.all;
+use     work.spi_pkg.all;
 
 entity tb is
 end tb;
@@ -54,7 +55,7 @@ architecture sim of tb is
   
 begin
     -- Instanciation du contrôleur SPI_master
-    dut: entity work.spi_master(rtl)
+    dut: spi_master
       port map
       (clk_i                => clk_i
       ,arst_b_i             => dut_ifi.arst_b_i

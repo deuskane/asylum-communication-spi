@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-31
--- Last update: 2025-09-06
+-- Last update: 2025-09-07
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -22,8 +22,10 @@
 library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
+library asylum;
+use     asylum.spi_pkg.all;
+library work;
 use     work.tb_SPI_pkg.all;
-use     work.spi_pkg.all;
  
 entity tb is
 end tb;

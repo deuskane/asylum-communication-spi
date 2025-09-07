@@ -23,8 +23,8 @@
 library IEEE;
 use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
-library work;
-use     work.math_pkg.all;
+library asylum;
+use     asylum.math_pkg.all;
  
 entity spi_master is
   generic (

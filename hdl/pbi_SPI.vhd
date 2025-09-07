@@ -25,10 +25,10 @@ use     IEEE.numeric_std.ALL;
 use     ieee.std_logic_textio.all;
 use     std.textio.all;
 
-library work;
-use     work.pbi_pkg.all;
-use     work.spi_pkg.all;
-use     work.SPI_csr_pkg.all;
+library asylum;
+use     asylum.pbi_pkg.all;
+use     asylum.spi_pkg.all;
+use     asylum.SPI_csr_pkg.all;
 
 entity pbi_SPI is
   generic(

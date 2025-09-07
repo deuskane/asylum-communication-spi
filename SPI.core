@@ -35,7 +35,7 @@ generate:
       file         : hdl/csr/SPI.hjson
       name         : SPI
       copy         : hdl/csr
-      #logical_name : asylum
+      logical_name : asylum
 
 #=========================================
 filesets:
@@ -49,7 +49,7 @@ filesets:
       - hdl/spi_master.vhd
       - hdl/pbi_SPI.vhd
     file_type    : vhdlSource
-#    logical_name : work
+    logical_name : asylum
     depend       :
       - asylum:utils:generators
       - asylum:utils:pkg

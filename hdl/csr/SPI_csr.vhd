@@ -54,9 +54,14 @@ architecture rtl of SPI_registers is
 
   signal   sig_busy  : std_logic;
 
-  constant INIT_data : std_logic_vector(8-1 downto 0) :=
-             "00000000" -- value
-           ;
+  function INIT_data
+    return std_logic_vector is
+    variable tmp : std_logic_vector(8-1 downto 0);
+  begin  -- function INIT_data
+    tmp(7 downto 0) := "00000000"; -- value
+    return tmp;
+  end function INIT_data;
+
   signal   data_wcs       : std_logic;
   signal   data_we        : std_logic;
   signal   data_wdata     : std_logic_vector(8-1 downto 0);
@@ -71,12 +76,17 @@ architecture rtl of SPI_registers is
   signal   data_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   data_rbusy     : std_logic;
 
-  constant INIT_cmd : std_logic_vector(8-1 downto 0) :=
-             "00000" -- nb_bytes
-           & "0" -- last
-           & "0" -- enable_rx
-           & "0" -- enable_tx
-           ;
+  function INIT_cmd
+    return std_logic_vector is
+    variable tmp : std_logic_vector(8-1 downto 0);
+  begin  -- function INIT_cmd
+    tmp(4 downto 0) := "00000"; -- nb_bytes
+    tmp(5 downto 5) := "0"; -- last
+    tmp(6 downto 6) := "0"; -- enable_rx
+    tmp(7 downto 7) := "0"; -- enable_tx
+    return tmp;
+  end function INIT_cmd;
+
   signal   cmd_wcs       : std_logic;
   signal   cmd_we        : std_logic;
   signal   cmd_wdata     : std_logic_vector(8-1 downto 0);
@@ -91,12 +101,17 @@ architecture rtl of SPI_registers is
   signal   cmd_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   cmd_rbusy     : std_logic;
 
-  constant INIT_cfg : std_logic_vector(4-1 downto 0) :=
-             "0" -- spi_enable
-           & "0" -- cpol
-           & "0" -- cpha
-           & "0" -- loopback
-           ;
+  function INIT_cfg
+    return std_logic_vector is
+    variable tmp : std_logic_vector(4-1 downto 0);
+  begin  -- function INIT_cfg
+    tmp(0 downto 0) := "0"; -- spi_enable
+    tmp(1 downto 1) := "0"; -- cpol
+    tmp(2 downto 2) := "0"; -- cpha
+    tmp(3 downto 3) := "0"; -- loopback
+    return tmp;
+  end function INIT_cfg;
+
   signal   cfg_wcs       : std_logic;
   signal   cfg_we        : std_logic;
   signal   cfg_wdata     : std_logic_vector(8-1 downto 0);
@@ -111,9 +126,14 @@ architecture rtl of SPI_registers is
   signal   cfg_rdata_hw  : std_logic_vector(4-1 downto 0);
   signal   cfg_rbusy     : std_logic;
 
-  constant INIT_prescaler : std_logic_vector(8-1 downto 0) :=
-             PRESCALER_RATIO -- ratio
-           ;
+  function INIT_prescaler
+    return std_logic_vector is
+    variable tmp : std_logic_vector(8-1 downto 0);
+  begin  -- function INIT_prescaler
+    tmp(7 downto 0) := PRESCALER_RATIO; -- ratio
+    return tmp;
+  end function INIT_prescaler;
+
   signal   prescaler_wcs       : std_logic;
   signal   prescaler_we        : std_logic;
   signal   prescaler_wdata     : std_logic_vector(8-1 downto 0);

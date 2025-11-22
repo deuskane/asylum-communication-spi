@@ -47,13 +47,12 @@ filesets:
     files        :
       - hdl/spi_pkg.vhd
       - hdl/spi_master.vhd
-      - hdl/pbi_SPI.vhd
+      - hdl/sbi_SPI.vhd
     file_type    : vhdlSource
     logical_name : asylum
     depend       :
       - asylum:utils:generators
       - asylum:utils:pkg
-      - asylum:component:pbi_wrapper_target
 
   #---------------------------------------
   sim_basic:

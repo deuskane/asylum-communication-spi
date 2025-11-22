@@ -1,12 +1,12 @@
 -------------------------------------------------------------------------------
--- Title      : pbi_GPIO
+-- Title      : sbi_GPIO
 -- Project    : PicoSOC
 -------------------------------------------------------------------------------
--- File       : pbi_GPIO.vhd
+-- File       : sbi_GPIO.vhd
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-09-06
+-- Last update: 2025-11-22
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -26,11 +26,11 @@ use     ieee.std_logic_textio.all;
 use     std.textio.all;
 
 library asylum;
-use     asylum.pbi_pkg.all;
+use     asylum.sbi_pkg.all;
 use     asylum.spi_pkg.all;
 use     asylum.SPI_csr_pkg.all;
 
-entity pbi_SPI is
+entity sbi_SPI is
   generic(
     USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
     PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
@@ -44,12 +44,12 @@ entity pbi_SPI is
 
     );
   port   (
-    clk_i            : in    std_logic;
-    arst_b_i         : in    std_logic; -- asynchronous reset
+    clk_i            : in  std_logic;
+    arst_b_i         : in  std_logic; -- asynchronous reset
 
     -- Bus
-    pbi_ini_i        : in    pbi_ini_t;
-    pbi_tgt_o        : out   pbi_tgt_t;
+    sbi_ini_i        : in  sbi_ini_t;
+    sbi_tgt_o        : out sbi_tgt_t;
     
     -- SPI Interface
     sclk_o           : out std_logic;
@@ -61,9 +61,9 @@ entity pbi_SPI is
     miso_i           : in  std_logic
     );
 
-end entity pbi_SPI;
+end entity sbi_SPI;
 
-architecture rtl of pbi_SPI is
+architecture rtl of sbi_SPI is
 
 -- synthesis translate_off
   file     file_cmd               : text open write_mode is FILENAME_CMD;
@@ -106,8 +106,8 @@ begin  -- architecture rtl
   port map(
     clk_i     => clk_i           ,
     arst_b_i  => arst_b_i        ,
-    pbi_ini_i => pbi_ini_i       ,
-    pbi_tgt_o => pbi_tgt_o       ,
+    sbi_ini_i => sbi_ini_i       ,
+    sbi_tgt_o => sbi_tgt_o       ,
     sw2hw_o   => sw2hw           ,
     hw2sw_i   => hw2sw   
   );

@@ -2,7 +2,7 @@
     name      : "SPI",
     width     : 8,
     desc      : "CSR for SPI"
-    interface : "pbi"
+    interface : "sbi"
 
     parameters : [
     	{

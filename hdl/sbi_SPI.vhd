@@ -17,6 +17,7 @@
 -- Revisions  :
 -- Date        Version  Author  Description
 -- 2025-06-13  0.1      mrosiere Created
+-- 2025-11-22  1.0      mrosiere Use sbi instead pbi
 -------------------------------------------------------------------------------
 
 library IEEE;

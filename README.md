@@ -151,7 +151,7 @@ The `spi_master` operates as a finite state machine with the following states:
 
 The module uses an internal prescaler counter to generate the SPI clock from the system clock. The prescaler ratio is controlled by the `cfg_prescaler_ratio_i` input. The actual SPI clock frequency is:
 
-$$f_{\text{sclk}} = \frac{f_{\text{clk}}}{2 \times (\text{prescaler\_ratio} + 1)}$$
+$$f_\text{sclk} = \frac{f_\text{clk}}{2 \times (\text{prescaler\_ratio} + 1)}$$
 
 #### SPI Modes
 
@@ -326,7 +326,7 @@ $$f_{SCK} = \frac{f_{CLK}}{2 \times (\text{prescaler\_ratio} + 1)}$$
 - `[7:0] ratio`: Prescaler ratio value (default: `PRESCALER_RATIO` generic)
 
 **Example**: If system clock is 100 MHz and prescaler is set to 4:
-$$f_{SCK} = \frac{100 \text{ MHz}}{2 \times (4 + 1)} = 10 \text{ MHz}$$
+$$f_\text{SCK} = \frac{100 \text{ MHz}}{2 \times (4 + 1)} = 10 \text{ MHz}$$
 
 ### Detailed Register Documentation
 

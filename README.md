@@ -149,7 +149,9 @@ The `spi_master` operates as a finite state machine with the following states:
 - **POSTAMBLE**: Deasserting CS if command indicates last transfer
 - **DONE**: Signaling transfer completion
 
-The module uses an internal prescaler counter to generate the SPI clock from the system clock. The prescaler ratio is controlled by the `cfg_prescaler_ratio_i` input. The actual SPI clock frequency is: `f_sclk = f_clk / (2 * (prescaler_ratio + 1))`
+The module uses an internal prescaler counter to generate the SPI clock from the system clock. The prescaler ratio is controlled by the `cfg_prescaler_ratio_i` input. The actual SPI clock frequency is:
+
+$$f_{\text{sclk}} = \frac{f_{\text{clk}}}{2 \times (\text{prescaler\_ratio} + 1)}$$
 
 #### SPI Modes
 

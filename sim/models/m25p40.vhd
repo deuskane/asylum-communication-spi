@@ -22,14 +22,18 @@
 --  Description: 4Mbit Serial Flash memory
 --
 --------------------------------------------------------------------------------
-LIBRARY IEEE;   USE IEEE.std_logic_1164.ALL;
-                USE STD.textio.ALL;
-                USE IEEE.numeric_std.ALL;
-                USE IEEE.vital_timing.ALL;     
-                USE IEEE.vital_primitives.ALL; 
+LIBRARY IEEE;
+USE     IEEE.std_logic_1164.ALL;
+USE     STD.textio.ALL;
+USE     IEEE.numeric_std.ALL;
 
-LIBRARY FMF;    USE FMF.gen_utils.ALL;
-                USE FMF.conversions.ALL;
+LIBRARY IEEE_dummy;
+USE     IEEE_dummy.vital_timing.ALL;     
+USE     IEEE_dummy.vital_primitives.ALL; 
+
+LIBRARY FMF;
+USE     FMF.gen_utils.ALL;
+USE     FMF.conversions.ALL;
 -------------------------------------------------------------------------------
 -- ENTITY DECLARATION
 -------------------------------------------------------------------------------

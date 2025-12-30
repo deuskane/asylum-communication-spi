@@ -19,9 +19,12 @@
 --    V1.6     R. Munden   03 FEB 07   Added To_UXLHZ
 --
 --------------------------------------------------------------------------------
-LIBRARY IEEE;   USE IEEE.std_Logic_1164.ALL;
-                USE IEEE.VITAL_primitives.ALL;
-                USE IEEE.VITAL_timing.ALL;
+LIBRARY IEEE;
+USE IEEE.std_Logic_1164.ALL;
+
+LIBRARY IEEE_dummy;
+USE IEEE_dummy.VITAL_primitives.ALL;
+USE IEEE_dummy.VITAL_timing.ALL;
 
 PACKAGE gen_utils IS
 

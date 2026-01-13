@@ -46,7 +46,7 @@ filesets:
       - sim/models/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
 #   logical_name : work
     file_type    : vhdlSource-2008
-    depends      :
+    depend       :
       - asylum:utils:pkg
 
 #=========================================

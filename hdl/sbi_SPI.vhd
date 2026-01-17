@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2025-11-22
+-- Last update: 2026-01-17
 -- Platform   : 
 -- Standard   : VHDL'87
 -------------------------------------------------------------------------------
@@ -75,9 +75,6 @@ architecture rtl of sbi_SPI is
   signal   sw2hw                  : SPI_sw2hw_t;
   signal   hw2sw                  : SPI_hw2sw_t;
            
-  signal   miso                   : std_logic;
-  signal   mosi                   : std_logic;
-
   alias    tx_tvalid              : std_logic        is sw2hw.data.valid;
   alias    tx_tready              : std_logic        is hw2sw.data.ready;
   alias    tx_tdata               : std_logic_vector is sw2hw.data.value;
@@ -135,20 +132,15 @@ begin  -- architecture rtl
      ,cfg_cpol_i            => sw2hw.cfg.cpol(0)
      ,cfg_cpha_i            => sw2hw.cfg.cpha(0)
      ,cfg_prescaler_ratio_i => sw2hw.prescaler.ratio
+     ,cfg_loopback_i        => sw2hw.cfg.loopback(0)
      ,sclk_o                => sclk_o   
      ,sclk_oe_o             => sclk_oe_o
      ,cs_b_o                => cs_b_o   
      ,cs_b_oe_o             => cs_b_oe_o
-     ,mosi_o                => mosi   
+     ,mosi_o                => mosi_o
      ,mosi_oe_o             => mosi_oe_o
-     ,miso_i                => miso   
+     ,miso_i                => miso_i   
     );
-
-  -- Loopback
-  miso   <= mosi when sw2hw.cfg.loopback = "1" else
-            miso_i;
-
-  mosi_o <= mosi;
 
 -- synthesis translate_off
   process (clk_i) is

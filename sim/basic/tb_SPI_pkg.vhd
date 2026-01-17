@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-06-22
+-- Last update: 2026-01-17
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -52,6 +52,7 @@ package tb_SPI_pkg is
     cfg_cpol_i           : std_logic;
     cfg_cpha_i           : std_logic;
     cfg_prescaler_ratio_i: std_logic_vector;
+    cfg_loopback_i       : std_logic;
     miso_i               : std_logic;
   end record spi_master_ifi_t;
 
@@ -158,6 +159,7 @@ package body tb_SPI_pkg is
     dut_ifi.cfg_cpol_i            <= cpol;
     dut_ifi.cfg_cpha_i            <= cpha;
     dut_ifi.cfg_prescaler_ratio_i <= prescaler_ratio_i;
+    dut_ifi.cfg_loopback_i        <= '0';
     run(1,"pos",clk_i);
     dut_ifi.arst_b_i              <= '1';
     run(1,"pos",clk_i);

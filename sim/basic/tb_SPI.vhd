@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    : 
 -- Created    : 2025-05-29
--- Last update: 2025-09-07
+-- Last update: 2026-01-17
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -70,6 +70,7 @@ begin
       ,cfg_cpol_i           => dut_ifi.cfg_cpol_i     
       ,cfg_cpha_i           => dut_ifi.cfg_cpha_i     
       ,cfg_prescaler_ratio_i=> dut_ifi.cfg_prescaler_ratio_i
+      ,cfg_loopback_i       => dut_ifi.cfg_loopback_i
       ,cmd_tvalid_i         => dut_ifi.cmd_tvalid_i
       ,cmd_tready_o         => dut_ifo.cmd_tready_o
       ,cmd_tlast_i          => dut_ifi.cmd_tlast_i

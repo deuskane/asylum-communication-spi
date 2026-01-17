@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2025-05-17
--- Last update: 2025-06-25
+-- Last update: 2026-01-17
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -57,7 +57,8 @@ entity spi_master is
     cfg_cpol_i           : in  std_logic;
     cfg_cpha_i           : in  std_logic;
     cfg_prescaler_ratio_i: in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-
+    cfg_loopback_i       : in  std_logic;
+    
     -- SPI Interface
     sclk_o               : out std_logic;
     sclk_oe_o            : out std_logic;
@@ -80,6 +81,9 @@ architecture rtl of spi_master is
     signal state_is_POSTAMBLE : std_logic;
     signal state_is_DONE      : std_logic;
 
+    signal miso               : std_logic;
+    signal mosi               : std_logic;
+    
     signal sclk_r             : std_logic;
     signal sclk_oe_r          : std_logic;
     signal mosi_r             : std_logic;
@@ -300,7 +304,7 @@ begin
           if (bit_sample = '1')
           then
             sclk_r    <= not sclk_r;
-            data_r    <= data_r(6 downto 0) & miso_i;
+            data_r    <= data_r(6 downto 0) & miso;
             cnt_bit_r <= cnt_bit_r + 1;
 
             if ((cfg_cpha_i = '1') and (cnt_bit_r = 7))
@@ -373,10 +377,18 @@ begin
   state_is_DONE      <= '1' when state_r = DONE      else '0';
 
   -----------------------------------------------------------------------------
+  -- Loopback
+  -----------------------------------------------------------------------------
+  miso         <= mosi when cfg_loopback_i = '1' else
+                  miso_i;
+            
+  mosi         <= mosi_r;
+
+  -----------------------------------------------------------------------------
   -- Output assignments
   -----------------------------------------------------------------------------
   sclk_o       <= sclk_r xor cfg_cpol_i; -- need cgate
-  mosi_o       <= mosi_r;
+  mosi_o       <= mosi;
   cs_b_o       <= cs_b_r;
                
   sclk_oe_o    <= sclk_oe_r;

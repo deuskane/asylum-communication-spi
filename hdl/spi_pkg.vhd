@@ -37,7 +37,8 @@ component spi_master is
     cfg_cpol_i           : in  std_logic;
     cfg_cpha_i           : in  std_logic;
     cfg_prescaler_ratio_i: in  std_logic_vector(PRESCALER_WIDTH-1 downto 0);
-
+    cfg_loopback_i       : in  std_logic;
+    
     -- SPI Interface
     sclk_o               : out std_logic;
     sclk_oe_o            : out std_logic;

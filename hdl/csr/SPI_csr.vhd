@@ -530,4 +530,5 @@ begin  -- architecture rtl
     cfg_rdata when cfg_rcs = '1' else
     prescaler_rdata when prescaler_rcs = '1' else
     (others => '0'); -- Bad Address, return 0
+  sbi_tgt_o.info.name <= to_sbi_name("SPI");
 end architecture rtl;

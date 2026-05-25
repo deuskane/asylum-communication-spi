@@ -6,6 +6,39 @@ use     asylum.sbi_pkg.all;
 
 package spi_pkg is
 -- [COMPONENT_INSERT][BEGIN]
+component sbi_SPI is
+  generic(
+    USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
+    PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
+    DEPTH_CMD             : natural := 0;
+    DEPTH_TX              : natural := 0;
+    DEPTH_RX              : natural := 0;
+
+    FILENAME_CMD          : string  := "dump_spi_cmd.txt";
+    FILENAME_TX           : string  := "dump_spi_tx.txt";
+    FILENAME_RX           : string  := "dump_spi_rx.txt"
+
+    );
+  port   (
+    clk_i            : in  std_logic;
+    arst_b_i         : in  std_logic; -- asynchronous reset
+
+    -- Bus
+    sbi_ini_i        : in  sbi_ini_t;
+    sbi_tgt_o        : out sbi_tgt_t;
+    
+    -- SPI Interface
+    sclk_o           : out std_logic;
+    sclk_oe_o        : out std_logic;
+    cs_b_o           : out std_logic;
+    cs_b_oe_o        : out std_logic;
+    mosi_o           : out std_logic;
+    mosi_oe_o        : out std_logic;
+    miso_i           : in  std_logic
+    );
+
+end component sbi_SPI;
+
 component spi_master is
   generic (
     PRESCALER_WIDTH      : integer := 8
@@ -49,39 +82,6 @@ component spi_master is
     miso_i               : in  std_logic
     );
 end component spi_master;
-
-component sbi_SPI is
-  generic(
-    USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
-    PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
-    DEPTH_CMD             : natural := 0;
-    DEPTH_TX              : natural := 0;
-    DEPTH_RX              : natural := 0;
-
-    FILENAME_CMD          : string  := "dump_spi_cmd.txt";
-    FILENAME_TX           : string  := "dump_spi_tx.txt";
-    FILENAME_RX           : string  := "dump_spi_rx.txt"
-
-    );
-  port   (
-    clk_i            : in  std_logic;
-    arst_b_i         : in  std_logic; -- asynchronous reset
-
-    -- Bus
-    sbi_ini_i        : in  sbi_ini_t;
-    sbi_tgt_o        : out sbi_tgt_t;
-    
-    -- SPI Interface
-    sclk_o           : out std_logic;
-    sclk_oe_o        : out std_logic;
-    cs_b_o           : out std_logic;
-    cs_b_oe_o        : out std_logic;
-    mosi_o           : out std_logic;
-    mosi_oe_o        : out std_logic;
-    miso_i           : in  std_logic
-    );
-
-end component sbi_SPI;
 
 -- [COMPONENT_INSERT][END]
 

@@ -33,6 +33,7 @@ use     asylum.SPI_csr_pkg.all;
 
 entity sbi_SPI is
   generic(
+    NAME                  : string  := "";
     USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
     PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
     DEPTH_CMD             : natural := 0;
@@ -95,6 +96,7 @@ begin  -- architecture rtl
 
   ins_csr : SPI_registers
   generic map(
+    MODULE_NAME           => NAME,
     USER_DEFINE_PRESCALER => USER_DEFINE_PRESCALER,
     PRESCALER_RATIO       => PRESCALER_RATIO,
     DEPTH_CMD             => DEPTH_CMD,

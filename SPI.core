@@ -20,9 +20,10 @@ CAPI=2:
 # 2025-09-05  1.2.1    mrosiere Add Package
 # 2025-11-22  1.2.2    mrosiere Use sbi instead pbi
 # 2026-01-17  1.2.3    mrosiere Move loopback from sbi_SPI to spi_master
+# 2026-06-06  1.2.4    mrosiere Add Name
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:1.2.3
+name        : asylum:communication:SPI:1.2.4
 description : SPI Module
 
 #=========================================

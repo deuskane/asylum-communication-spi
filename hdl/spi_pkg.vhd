@@ -8,6 +8,7 @@ package spi_pkg is
 -- [COMPONENT_INSERT][BEGIN]
 component sbi_SPI is
   generic(
+    NAME                  : string  := "";
     USER_DEFINE_PRESCALER : boolean;                        -- Parameters to use the enable the User define Prescaler
     PRESCALER_RATIO       : std_logic_vector(8-1 downto 0); -- Default value for prescaler ratio
     DEPTH_CMD             : natural := 0;

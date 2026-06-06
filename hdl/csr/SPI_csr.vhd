@@ -19,7 +19,8 @@ use     asylum.sbi_pkg.all;
 --==================================
 entity SPI_registers is
   generic (
-    USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
+    MODULE_NAME :  string := "" -- Name of the module
+   ;USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
    ;PRESCALER_RATIO : std_logic_vector(7 downto 0) -- Default value for prescaler ratio
    ;DEPTH_TX : natural -- Depth of FIFO TX (SW2HW)
    ;DEPTH_RX : natural -- Depth of FIFO RX (HW2SW)
@@ -530,5 +531,11 @@ begin  -- architecture rtl
     cfg_rdata when cfg_rcs = '1' else
     prescaler_rdata when prescaler_rcs = '1' else
     (others => '0'); -- Bad Address, return 0
-  sbi_tgt_o.info.name <= to_sbi_name("SPI");
+
+  gen_tgt_info_name : if MODULE_NAME = ""
+  generate
+    sbi_tgt_o.info.name <= to_sbi_name("SPI");
+  else generate
+    sbi_tgt_o.info.name <= to_sbi_name(MODULE_NAME);
+  end generate;
 end architecture rtl;

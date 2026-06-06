@@ -174,7 +174,8 @@ package SPI_csr_pkg is
   ------------------------------------
 component SPI_registers is
   generic (
-    USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
+    MODULE_NAME :  string := "" -- Name of the module
+   ;USER_DEFINE_PRESCALER : boolean -- Parameters to use the enable the User define Prescaler
    ;PRESCALER_RATIO : std_logic_vector(7 downto 0) -- Default value for prescaler ratio
    ;DEPTH_TX : natural -- Depth of FIFO TX (SW2HW)
    ;DEPTH_RX : natural -- Depth of FIFO RX (HW2SW)

@@ -96,7 +96,7 @@
 #define SPI_PRESCALER_RATIO_MASK 255
 
 //----------------------------------
-// Structure {module}_t
+// Structure SPI_t
 //----------------------------------
 typedef struct {
   uint8_t data; // 0x0

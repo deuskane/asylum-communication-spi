@@ -43,13 +43,13 @@ architecture rtl of SPI_registers is
 
   signal   sig_wcs   : std_logic;
   signal   sig_we    : std_logic;
-  signal   sig_waddr : std_logic_vector(sbi_ini_i.addr'length-1 downto 0);
+  signal   sig_waddr : unsigned(SPI_ADDR_WIDTH-1 downto 0);
   signal   sig_wdata : std_logic_vector(sbi_ini_i.wdata'length-1 downto 0);
   signal   sig_wbusy : std_logic;
 
   signal   sig_rcs   : std_logic;
   signal   sig_re    : std_logic;
-  signal   sig_raddr : std_logic_vector(sbi_ini_i.addr'length-1 downto 0);
+  signal   sig_raddr : unsigned(SPI_ADDR_WIDTH-1 downto 0);
   signal   sig_rdata : std_logic_vector(sbi_tgt_o.rdata'length-1 downto 0);
   signal   sig_rbusy : std_logic;
 
@@ -154,12 +154,12 @@ begin  -- architecture rtl
   -- Interface 
   sig_wcs   <= sbi_ini_i.cs;
   sig_we    <= sbi_ini_i.we;
-  sig_waddr <= sbi_ini_i.addr;
+  sig_waddr <= unsigned(sbi_ini_i.addr(SPI_ADDR_WIDTH-1 downto 0));
   sig_wdata <= sbi_ini_i.wdata;
 
   sig_rcs   <= sbi_ini_i.cs;
   sig_re    <= sbi_ini_i.re;
-  sig_raddr <= sbi_ini_i.addr;
+  sig_raddr <= unsigned(sbi_ini_i.addr(SPI_ADDR_WIDTH-1 downto 0));
   sbi_tgt_o.rdata <= sig_rdata;
   sbi_tgt_o.ready <= not sig_busy;
 
@@ -185,7 +185,7 @@ begin  -- architecture rtl
   --==================================
 
 
-    data_rcs     <= '1' when     (sig_raddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(0,SPI_ADDR_WIDTH))) else '0';
+    data_rcs     <= '1' when (sig_raddr = SPI_DATA) else '0';
     data_re      <= sig_rcs and sig_re and data_rcs;
     data_rdata   <= (
       0 => data_rdata_sw(0), -- value(0)
@@ -198,7 +198,7 @@ begin  -- architecture rtl
       7 => data_rdata_sw(7), -- value(7)
       others => '0');
 
-    data_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(0,SPI_ADDR_WIDTH)))   else '0';
+    data_wcs     <= '1' when       (sig_waddr = SPI_DATA)   else '0';
     data_we      <= sig_wcs and sig_we and data_wcs;
     data_wdata   <= sig_wdata;
     data_wdata_sw(7 downto 0) <= data_wdata(7 downto 0); -- value
@@ -288,7 +288,7 @@ begin  -- architecture rtl
     cmd_re      <= '0';
     cmd_rdata   <= (others=>'0');
 
-    cmd_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(1,SPI_ADDR_WIDTH)))   else '0';
+    cmd_wcs     <= '1' when       (sig_waddr = SPI_CMD)   else '0';
     cmd_we      <= sig_wcs and sig_we and cmd_wcs;
     cmd_wdata   <= sig_wdata;
     cmd_wdata_sw(4 downto 0) <= cmd_wdata(4 downto 0); -- nb_bytes
@@ -380,7 +380,7 @@ begin  -- architecture rtl
   --==================================
 
 
-    cfg_rcs     <= '1' when     (sig_raddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(2,SPI_ADDR_WIDTH))) else '0';
+    cfg_rcs     <= '1' when (sig_raddr = SPI_CFG) else '0';
     cfg_re      <= sig_rcs and sig_re and cfg_rcs;
     cfg_rdata   <= (
       0 => cfg_rdata_sw(0), -- spi_enable(0)
@@ -389,7 +389,7 @@ begin  -- architecture rtl
       3 => cfg_rdata_sw(3), -- loopback(0)
       others => '0');
 
-    cfg_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(2,SPI_ADDR_WIDTH)))   else '0';
+    cfg_wcs     <= '1' when       (sig_waddr = SPI_CFG)   else '0';
     cfg_we      <= sig_wcs and sig_we and cfg_wcs;
     cfg_wdata   <= sig_wdata;
     cfg_wdata_sw(0 downto 0) <= cfg_wdata(0 downto 0); -- spi_enable
@@ -458,7 +458,7 @@ begin  -- architecture rtl
   --==================================
 
 
-    prescaler_rcs     <= '1' when     (sig_raddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(3,SPI_ADDR_WIDTH))) else '0';
+    prescaler_rcs     <= '1' when (sig_raddr = SPI_PRESCALER) else '0';
     prescaler_re      <= sig_rcs and sig_re and prescaler_rcs;
     prescaler_rdata   <= (
       0 => prescaler_rdata_sw(0), -- ratio(0)
@@ -471,7 +471,7 @@ begin  -- architecture rtl
       7 => prescaler_rdata_sw(7), -- ratio(7)
       others => '0');
 
-    prescaler_wcs     <= '1' when       (sig_waddr(SPI_ADDR_WIDTH-1 downto 0) = std_logic_vector(to_unsigned(3,SPI_ADDR_WIDTH)))   else '0';
+    prescaler_wcs     <= '1' when       (sig_waddr = SPI_PRESCALER)   else '0';
     prescaler_we      <= sig_wcs and sig_we and prescaler_wcs;
     prescaler_wdata   <= sig_wdata;
     prescaler_wdata_sw(7 downto 0) <= prescaler_wdata(7 downto 0); -- ratio

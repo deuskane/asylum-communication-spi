@@ -14,6 +14,13 @@ use     asylum.sbi_pkg.all;
 
 package SPI_csr_pkg is
 
+  ------------------------------------
+  -- Global Constants
+  ------------------------------------
+
+  constant SPI_ADDR_WIDTH : natural := 2;
+  constant SPI_DATA_WIDTH : natural := 8;
+
   --==================================
   -- Register    : data
   -- Description : Write : data to tansmit, Read : data to receive
@@ -23,6 +30,8 @@ package SPI_csr_pkg is
   -- Hw Access   : rw
   -- Hw Type     : fifo
   --==================================
+  constant SPI_DATA : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(0, SPI_ADDR_WIDTH);
+
   type SPI_data_sw2hw_t is record
     ready : std_logic;
     valid : std_logic;
@@ -58,6 +67,8 @@ package SPI_csr_pkg is
   -- Hw Access   : ro
   -- Hw Type     : fifo
   --==================================
+  constant SPI_CMD : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(1, SPI_ADDR_WIDTH);
+
   type SPI_cmd_sw2hw_t is record
     valid : std_logic;
   --==================================
@@ -101,6 +112,8 @@ package SPI_csr_pkg is
   -- Hw Access   : ro
   -- Hw Type     : reg
   --==================================
+  constant SPI_CFG : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(2, SPI_ADDR_WIDTH);
+
   type SPI_cfg_sw2hw_t is record
     re : std_logic;
     we : std_logic;
@@ -139,6 +152,8 @@ package SPI_csr_pkg is
   -- Hw Access   : ro
   -- Hw Type     : reg
   --==================================
+  constant SPI_PRESCALER : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(3, SPI_ADDR_WIDTH);
+
   type SPI_prescaler_sw2hw_t is record
     re : std_logic;
     we : std_logic;
@@ -164,10 +179,6 @@ package SPI_csr_pkg is
     data : SPI_data_hw2sw_t;
     cmd : SPI_cmd_hw2sw_t;
   end record SPI_hw2sw_t;
-
-
-  constant SPI_ADDR_WIDTH : natural := 2;
-  constant SPI_DATA_WIDTH : natural := 8;
 
   ------------------------------------
   -- Component

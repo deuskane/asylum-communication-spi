@@ -21,9 +21,10 @@ CAPI=2:
 # 2025-11-22  1.2.2    mrosiere Use sbi instead pbi
 # 2026-01-17  1.2.3    mrosiere Move loopback from sbi_SPI to spi_master
 # 2026-06-06  1.2.4    mrosiere Add Name
+# 2026-08-02  1.2.5    mrosiere Testbench : use UVVM sbi, dut is sbi_spi instead spi_master
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:1.2.4
+name        : asylum:communication:SPI:1.2.5
 description : SPI Module
 
 #=========================================
@@ -84,7 +85,9 @@ filesets:
 #    logical_name : work
     file_type    : vhdlSource-2008
     depend       :
+      - bitvis:verification:uvvm 
       - fmf:memory:flash_nor
+
 #=========================================
 targets:
 #=========================================

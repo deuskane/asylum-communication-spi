@@ -34,6 +34,7 @@ library asylum;
 use     asylum.sbi_pkg.all;
 use     asylum.spi_pkg.all;
 use     asylum.SPI_csr_pkg.all;
+use     asylum.techmap_pkg.all;
 
 entity tb is
 end tb;
@@ -43,24 +44,6 @@ architecture sim of tb is
   constant C_SCOPE         : string := "TB_SPI";
   constant SPI_ADDR_WIDTH  : natural := 2;
   constant SPI_DATA_WIDTH  : natural := 8;
-
-  constant C_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := (
-    max_wait_cycles            => 1000,
-    max_wait_cycles_severity   => failure,
-    use_fixed_wait_cycles_read => false,
-    fixed_wait_cycles_read     => 0,
-    clock_period               => -1 ns,
-    clock_period_margin        => 0 ns,
-    clock_margin_severity      => TB_ERROR,
-    setup_time                 => -1 ns,
-    hold_time                  => -1 ns,
-    bfm_sync                   => SYNC_ON_CLOCK_ONLY,
-    match_strictness           => MATCH_EXACT,
-    id_for_bfm                 => ID_BFM,
-    id_for_bfm_wait            => ID_BFM_WAIT,
-    id_for_bfm_poll            => ID_BFM_POLL,
-    use_ready_signal           => true
-  );
 
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
@@ -74,9 +57,17 @@ architecture sim of tb is
                                       rdata(SPI_DATA_WIDTH-1 downto 0));
 
   signal sclk_o            : std_logic;
+  signal sclk_oe_o         : std_logic;
   signal cs_b_o            : std_logic;
+  signal cs_b_oe_o         : std_logic;
   signal mosi_o            : std_logic;
+  signal mosi_oe_o         : std_logic;
   signal miso_i            : std_logic;
+
+  signal SCLK              : std_logic;
+  signal CS_B              : std_logic;
+  signal MOSI              : std_logic;
+  signal MISO              : std_logic;
   signal RSTNeg            : std_logic;
   signal WPNeg             : std_logic;
   signal HOLDNeg           : std_logic;
@@ -105,13 +96,49 @@ begin
      ,sbi_ini_i  => sbi_ini
      ,sbi_tgt_o  => sbi_tgt
      ,sclk_o     => sclk_o
-     ,sclk_oe_o  => open
+     ,sclk_oe_o  => sclk_oe_o
      ,cs_b_o     => cs_b_o
-     ,cs_b_oe_o  => open
+     ,cs_b_oe_o  => cs_b_oe_o
      ,mosi_o     => mosi_o
-     ,mosi_oe_o  => open
+     ,mosi_oe_o  => mosi_oe_o
      ,miso_i     => miso_i
     );
+
+  IOBUF_SCLK : iobuf
+    port map
+     (buf_io     => SCLK
+     ,d_i        => sclk_o
+     ,d_o        => open
+     ,oe_i       => sclk_oe_o
+     ,ie_i       => '0'
+  );
+
+  IOBUF_CS_B : iobuf
+    port map
+     (buf_io     => CS_B
+     ,d_i        => cs_b_o
+     ,d_o        => open
+     ,oe_i       => cs_b_oe_o
+     ,ie_i       => '0'
+  );
+
+  IOBUF_MOSI : iobuf
+    port map
+     (buf_io     => MOSI
+     ,d_i        => mosi_o
+     ,d_o        => open
+     ,oe_i       => mosi_oe_o
+     ,ie_i       => '0'
+  );
+  
+  IOBUF_MISO : iobuf
+    port map
+     (buf_io     => MISO
+     ,d_i        => '0'
+     ,d_o        => miso_i
+     ,oe_i       => '0'
+     ,ie_i       => '1'
+  );  
 
   mem : entity work.m25p40(vhdl_behavioral)
     generic map (
@@ -123,10 +150,10 @@ begin
      ,XOn            => true
     )
     port map (
-      D       => mosi_o
-     ,Q       => miso_i
-     ,C       => sclk_o
-     ,SNeg    => cs_b_o
+      D       => MOSI
+     ,Q       => MISO
+     ,C       => SCLK
+     ,SNeg    => CS_B
      ,WNeg    => WPNeg
      ,HOLDNeg => HOLDNeg
     );
@@ -140,7 +167,14 @@ begin
   sbi_if.rdata(SPI_DATA_WIDTH-1 downto 0) <= sbi_tgt.rdata;
 
   process
+    
+    variable V_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
+    
   begin
+
+    -- BFM Configuration
+    V_SBI_BFM_CONFIG_SPI.max_wait_cycles            := 1000;
+
     sbi_if <= init_sbi_if_signals(SPI_ADDR_WIDTH, SPI_DATA_WIDTH);
     wait until arst_b_i = '1';
     wait until rising_edge(clk_i);
@@ -148,27 +182,27 @@ begin
     log(ID_SEQUENCER, "Reset released, starting SPI SBI test", C_SCOPE);
 
     log(ID_LOG_HDR, "Configuration of the Prescaler (Divide by 32)", C_SCOPE);
-    sbi_write(addr_value => SPI_PRESCALER, data_value => x"0F", msg => "Set prescaler", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    --sbi_check(addr_value => SPI_PRESCALER, data_exp   => x"0F", msg => "Read back prescaler", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_PRESCALER, data_value => x"0F", msg => "Set prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    --sbi_check(addr_value => SPI_PRESCALER, data_exp   => x"0F", msg => "Read back prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
     log(ID_LOG_HDR, "Configure and verify SPI control registers", C_SCOPE);
-    sbi_write(addr_value => SPI_CFG      , data_value => x"01", msg => "Enable SPI", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_CFG      , data_exp   => x"01", msg => "Read back enabled config", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_CFG      , data_value => x"01", msg => "Enable SPI", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_check(addr_value => SPI_CFG      , data_exp   => x"01", msg => "Read back enabled config", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
     wait for 800 us;
 
 
-    sbi_write(addr_value => SPI_CMD      , data_value => x"83", msg => "Write command register", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"03", msg => "SPI Instruction 0x03", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_CMD      , data_value => x"83", msg => "Write command register", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_DATA     , data_value => x"03", msg => "SPI Instruction 0x03", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Address 0x000005", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-    sbi_write(addr_value => SPI_CMD      , data_value => x"63", msg => "Write command register", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"06", msg => "Read Byte @ 0x000005", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"07", msg => "Read Byte @ 0x000006", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"08", msg => "Read Byte @ 0x000007", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"09", msg => "Read Byte @ 0x000008", clk => clk_i, sbi_if => sbi_if, config => C_SBI_BFM_CONFIG_SPI);
+    sbi_write(addr_value => SPI_CMD      , data_value => x"63", msg => "Write command register", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_check(addr_value => SPI_DATA     , data_exp   => x"06", msg => "Read Byte @ 0x000005", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_check(addr_value => SPI_DATA     , data_exp   => x"07", msg => "Read Byte @ 0x000006", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_check(addr_value => SPI_DATA     , data_exp   => x"08", msg => "Read Byte @ 0x000007", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    sbi_check(addr_value => SPI_DATA     , data_exp   => x"09", msg => "Read Byte @ 0x000008", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
 --       cfg(clk_i,dut_ifi,dut_ifo,'0','0',X"0F");
 -- 

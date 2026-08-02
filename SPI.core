@@ -85,6 +85,7 @@ filesets:
 #    logical_name : work
     file_type    : vhdlSource-2008
     depend       :
+      - asylum:target:techmap
       - bitvis:verification:uvvm 
       - fmf:memory:flash_nor
 

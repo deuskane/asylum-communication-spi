@@ -127,9 +127,37 @@ targets:
       - pkg_fmf
       - models
     toplevel        : tb
+    parameters      :
+      - MODEL=m25p40
     default_tool    : ghdl
     tools :
       ghdl :
         analyze_options : ["-frelaxed","--no-vital-checks","-Wall"]
         run_options     : ["--fst=dut.fst","--ieee-asserts=disable"]
 
+  #---------------------------------------
+  _sim_s25fl064p:
+  #---------------------------------------
+    << : *default
+    description     : Simulation of s25fl064p
+    filesets_append :
+      - pkg_fmf
+      - models
+    toplevel        : tb
+    parameters      :
+      - MODEL=s25fl064p
+    default_tool    : ghdl
+    tools :
+      ghdl :
+        analyze_options : ["-frelaxed","--no-vital-checks","-Wall"]
+        run_options     : ["--fst=dut.fst","--ieee-asserts=disable"]
+
+#=========================================
+parameters :
+#=========================================
+
+  MODEL :
+    description : SPI Memory Model
+    datatype    : str
+    default     : m25p40
+    paramtype   : generic

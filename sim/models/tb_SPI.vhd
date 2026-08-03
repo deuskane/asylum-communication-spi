@@ -37,6 +37,9 @@ use     asylum.SPI_csr_pkg.all;
 use     asylum.techmap_pkg.all;
 
 entity tb is
+  generic (
+    MODEL : string := "m25p40" -- m25p40 s25fl064p
+  );
 end tb;
 
 architecture sim of tb is
@@ -75,9 +78,6 @@ architecture sim of tb is
 begin
 
   arst_b_i <= '0', '1' after 100 ns;
-  RSTNeg   <= '1';
-  WPNeg    <= '1';
-  HOLDNeg  <= '1';
 
   clock_generator(clk_i, clk_ena, 20 ns, "TB Clock");
 
@@ -103,6 +103,10 @@ begin
      ,mosi_oe_o  => mosi_oe_o
      ,miso_i     => miso_i
     );
+
+  RSTNeg   <= '1';
+  WPNeg    <= '1';
+  HOLDNeg  <= '1';
 
   IOBUF_SCLK : iobuf
     port map
@@ -138,25 +142,52 @@ begin
      ,d_o        => miso_i
      ,oe_i       => '0'
      ,ie_i       => '1'
-  );  
+  );
+  
+  gen_m25p40:
+  if MODEL = "m25p40" 
+  generate
+    mem : entity work.m25p40(vhdl_behavioral)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,UserPreload    => true
+       ,DebugInfo      => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+      )
+      port map (
+        D       => MOSI
+       ,Q       => MISO
+       ,C       => SCLK
+       ,SNeg    => CS_B
+       ,WNeg    => WPNeg
+       ,HOLDNeg => HOLDNeg
+      );
+  end generate;
 
-  mem : entity work.m25p40(vhdl_behavioral)
-    generic map (
-      mem_file_name  => "memory.mem"
-     ,UserPreload    => true
-     ,DebugInfo      => true
-     ,TimingChecksOn => true
-     ,MsgOn          => true
-     ,XOn            => true
-    )
-    port map (
-      D       => MOSI
-     ,Q       => MISO
-     ,C       => SCLK
-     ,SNeg    => CS_B
-     ,WNeg    => WPNeg
-     ,HOLDNeg => HOLDNeg
-    );
+  gen_s25fl064p:
+  if MODEL = "s25fl064p" 
+  generate
+    mem : entity work.s25fl064p(vhdl_behavioral)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "memoryOTP.mem"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,HOLDNeg => HOLDNeg
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+      );
+  end generate;
 
   sbi_ini.cs                               <= sbi_if.cs;
   sbi_ini.addr                             <= std_logic_vector(sbi_if.addr(SPI_ADDR_WIDTH-1 downto 0));
@@ -164,7 +195,7 @@ begin
   sbi_ini.we                               <= sbi_if.wena;
   sbi_ini.wdata                            <= sbi_if.wdata(SPI_DATA_WIDTH-1 downto 0);
   sbi_if.ready                             <= sbi_tgt.ready;
-  sbi_if.rdata(SPI_DATA_WIDTH-1 downto 0) <= sbi_tgt.rdata;
+  sbi_if.rdata(SPI_DATA_WIDTH-1 downto 0)  <= sbi_tgt.rdata;
 
   process
     
@@ -185,11 +216,12 @@ begin
     sbi_write(addr_value => SPI_PRESCALER, data_value => x"0F", msg => "Set prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     --sbi_check(addr_value => SPI_PRESCALER, data_exp   => x"0F", msg => "Read back prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
+    wait for 800 us;
+
     log(ID_LOG_HDR, "Configure and verify SPI control registers", C_SCOPE);
     sbi_write(addr_value => SPI_CFG      , data_value => x"01", msg => "Enable SPI", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_CFG      , data_exp   => x"01", msg => "Read back enabled config", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-    wait for 800 us;
 
 
     sbi_write(addr_value => SPI_CMD      , data_value => x"83", msg => "Write command register", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);

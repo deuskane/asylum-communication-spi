@@ -37,13 +37,17 @@ filesets:
   models:
   #---------------------------------------
     files:
+      - sim/models/at25df161.vhd
+      - sim/models/cy15b104qs.vhd
+      - sim/models/cy15v104qs.vhd
       - sim/models/m25p40.vhd
       - sim/models/m45pe80.vhd
       - sim/models/s25fl064p.vhd
       - sim/models/s25fl512s.vhd
       - sim/models/s35hl256t.vhd
-      - sim/models/memory.mem         : {file_type : user, copyto : memory.mem}
+      - sim/models/memory.mem         : {file_type : user, copyto : memory.mem   }
       - sim/models/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
+      - sim/models/none               : {file_type : user, copyto : none         }
 #   logical_name : work
     file_type    : vhdlSource-2008
     depend       :

@@ -26,10 +26,11 @@ LIBRARY IEEE;
 USE     IEEE.std_logic_1164.ALL;
 USE     STD.textio.ALL;
 USE     IEEE.numeric_std.ALL;
-
+--                USE IEEE.VITAL_timing.ALL;
+--                USE IEEE.VITAL_primitives.ALL;
 LIBRARY IEEE_dummy;
 USE     IEEE_dummy.vital_timing.ALL;     
-USE     IEEE_dummy.vital_primitives.ALL; 
+USE     IEEE_dummy.vital_primitives.ALL;                 
 
 LIBRARY FMF;
 USE     FMF.gen_utils.ALL;

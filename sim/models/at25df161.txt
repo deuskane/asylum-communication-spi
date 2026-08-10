@@ -1,0 +1,47 @@
+
+________________________________________________________________________________
+DESCRIPTION:  16 Megabit Serial Flash Memory with 100 MHz SPI Bus Interface
+
+MODEL:  at25df161.vhd                                            VERSION:    1.0
+                                                                 DATE: 09 AUG 18
+TIMING FILE:  at25df161.ftm                                      VERSION:    1.0
+                                                                 DATE: 09 JUL 13
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/at25df161.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/at25df161.ftm
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  AT25DF161
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Atmel                  
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    AT25DF161-MH-T_15pF                    1
+
+    AT25DF161-MH-Y_15pF                    1
+
+    AT25DF161-SH-B_15pF                    1
+
+    AT25DF161-SH-T_15pF                    1
+
+    AT25DF161-SSH-B_15pF                   1
+
+    AT25DF161-SSH-T_15pF                   1
+
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   Atmel, 3687B-DFLASH-11/08
+

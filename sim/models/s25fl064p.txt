@@ -1,0 +1,102 @@
+
+________________________________________________________________________________
+DESCRIPTION:  64 Megabit Serial Flash Memory with 104 MHz MIO SPI Bus Interface
+
+MODEL:  s25fl064p.vhd                                            VERSION:    1.6
+                                                                 DATE: 12 JAN 13
+TIMING FILE:  s25fl064p.ftm                                      VERSION:    1.4
+                                                                 DATE: 12 JAN 12
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s25fl064p.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s25fl064p.ftm
+
+MODEL:  s25fl064p.v                                              VERSION:    1.7
+                                                                 DATE: 12 JAN 13
+TIMING FILE:  s25fl064p.ftmv                                     VERSION:    1.4
+                                                                 DATE: 12 JAN 10
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s25fl064p.v
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s25fl064p.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  S25FL064P
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Spansion                
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    S25FL064P0XMFI000_F_30pF               1
+	S25FL064P0XMFI001_F_30pF               1
+	S25FL064P0XMFI003_F_30pF               1
+	S25FL064P0XNFI000_F_30pF               1
+	S25FL064P0XNFI001_F_30pF               1
+	S25FL064P0XNFI003_F_30pF               1
+	S25FL064P0XMFV000_F_30pF               1
+	S25FL064P0XMFV001_F_30pF               1
+	S25FL064P0XMFV003_F_30pF               1
+	S25FL064P0XNFV000_F_30pF               1
+	S25FL064P0XNFV001_F_30pF               1
+	S25FL064P0XNFV003_F_30pF               1
+	S25FL064P0XBHI020_F_30pF               1
+	S25FL064P0XBHI023_F_30pF               1
+	S25FL064P0XBHI030_F_30pF               1
+	S25FL064P0XBHI033_F_30pF               1
+	S25FL064P0XBHV020_F_30pF               1
+	S25FL064P0XBHV023_F_30pF               1
+	S25FL064P0XBHV030_F_30pF               1
+	S25FL064P0XBHV033_F_30pF               1
+	S25FL064P0XMFI000_R_30pF               1
+	S25FL064P0XMFI001_R_30pF               1
+	S25FL064P0XMFI003_R_30pF               1
+	S25FL064P0XNFI000_R_30pF               1
+	S25FL064P0XNFI001_R_30pF               1
+	S25FL064P0XNFI003_R_30pF               1
+	S25FL064P0XMFV000_R_30pF               1
+	S25FL064P0XMFV001_R_30pF               1
+	S25FL064P0XMFV003_R_30pF               1
+	S25FL064P0XNFV000_R_30pF               1
+	S25FL064P0XNFV001_R_30pF               1
+	S25FL064P0XNFV003_R_30pF               1
+	S25FL064P0XBHI020_R_30pF               1
+	S25FL064P0XBHI023_R_30pF               1
+	S25FL064P0XBHI030_R_30pF               1
+	S25FL064P0XBHI033_R_30pF               1
+	S25FL064P0XBHV020_R_30pF               1
+	S25FL064P0XBHV023_R_30pF               1
+	S25FL064P0XBHV030_R_30pF               1
+	S25FL064P0XBHV033_R_30pF               1
+	S25FL064P0XMFI000_R_15pF               1
+	S25FL064P0XMFI001_R_15pF               1
+	S25FL064P0XMFI003_R_15pF               1
+	S25FL064P0XNFI000_R_15pF               1
+	S25FL064P0XNFI001_R_15pF               1
+	S25FL064P0XNFI003_R_15pF               1
+	S25FL064P0XMFV000_R_15pF               1
+	S25FL064P0XMFV001_R_15pF               1
+	S25FL064P0XMFV003_R_15pF               1
+	S25FL064P0XNFV000_R_15pF               1
+	S25FL064P0XNFV001_R_15pF               1
+	S25FL064P0XNFV003_R_15pF               1
+	S25FL064P0XBHI020_R_15pF               1
+	S25FL064P0XBHI023_R_15pF               1
+	S25FL064P0XBHI030_R_15pF               1
+	S25FL064P0XBHI033_R_15pF               1
+	S25FL064P0XBHV020_R_15pF               1
+	S25FL064P0XBHV023_R_15pF               1
+	S25FL064P0XBHV030_R_15pF               1
+	S25FL064P0XBHV033_R_15pF               1
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   Spansion, S25FL064P_00_05, November 18, 2011
+

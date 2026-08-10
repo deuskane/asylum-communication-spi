@@ -6,7 +6,7 @@
 -- Author     : mrosiere
 -- Company    :
 -- Created    : 2025-05-31
--- Last update: 2026-08-01
+-- Last update: 2026-08-04
 -- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -104,9 +104,13 @@ begin
      ,miso_i     => miso_i
     );
 
-  RSTNeg   <= '1';
-  WPNeg    <= '1';
-  HOLDNeg  <= '1';
+  RSTNeg   <= '1'; -- PULL UP
+  WPNeg    <= '1'; -- PULL UP
+  HOLDNeg  <= '1'; -- PULL UP
+  SCLK     <= 'H'; -- PULL UP
+  CS_B     <= 'H'; -- PULL UP
+  MISO     <= 'H'; -- PULL UP
+  MOSI     <= 'H'; -- PULL UP
 
   IOBUF_SCLK : iobuf
     port map
@@ -116,6 +120,7 @@ begin
      ,oe_i       => sclk_oe_o
      ,ie_i       => '0'
   );
+
 
   IOBUF_CS_B : iobuf
     port map
@@ -144,6 +149,78 @@ begin
      ,ie_i       => '1'
   );
   
+  gen_at25df161:
+  if MODEL = "at25df161" 
+  generate
+    mem : entity work.at25df161(vhdl_behavioral)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "none"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,HOLDNeg => HOLDNeg
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+      );
+  end generate;
+
+ gen_cy15b104qs:
+  if MODEL = "cy15b104qs" 
+  generate
+    mem : entity work.cy15b104qs(vhdl_behavioral_static_memory_allocation)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "none"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+       ,TimingModel    => "CY15B104QSN-108SXI"
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+       ,RESETNeg=> RSTNeg
+      );
+  end generate;
+
+  gen_cy15v104qs:
+  if MODEL = "cy15v104qs" 
+  generate
+    mem : entity work.cy15v104qs(vhdl_behavioral_static_memory_allocation)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "none"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+       ,TimingModel    => "CY15V104QSN-108SXI"
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+       ,RESETNeg=> RSTNeg
+
+      );
+  end generate;
+
   gen_m25p40:
   if MODEL = "m25p40" 
   generate
@@ -166,13 +243,34 @@ begin
       );
   end generate;
 
+  gen_m45pe80:
+  if MODEL = "m45pe80" 
+  generate
+    mem : entity work.m45pe80(vhdl_behavioral)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+      )
+      port map (
+        D       => MOSI
+       ,Q       => MISO
+       ,C       => SCLK
+       ,SNeg    => CS_B
+       ,WNeg    => WPNeg
+       ,ResetNeg=> RSTNeg
+      );
+  end generate;
+
   gen_s25fl064p:
   if MODEL = "s25fl064p" 
   generate
     mem : entity work.s25fl064p(vhdl_behavioral)
       generic map (
         mem_file_name  => "memory.mem"
-       ,otp_file_name  => "memoryOTP.mem"
+       ,otp_file_name  => "none"
        ,UserPreload    => true
        ,TimingChecksOn => true
        ,MsgOn          => true
@@ -184,6 +282,54 @@ begin
        ,SI      => MOSI
        ,CSNeg   => CS_B
        ,HOLDNeg => HOLDNeg
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+      );
+  end generate;
+
+  gen_s25fl512s:
+  if MODEL = "s25fl512s" 
+  generate
+    mem : entity work.s25fl512s(vhdl_behavioral_static_memory_allocation)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "none"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+       ,TimingModel    => "S25FL512SAGMFI010_F_30pF"
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,HOLDNeg => HOLDNeg
+       ,WPNeg   => WPNeg
+       ,SO      => MISO
+      );
+  end generate;
+
+  gen_s35hl256t:
+  if MODEL = "s35hl256t" 
+  generate
+    mem : entity work.s35hl256t(vhdl_behavioral)
+      generic map (
+        mem_file_name  => "memory.mem"
+       ,otp_file_name  => "none"
+       ,UserPreload    => true
+       ,TimingChecksOn => true
+       ,MsgOn          => true
+       ,XOn            => true
+       ,TimingModel    => "S35HL256TDPBHI010_15pF"
+      )
+      PORT MAP
+      (
+        SCK     => SCLK
+       ,SI      => MOSI
+       ,CSNeg   => CS_B
+       ,IO3RESETNeg => HOLDNeg
        ,WPNeg   => WPNeg
        ,SO      => MISO
       );

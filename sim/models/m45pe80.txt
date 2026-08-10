@@ -1,0 +1,46 @@
+
+________________________________________________________________________________
+DESCRIPTION:  8Mbit Page Erasable Serial Flash Memory 
+
+MODEL:  m45pe80.vhd                                              VERSION:    1.0
+                                                                 DATE: 04 SEP 24
+TIMING FILE:  m45pe80.ftm                                        VERSION:    1.0
+                                                                 DATE: 04 SEP 25
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/m45pe80.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/m45pe80.ftm
+
+MODEL:  m45pe80.v                                                VERSION:    1.0
+                                                                 DATE: 04 SEP 28
+TIMING FILE:  m45pe80.ftmv                                       VERSION:    1.0
+                                                                 DATE: 04 SEP 28
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/m45pe80.v
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/m45pe80.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  M45PE80
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   STMicro                 
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    M45PE80VMF6                            1
+
+    M45PE80VMP6                            1
+
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   STMicro M45PE80 DataSheet Rev. 4.0 May 28, 2004
+

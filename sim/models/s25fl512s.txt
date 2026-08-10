@@ -1,0 +1,375 @@
+
+________________________________________________________________________________
+DESCRIPTION:  512 Megabit Serial Flash Memory
+
+MODEL:  s25fl512s.vhd                                            VERSION:   1.15
+                                                                 DATE: 20 MAY 18
+TIMING FILE:  s25fl512s.ftm                                      VERSION:    1.3
+                                                                 DATE: 19 MAY 08
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s25fl512s.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s25fl512s.ftm
+MODEL:  s25fl512s.v                                              VERSION:   2.18
+                                                                 DATE: 20 MAY 18
+MODEL:  s25fl512s.sv                                             VERSION:   2.18
+                                                                 DATE: 20 MAY 18
+TIMING FILE:  s25fl512s.ftmv                                     VERSION:    1.4
+                                                                 DATE: 19 MAY 08
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s25fl512s.v
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s25fl512s.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  S25FL512S
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Spansion                
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+	S25FL512SAGMFI010_F_30pF               1
+
+	S25FL512SAGMFI011_F_30pF               1
+
+	S25FL512SAGMFI013_F_30pF               1
+
+	S25FL512SAGMFIR10_F_30pF               1
+
+	S25FL512SAGMFIR11_F_30pF               1
+
+	S25FL512SAGMFIR13_F_30pF               1
+
+	S25FL512SAGMFV010_F_30pF               1
+
+	S25FL512SAGMFV011_F_30pF               1
+
+	S25FL512SAGMFV013_F_30pF               1
+
+	S25FL512SAGMFVR10_F_30pF               1
+
+	S25FL512SAGMFVR11_F_30pF               1
+
+	S25FL512SAGMFVR13_F_30pF               1
+
+	S25FL512SAGBHI210_F_30pF               1
+
+	S25FL512SAGBHI213_F_30pF               1
+
+	S25FL512SAGBHI310_F_30pF               1
+
+	S25FL512SAGBHI313_F_30pF               1
+
+	S25FL512SAGBHIA10_F_30pF               1
+
+	S25FL512SAGBHIA13_F_30pF               1
+
+	S25FL512SAGBHIB10_F_30pF               1
+
+	S25FL512SAGBHIB13_F_30pF               1
+
+	S25FL512SAGBHIC10_F_30pF               1
+
+	S25FL512SAGBHIC13_F_30pF               1
+
+	S25FL512SAGBHID10_F_30pF               1
+
+	S25FL512SAGBHID13_F_30pF               1
+
+	S25FL512SAGBHV210_F_30pF               1
+
+	S25FL512SAGBHV213_F_30pF               1
+
+	S25FL512SAGBHV310_F_30pF               1
+
+	S25FL512SAGBHV313_F_30pF               1
+
+	S25FL512SAGBHVA10_F_30pF               1
+
+	S25FL512SAGBHVA13_F_30pF               1
+
+	S25FL512SAGBHVB10_F_30pF               1
+
+	S25FL512SAGBHVB13_F_30pF               1
+
+	S25FL512SAGBHVC10_F_30pF               1
+
+	S25FL512SAGBHVC13_F_30pF               1
+
+	S25FL512SAGBHVD10_F_30pF               1
+
+	S25FL512SAGBHVD13_F_30pF               1
+
+	S25FL512SAGBHIY10_F_30pF               1
+
+	S25FL512SAGBHIY13_F_30pF               1
+
+	S25FL512SAGBHIZ10_F_30pF               1
+
+	S25FL512SAGBHIZ13_F_30pF               1
+
+	S25FL512SAGBHIS10_F_30pF               1
+
+	S25FL512SAGBHIS13_F_30pF               1
+
+	S25FL512SAGBHIT10_F_30pF               1
+
+	S25FL512SAGBHIT13_F_30pF               1
+
+	S25FL512SAGBHIK10_F_30pF               1
+
+	S25FL512SAGBHIK13_F_30pF               1
+
+	S25FL512SAGBHIL10_F_30pF               1
+
+	S25FL512SAGBHIL13_F_30pF               1
+
+    S25FL512SAGMFI010_R_30pF               1
+
+    S25FL512SAGMFI011_R_30pF               1
+
+    S25FL512SAGMFI013_R_30pF               1
+
+    S25FL512SAGMFIR10_R_30pF               1
+
+    S25FL512SAGMFIR11_R_30pF               1
+
+    S25FL512SAGMFIR13_R_30pF               1
+
+    S25FL512SAGMFV010_R_30pF               1
+
+    S25FL512SAGMFV011_R_30pF               1
+
+    S25FL512SAGMFV013_R_30pF               1
+
+    S25FL512SAGMFVR10_R_30pF               1
+
+    S25FL512SAGMFVR11_R_30pF               1
+
+    S25FL512SAGMFVR13_R_30pF               1
+
+    S25FL512SAGBHI210_R_30pF               1
+
+    S25FL512SAGBHI213_R_30pF               1
+
+    S25FL512SAGBHI310_R_30pF               1
+
+    S25FL512SAGBHI313_R_30pF               1
+
+    S25FL512SAGBHIA10_R_30pF               1
+
+    S25FL512SAGBHIA13_R_30pF               1
+
+    S25FL512SAGBHIB10_R_30pF               1
+
+    S25FL512SAGBHIB13_R_30pF               1
+
+    S25FL512SAGBHIC10_R_30pF               1
+
+    S25FL512SAGBHIC13_R_30pF               1
+
+    S25FL512SAGBHID10_R_30pF               1
+
+    S25FL512SAGBHID13_R_30pF               1
+
+    S25FL512SAGBHV210_R_30pF               1
+
+    S25FL512SAGBHV213_R_30pF               1
+
+    S25FL512SAGBHV310_R_30pF               1
+
+    S25FL512SAGBHV313_R_30pF               1
+
+    S25FL512SAGBHVA10_R_30pF               1
+
+    S25FL512SAGBHVA13_R_30pF               1
+
+    S25FL512SAGBHVB10_R_30pF               1
+
+    S25FL512SAGBHVB13_R_30pF               1
+
+    S25FL512SAGBHVC10_R_30pF               1
+
+    S25FL512SAGBHVC13_R_30pF               1
+
+    S25FL512SAGBHVD10_R_30pF               1
+
+    S25FL512SAGBHVD13_R_30pF               1
+
+    S25FL512SAGBHIY10_R_30pF               1
+
+    S25FL512SAGBHIY13_R_30pF               1
+
+    S25FL512SAGBHIZ10_R_30pF               1
+
+    S25FL512SAGBHIZ13_R_30pF               1
+
+    S25FL512SAGBHIS10_R_30pF               1
+
+    S25FL512SAGBHIS13_R_30pF               1
+
+    S25FL512SAGBHIT10_R_30pF               1
+
+    S25FL512SAGBHIT13_R_30pF               1
+
+    S25FL512SAGBHIK10_R_30pF               1
+
+    S25FL512SAGBHIK13_R_30pF               1
+
+    S25FL512SAGBHIL10_R_30pF               1
+
+    S25FL512SAGBHIL13_R_30pF               1
+
+    S25FL512SAGMFI010_R_15pF               1
+
+	S25FL512SAGMFI011_R_15pF               1
+
+	S25FL512SAGMFI013_R_15pF               1
+
+	S25FL512SAGMFIR10_R_15pF               1
+
+	S25FL512SAGMFIR11_R_15pF               1
+
+	S25FL512SAGMFIR13_R_15pF               1
+
+	S25FL512SAGMFV010_R_15pF               1
+
+	S25FL512SAGMFV011_R_15pF               1
+
+	S25FL512SAGMFV013_R_15pF               1
+
+	S25FL512SAGMFVR10_R_15pF               1
+
+	S25FL512SAGMFVR11_R_15pF               1
+
+	S25FL512SAGMFVR13_R_15pF               1
+
+	S25FL512SAGBHI210_R_15pF               1
+
+	S25FL512SAGBHI213_R_15pF               1
+
+	S25FL512SAGBHI310_R_15pF               1
+
+	S25FL512SAGBHI313_R_15pF               1
+
+	S25FL512SAGBHIA10_R_15pF               1
+
+	S25FL512SAGBHIA13_R_15pF               1
+
+	S25FL512SAGBHIB10_R_15pF               1
+
+	S25FL512SAGBHIB13_R_15pF               1
+
+	S25FL512SAGBHIC10_R_15pF               1
+
+	S25FL512SAGBHIC13_R_15pF               1
+
+	S25FL512SAGBHID10_R_15pF               1
+
+	S25FL512SAGBHID13_R_15pF               1
+
+	S25FL512SAGBHV210_R_15pF               1
+
+	S25FL512SAGBHV213_R_15pF               1
+
+	S25FL512SAGBHV310_R_15pF               1
+
+	S25FL512SAGBHV313_R_15pF               1
+
+	S25FL512SAGBHVA10_R_15pF               1
+
+	S25FL512SAGBHVA13_R_15pF               1
+
+	S25FL512SAGBHVB10_R_15pF               1
+
+	S25FL512SAGBHVB13_R_15pF               1
+
+	S25FL512SAGBHVC10_R_15pF               1
+
+	S25FL512SAGBHVC13_R_15pF               1
+
+	S25FL512SAGBHVD10_R_15pF               1
+
+	S25FL512SAGBHVD13_R_15pF               1
+
+	S25FL512SAGBHIY10_R_15pF               1
+
+	S25FL512SAGBHIY13_R_15pF               1
+
+	S25FL512SAGBHIZ10_R_15pF               1
+
+	S25FL512SAGBHIZ13_R_15pF               1
+
+	S25FL512SAGBHIS10_R_15pF               1
+
+	S25FL512SAGBHIS13_R_15pF               1
+
+	S25FL512SAGBHIT10_R_15pF               1
+
+	S25FL512SAGBHIT13_R_15pF               1
+
+	S25FL512SAGBHIK10_R_15pF               1
+
+	S25FL512SAGBHIK13_R_15pF               1
+
+	S25FL512SAGBHIL10_R_15pF               1
+
+	S25FL512SAGBHIL13_R_15pF               1
+
+    S25FL512SDPMFIR10_F_30pF               1
+
+	S25FL512SDPMFIR11_F_30pF               1
+
+	S25FL512SDPMFIR13_F_30pF               1
+
+	S25FL512SDPBHI210_F_30pF               1
+
+	S25FL512SDPBHI213_F_30pF               1
+
+	S25FL512SDPBHI310_F_30pF               1
+
+	S25FL512SDPBHI313_F_30pF               1
+
+	S25FL512SDPBHIC10_F_30pF               1
+
+	S25FL512SDPBHIC13_F_30pF               1
+
+	S25FL512SDPBHID10_F_30pF               1
+
+	S25FL512SDPBHID13_F_30pF               1
+
+	S25FL512SDPMFIR10_F_15pF               1
+
+	S25FL512SDPMFIR11_F_15pF               1
+
+	S25FL512SDPMFIR13_F_15pF               1
+
+	S25FL512SDPBHI210_F_15pF               1
+
+	S25FL512SDPBHI213_F_15pF               1
+
+	S25FL512SDPBHI310_F_15pF               1
+
+	S25FL512SDPBHI313_F_15pF               1
+
+	S25FL512SDPBHIC10_F_15pF               1
+
+	S25FL512SDPBHIC13_F_15pF               1
+
+	S25FL512SDPBHID10_F_15pF               1
+
+	S25FL512SDPBHID13_F_15pF               1
+
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   Spansion, Spansion, FL-S_PPD_2.0 April 1, 2011
+

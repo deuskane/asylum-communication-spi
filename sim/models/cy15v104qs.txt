@@ -1,0 +1,44 @@
+
+________________________________________________________________________________
+DESCRIPTION:  4 Megabit Flash FRAM Memory
+
+MODEL:  cy15v104qs.vhd                                           VERSION:    1.2
+                                                                 DATE: 19 DEC 26
+TIMING FILE:  cy15v104qs.ftm                                     VERSION:    1.2
+                                                                 DATE: 19 DEC 26
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/cy15v104qs.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/cy15v104qs.ftm
+
+MODEL:  cy15v104qs.v                                             VERSION:    1.2
+                                                                 DATE: 19 DEC 26
+TIMING FILE:  cy15v104qs.ftmv                                    VERSION:    1.2
+                                                                 DATE: 19 DEC 26
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/cy15v104qs.v
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/cy15v104qs.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  CY15V104QS
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Spansion                
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    CY15V104QSN-108SXI                     1
+
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   Spansion, Revised September 22, 2017
+

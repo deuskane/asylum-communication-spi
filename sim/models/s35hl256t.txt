@@ -1,0 +1,205 @@
+
+________________________________________________________________________________
+DESCRIPTION:  256 Megabit Serial Flash Memory
+
+MODEL:  s35hl256t.vhd                                            VERSION:    1.0
+                                                                 DATE: 20 APR 27
+TIMING FILE:  s35hl256t.ftm                                      VERSION:    1.0
+                                                                 DATE: 20 APR 27
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s35hl256t.vhd
+LOCATION:  http://FreeModelFoundry.com/fmf_models/flash/s35hl256t.ftm
+MODEL:  s35hl256t.v                                              VERSION:    1.0
+                                                                 DATE: 20 APR 27
+MODEL:  s35hl256t.sv                                             VERSION:    1.0
+                                                                 DATE: 20 APR 27
+TIMING FILE:  s35hl256t.ftmv                                     VERSION:    1.0
+                                                                 DATE: 20 APR 27
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s35hl256t.v
+LOCATION:  http://FreeModelFoundry.com/fmf_vlog_models/flash/s35hl256t.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  S35HL256T
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Cypress Semiconductor                
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+	S35HL256TDPBHI010_15pF               1  
+	S35HL256TDPBHI013_15pF               1 
+	S35HL256TDPBHV010_15pF               1 
+	S35HL256TDPBHV013_15pF               1 
+	S35HL256TDPMHI010_15pF               1 
+	S35HL256TDPMHV010_15pF               1 
+	S35HL256TDPNHI010_15pF               1 
+	S35HL256TDPNHV010_15pF               1 
+	S35HL256TDPMHI011_15pF               1 
+	S35HL256TDPMHV011_15pF               1 
+	S35HL256TDPNHI011_15pF               1 
+	S35HL256TDPNHV011_15pF               1 
+	S35HL256TDPMHI013_15pF               1 
+	S35HL256TDPMHV013_15pF               1 
+	S35HL256TDPNHI013_15pF               1 
+	S35HL256TDPNHV013_15pF               1 
+	S35HL256TFABHI010_15pF               1 
+	S35HL256TFABHI013_15pF               1 
+	S35HL256TFABHV010_15pF               1 
+	S35HL256TFABHV013_15pF               1 
+	S35HL256TFAMHI010_15pF               1 
+	S35HL256TFAMHV010_15pF               1 
+	S35HL256TFANHI010_15pF               1 
+	S35HL256TFANHV010_15pF               1 
+	S35HL256TFAMHI011_15pF               1 
+	S35HL256TFAMHI011_15pF               1 
+	S35HL256TFAMHV011_15pF               1 
+	S35HL256TFANHI011_15pF               1 
+	S35HL256TFANHV011_15pF               1 
+	S35HL256TFAMHI013_15pF               1 
+	S35HL256TFAMHV013_15pF               1 
+	S35HL256TFANHI013_15pF               1 
+	S35HL256TFANHV013_15pF               1 
+	S35HL256TDPBHA010_15pF               1 
+	S35HL256TDPBHB010_15pF               1 
+	S35HL256TDPBHM010_15pF               1 
+	S35HL256TDPBHA013_15pF               1 
+	S35HL256TDPBHB013_15pF               1 
+	S35HL256TDPBHM013_15pF               1 
+	S35HL256TDPMHA010_15pF               1 
+	S35HL256TDPMHB010_15pF               1 
+	S35HL256TDPMHM010_15pF               1 
+	S35HL256TDPMHA011_15pF               1 
+	S35HL256TDPMHB011_15pF               1 
+	S35HL256TDPMHM011_15pF               1 
+	S35HL256TDPMHA013_15pF               1 
+	S35HL256TDPMHB013_15pF               1 
+	S35HL256TDPMHM013_15pF               1 
+	S35HL256TDPNHA010_15pF               1 
+	S35HL256TDPNHB010_15pF               1 
+	S35HL256TDPNHM010_15pF               1 
+	S35HL256TDPNHA011_15pF               1 
+	S35HL256TDPNHB011_15pF               1 
+	S35HL256TDPNHM011_15pF               1 
+	S35HL256TDPNHA013_15pF               1 
+	S35HL256TDPNHB013_15pF               1 
+	S35HL256TDPNHM013_15pF               1 
+	S35HL256TFABHA010_15pF               1 
+	S35HL256TFABHB010_15pF               1 
+	S35HL256TFABHM010_15pF               1 
+	S35HL256TFABHA013_15pF               1 
+	S35HL256TFABHB013_15pF               1 
+	S35HL256TFABHM013_15pF               1 
+	S35HL256TFAMHA010_15pF               1 
+	S35HL256TFAMHB010_15pF               1 
+	S35HL256TFAMHM010_15pF               1 
+	S35HL256TFAMHA011_15pF               1 
+	S35HL256TFAMHB011_15pF               1 
+	S35HL256TFAMHM011_15pF               1 
+	S35HL256TFAMHA013_15pF               1 
+	S35HL256TFAMHB013_15pF               1 
+	S35HL256TFAMHM013_15pF               1 
+	S35HL256TFANHA010_15pF               1 
+	S35HL256TFANHB010_15pF               1 
+	S35HL256TFANHM010_15pF               1 
+	S35HL256TFANHA011_15pF               1 
+	S35HL256TFANHB011_15pF               1 
+	S35HL256TFANHM011_15pF               1 
+	S35HL256TFANHA013_15pF               1 
+	S35HL256TFANHB013_15pF               1 
+	S35HL256TFANHM013_15pF               1 
+	S35HL256TDPBHI010_30pF               1 
+	S35HL256TDPBHI013_30pF               1 
+	S35HL256TDPBHV010_30pF               1 
+	S35HL256TDPBHV013_30pF               1 
+	S35HL256TDPMHI010_30pF               1 
+	S35HL256TDPMHV010_30pF               1 
+	S35HL256TDPNHI010_30pF               1 
+	S35HL256TDPNHV010_30pF               1 
+	S35HL256TDPMHI011_30pF               1 
+	S35HL256TDPMHV011_30pF               1 
+	S35HL256TDPNHI011_30pF               1 
+	S35HL256TDPNHV011_30pF               1 
+	S35HL256TDPMHI013_30pF               1 
+	S35HL256TDPMHV013_30pF               1 
+	S35HL256TDPNHI013_30pF               1 
+	S35HL256TDPNHV013_30pF               1 
+	S35HL256TFABHI010_30pF               1 
+	S35HL256TFABHI013_30pF               1 
+	S35HL256TFABHV010_30pF               1 
+	S35HL256TFABHV013_30pF               1 
+	S35HL256TFAMHI010_30pF               1 
+	S35HL256TFAMHV010_30pF               1 
+	S35HL256TFANHI010_30pF               1 
+	S35HL256TFANHV010_30pF               1 
+	S35HL256TFAMHI011_30pF               1 
+	S35HL256TFAMHV011_30pF               1 
+	S35HL256TFANHI011_30pF               1 
+	S35HL256TFANHV011_30pF               1 
+	S35HL256TFAMHI013_30pF               1 
+	S35HL256TFAMHV013_30pF               1 
+	S35HL256TFANHI013_30pF               1 
+	S35HL256TFANHV013_30pF               1 
+	S35HL256TDPBHA010_30pF               1 
+	S35HL256TDPBHB010_30pF               1 
+	S35HL256TDPBHM010_30pF               1 
+	S35HL256TDPBHA013_30pF               1 
+	S35HL256TDPBHB013_30pF               1 
+	S35HL256TDPBHM013_30pF               1 
+	S35HL256TDPMHA010_30pF               1 
+	S35HL256TDPMHB010_30pF               1 
+	S35HL256TDPMHM010_30pF               1 
+	S35HL256TDPMHA011_30pF               1 
+	S35HL256TDPMHB011_30pF               1 
+	S35HL256TDPMHM011_30pF               1 
+	S35HL256TDPMHA013_30pF               1 
+	S35HL256TDPMHB013_30pF               1 
+	S35HL256TDPMHM013_30pF               1 
+	S35HL256TDPNHA010_30pF               1 
+	S35HL256TDPNHB010_30pF               1 
+	S35HL256TDPNHM010_30pF               1 
+	S35HL256TDPNHA011_30pF               1 
+	S35HL256TDPNHB011_30pF               1 
+	S35HL256TDPNHM011_30pF               1 
+	S35HL256TDPNHA013_30pF               1 
+	S35HL256TDPNHB013_30pF               1 
+	S35HL256TDPNHM013_30pF               1 
+	S35HL256TFABHA010_30pF               1 
+	S35HL256TFABHB010_30pF               1 
+	S35HL256TFABHM010_30pF               1 
+	S35HL256TFABHA013_30pF               1 
+	S35HL256TFABHB013_30pF               1 
+	S35HL256TFABHM013_30pF               1 
+	S35HL256TFAMHA010_30pF               1 
+	S35HL256TFAMHB010_30pF               1 
+	S35HL256TFAMHM010_30pF               1 
+	S35HL256TFAMHA011_30pF               1 
+	S35HL256TFAMHB011_30pF               1 
+	S35HL256TFAMHM011_30pF               1 
+	S35HL256TFAMHA013_30pF               1 
+	S35HL256TFAMHB013_30pF               1 
+	S35HL256TFAMHM013_30pF               1 
+	S35HL256TFANHA010_30pF               1 
+	S35HL256TFANHB010_30pF               1 
+	S35HL256TFANHM010_30pF               1 
+	S35HL256TFANHA011_30pF               1 
+	S35HL256TFANHB011_30pF               1 
+	S35HL256TFANHM011_30pF               1 
+	S35HL256TFANHA013_30pF               1 
+	S35HL256TFANHB013_30pF               1 
+        S35HL256TFANHM013_30pF               1 
+
+
+________________________________________________________________________________
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.    Cypress Semiconductor, 002-12345 Rev. *H Issue date March 28, 2018
+

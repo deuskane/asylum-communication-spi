@@ -1,0 +1,42 @@
+
+________________________________________________________________________________
+
+MODEL:  m25p40.vhd                                               VERSION:    1.0
+DESCRIPTION:  4M Serial Flash Memory                             DATE: 04 AUG 18
+TIMING FILE:  m25p40.ftm                                         VERSION:    1.0
+                                                                 DATE: 04 AUG 18
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/flash/m25p40.vhd
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/flash/m25p40.ftm
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  M25P40
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                        STMicroelectronics
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    M25P40VMN3                            1
+
+    M25P40VMP3                            1
+
+    M25P40VMN6                            1
+
+    M25P40VMP6                            1
+
+    ____________________________________________________________________________
+
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and
+    timing of the components represented by this model.
+
+    1. STMicroelectronics M25P40 DataSheet Rev. 3.0 March 12, 2004
+

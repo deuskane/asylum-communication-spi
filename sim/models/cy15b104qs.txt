@@ -1,0 +1,48 @@
+
+________________________________________________________________________________
+DESCRIPTION:  4 Megabit Serial FRAM Memory 
+
+MODEL:  cy15b104qs.vhd                                           VERSION:    1.4
+                                                                 DATE: 19 DEC 26
+TIMING FILE:  cy15b104qs.ftm                                     VERSION:    1.4
+                                                                 DATE: 19 DEC 26
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/ram/cy15b104qs.vhd
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/ram/cy15b104qs.ftm
+
+MODEL:  cy15b104qs.v                                             VERSION:    1.6
+                                                                 DATE: 19 DEC 26
+TIMING FILE:  cy15b104qs.ftm                                     VERSION:    1.4
+                                                                 DATE: 19 DEC 26
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/ram/cy15b104qs.v
+LOCATION:  http://www.FreeModelFoundry.com/fmf_models/ram/cy15b104qs.ftmv
+
+LIBRARY:  FLASH
+
+GENERIC PART NUMBERS COVERED:  CY15B104QS
+
+________________________________________________________________________________
+
+SUPPORTED PART NUMBERS
+    ____________________________________________________________________________
+
+                   Cypress Semiconductor
+
+    Part Number                       Data Source
+    ____________________________________________________________________________
+
+    CY15B104QSN-108SXI                     1
+    CY15B104QSN-108LPXI                    1
+    CY15B104QSN-108SXI_15pF                1
+    CY15B104QSN-108LPXI_15pF               1
+
+    ____________________________________________________________________________
+
+
+DATA SOURCES
+
+    These are the primary sources of data used in determining behaviour and 
+    timing of the components represented by this model.
+
+    1.   Spansion datasheet 002-18293 Rev. *G September 22, 2017
+
+

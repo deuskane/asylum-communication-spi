@@ -68,20 +68,14 @@ filesets:
     file_type : vhdlSource-2008
 
   #---------------------------------------
-  pkg_fmf:
-  #---------------------------------------
-    files:
-      - sim/utilities/conversions.vhd
-      - sim/utilities/gen_utils.vhd
-    logical_name : fmf
-    file_type    : vhdlSource-2008
-
-  #---------------------------------------
   models:
   #---------------------------------------
     files:
       - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
+      - sim/models/mem/memory.mem         : {file_type : user, copyto : memory.mem   }
+      - sim/models/mem/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
+      - sim/models/mem/none               : {file_type : user, copyto : none         }
 #    logical_name : work
     file_type    : vhdlSource-2008
     depend       :
@@ -110,7 +104,6 @@ targets:
     << : *default
     description     : Default Target for simulation
     filesets_append :
-      - pkg_fmf
       - models
     toplevel        : tb
     parameters      :

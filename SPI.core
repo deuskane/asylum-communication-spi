@@ -73,7 +73,7 @@ filesets:
     files:
       - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
-      - sim/models/mem/memory.mem         : {file_type : user, copyto : memory.mem   }
+      - sim/models/mem/memory_1KB.mem    : {file_type : user, copyto : memory.mem   }
       - sim/models/mem/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
       - sim/models/mem/none               : {file_type : user, copyto : none         }
 #    logical_name : work
@@ -131,7 +131,7 @@ targets:
 
 
   #---------------------------------------
-  _sim_at25df161:
+  sim_at25df161:
   #---------------------------------------
     << : *default_sim
     description     : Simulation of at25df161
@@ -139,7 +139,7 @@ targets:
       - MODEL=at25df161
 
   #---------------------------------------
-  _sim_cy15b104qs:
+  sim_cy15b104qs:
   #---------------------------------------
     << : *default_sim
     description     : Simulation of cy15b104qs
@@ -147,7 +147,7 @@ targets:
       - MODEL=cy15b104qs
 
   #---------------------------------------
-  _sim_cy15v104qs:
+  sim_cy15v104qs:
   #---------------------------------------
     << : *default_sim
     description     : Simulation of cy15v104qs
@@ -179,7 +179,7 @@ targets:
       - MODEL=s25fl064p
 
   #---------------------------------------
-  _sim_s25fl512s:
+  sim_s25fl512s:
   #---------------------------------------
     << : *default_sim
     description     : Simulation of s25fl512s
@@ -187,7 +187,7 @@ targets:
       - MODEL=s25fl512s
 
   #---------------------------------------
-  _sim_s35hl256t:
+  sim_s35hl256t:
   #---------------------------------------
     << : *default_sim
     description     : Simulation of s35hl256t

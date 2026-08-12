@@ -2653,8 +2653,7 @@ BEGIN
             ind := 0;
             Mem := (OTHERS => MaxData);
             WHILE (not ENDFILE (mem_file)) LOOP
-
-                report "Preload Memory File: " & buf.all;
+                READLINE (mem_file, buf);
                 IF buf(1) = '/' THEN
                     NEXT;
                 ELSIF buf(1) = '@' THEN

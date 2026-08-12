@@ -1,12 +1,12 @@
-_sim_at25df161  : Simulation of at25df161
-_sim_cy15b104qs : Simulation of cy15b104qs
-_sim_cy15v104qs : Simulation of cy15v104qs
-_sim_s25fl512s  : Simulation of s25fl512s
-_sim_s35hl256t  : Simulation of s35hl256t
-default         : Default Target
-default_sim     : Default Target for simulation
-sim_basic       : Simulation of basic unit tests
-sim_m25p40      : Simulation of m25p40
-sim_m45pe80     : Simulation of m45pe80
-sim_s25fl064p   : Simulation of s25fl064p
+_sim_at25df161 : Simulation of at25df161
+default        : Default Target
+default_sim    : Default Target for simulation
+sim_basic      : Simulation of basic unit tests
+sim_cy15b104qs : Simulation of cy15b104qs
+sim_cy15v104qs : Simulation of cy15v104qs
+sim_m25p40     : Simulation of m25p40
+sim_m45pe80    : Simulation of m45pe80
+sim_s25fl064p  : Simulation of s25fl064p
+sim_s25fl512s  : Simulation of s25fl512s
+sim_s35hl256t  : Simulation of s35hl256t
 

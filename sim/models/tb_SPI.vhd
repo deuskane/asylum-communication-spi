@@ -308,6 +308,7 @@ begin
        ,HOLDNeg => HOLDNeg
        ,WPNeg   => WPNeg
        ,SO      => MISO
+       ,RSTNeg  => RSTNeg
       );
   end generate;
 
@@ -326,12 +327,13 @@ begin
       )
       PORT MAP
       (
-        SCK     => SCLK
-       ,SI      => MOSI
-       ,CSNeg   => CS_B
+        SCK         => SCLK
+       ,SI          => MOSI
+       ,CSNeg       => CS_B
        ,IO3RESETNeg => HOLDNeg
-       ,WPNeg   => WPNeg
-       ,SO      => MISO
+       ,WPNeg       => WPNeg
+       ,SO          => MISO
+       ,RESETNeg    => RSTNeg
       );
   end generate;
 

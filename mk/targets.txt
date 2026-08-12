@@ -1,6 +1,6 @@
-_sim_at25df161 : Simulation of at25df161
 default        : Default Target
 default_sim    : Default Target for simulation
+sim_at25df161  : Simulation of at25df161
 sim_basic      : Simulation of basic unit tests
 sim_cy15b104qs : Simulation of cy15b104qs
 sim_cy15v104qs : Simulation of cy15v104qs

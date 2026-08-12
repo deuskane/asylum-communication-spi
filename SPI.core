@@ -74,8 +74,8 @@ filesets:
       - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
       - sim/models/mem/memory_1KB.mem    : {file_type : user, copyto : memory.mem   }
-      - sim/models/mem/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
-      - sim/models/mem/none               : {file_type : user, copyto : none         }
+      - sim/models/mem/memoryOTP.mem     : {file_type : user, copyto : memoryOTP.mem}
+      - sim/models/mem/none              : {file_type : user, copyto : none         }
 #    logical_name : work
     file_type    : vhdlSource-2008
     depend       :

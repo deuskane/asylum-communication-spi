@@ -73,16 +73,16 @@ package SPI_csr_pkg is
     valid : std_logic;
   --==================================
   -- Field       : nb_bytes
-  -- Description : Transfert Length in bytes
-  -- Width       : 5
+  -- Description : Transfert Length in bytes (N+1)
+  -- Width       : 2
   --==================================
-    nb_bytes : std_logic_vector(5-1 downto 0);
+    nb_bytes : std_logic_vector(2-1 downto 0);
   --==================================
-  -- Field       : last
-  -- Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
-  -- Width       : 1
+  -- Field       : size
+  -- Description : Transfert Size : 1/2/4/Reserved
+  -- Width       : 2
   --==================================
-    last : std_logic_vector(1-1 downto 0);
+    size : std_logic_vector(2-1 downto 0);
   --==================================
   -- Field       : enable_rx
   -- Description : Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte
@@ -95,6 +95,18 @@ package SPI_csr_pkg is
   -- Width       : 1
   --==================================
     enable_tx : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : last
+  -- Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
+  -- Width       : 1
+  --==================================
+    last : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : cfg
+  -- Description : Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_tx/enable_rx and size by nb_bytes[5:2]
+  -- Width       : 1
+  --==================================
+    cfg : std_logic_vector(1-1 downto 0);
     sw2hw_empty : std_logic;
     sw2hw_full  : std_logic;
   end record SPI_cmd_sw2hw_t;

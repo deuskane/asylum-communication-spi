@@ -44,8 +44,8 @@
             params: {
                 BLOCKING_READ  : "True", 
                 BLOCKING_WRITE : "True",
-		DEPTH_SW2HW    : "DEPTH_TX"
-		DEPTH_HW2SW    : "DEPTH_RX"
+                DEPTH_SW2HW    : "DEPTH_TX"
+                DEPTH_HW2SW    : "DEPTH_RX"
             }
 
             fields: [
@@ -68,31 +68,65 @@
             params: {
                 BLOCKING_READ  : "True", 
                 BLOCKING_WRITE : "True",
-		DEPTH_SW2HW    : "DEPTH_CMD"
+                DEPTH_SW2HW    : "DEPTH_CMD"
             }
 
+//            fields: [
+//                {
+//                    name: "nb_bytes",
+//                    bits: "4:0",
+//                    desc: "Transfert Length in bytes (N+1)"
+//                },
+//                {
+//                    name: "last",
+//                    bits: "5",
+//                    desc: "Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert"
+//                },
+//                {
+//                    name: "enable_rx",
+//                    bits: "6",
+//                    desc: "Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte"
+//                },
+//                {
+//                    name: "enable_tx",
+//                    bits: "7",
+//                    desc: "POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert"
+//                },
+//            ]
             fields: [
                 {
                     name: "nb_bytes",
-                    bits: "4:0",
-                    desc: "Transfert Length in bytes"
+                    bits: "1:0",
+                    desc: "Transfert Length in bytes (N+1)"
                 },
                 {
-                    name: "last",
-                    bits: "5",
-                    desc: "Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert"
+                    name: "size",
+                    bits: "3:2",
+                    desc: "Transfert Size : 1/2/4/Reserved"
                 },
                 {
                     name: "enable_rx",
-                    bits: "6",
+                    bits: "4",
                     desc: "Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte"
                 },
                 {
                     name: "enable_tx",
-                    bits: "7",
+                    bits: "5",
                     desc: "POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert"
                 },
+                {
+                    name: "last",
+                    bits: "6",
+                    desc: "Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert"
+                },
+                {
+                    name: "cfg",
+                    bits: "7",
+                    desc: "Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_tx/enable_rx and size by nb_bytes[5:2]"
+                },
             ]
+
+
         },
 
 	{
@@ -138,14 +172,14 @@
             swaccess     : "rw",
             hwaccess     : "ro",
             hwtype       : "reg",
-	    enable       : "USER_DEFINE_PRESCALER",
+            enable       : "USER_DEFINE_PRESCALER",
 
             fields: [
                 {
                     name: "ratio",
                     bits: "7:0",
                     desc: "Baud Tick Counter Max"
-		    expr: "PRESCALER_RATIO"
+                    expr: "PRESCALER_RATIO"
                 },
             ]
         },

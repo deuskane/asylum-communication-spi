@@ -92,6 +92,7 @@ architecture rtl of sbi_SPI is
   signal   cmd_enable_tx          : std_logic        ;
   signal   cmd_size               : std_logic_vector(2-1 downto 0);
   signal   cmd_nb_bytes           : std_logic_vector(6-1 downto 0);
+  signal   dump_init              : std_logic := '0';
 
   -- Save command
   alias    spi_master_arst_b      : std_logic        is sw2hw.cfg.spi_enable(0);
@@ -183,12 +184,24 @@ begin  -- architecture rtl
   process (clk_i) is
     variable line_buffer : line;
 
-    
   begin  -- process
 
     if rising_edge(clk_i)
     then
-     
+      if dump_init = '0'
+      then
+        dump_init <= '1';
+
+        write(line_buffer, string'("TX format: <binary> - 0x<hex> - <char>"));
+        writeline(file_tx, line_buffer);
+
+        write(line_buffer, string'("RX format: <binary> - 0x<hex> - <char>"));
+        writeline(file_rx, line_buffer);
+
+        write(line_buffer, string'("CMD format: cfg - enable_tx - enable_rx - last - 0x<nb_bytes> - Size 0x<size>"));
+        writeline(file_cmd, line_buffer);
+      end if;
+
       if (tx_tvalid and tx_tready)
       then
         write    (line_buffer, tx_tdata);
@@ -198,7 +211,7 @@ begin  -- architecture rtl
         write    (line_buffer, character'val(to_integer(unsigned(tx_tdata))));
         writeline(file_tx, line_buffer);
       end if;
-      
+
       if (rx_tvalid and rx_tready)
       then
         write    (line_buffer, rx_tdata);
@@ -209,22 +222,22 @@ begin  -- architecture rtl
         writeline(file_rx, line_buffer);
       end if;
 
-     if (cmd_tvalid and cmd_tready)
-     then
-       write    (line_buffer, cmd_cfg);
-       write    (line_buffer, string'(" - "));
-       write    (line_buffer, cmd_enable_tx);
-       write    (line_buffer, string'(" - "));
-       write    (line_buffer, cmd_enable_rx);
-       write    (line_buffer, string'(" - "));
-       write    (line_buffer, cmd_last);
-       write    (line_buffer, string'(" - 0x"));
-       write    (line_buffer, to_hstring(cmd_nb_bytes));
-       write    (line_buffer, string'(" - Size 0x"));
-       write    (line_buffer, to_hstring(cmd_size));
-       writeline(file_cmd, line_buffer);
-     end if;
-      
+      if (cmd_tvalid and cmd_tready)
+      then
+        write    (line_buffer, cmd_cfg);
+        write    (line_buffer, string'(" - "));
+        write    (line_buffer, cmd_enable_tx);
+        write    (line_buffer, string'(" - "));
+        write    (line_buffer, cmd_enable_rx);
+        write    (line_buffer, string'(" - "));
+        write    (line_buffer, cmd_last);
+        write    (line_buffer, string'(" - 0x"));
+        write    (line_buffer, to_hstring(cmd_nb_bytes));
+        write    (line_buffer, string'(" - Size 0x"));
+        write    (line_buffer, to_hstring(cmd_size));
+        writeline(file_cmd, line_buffer);
+      end if;
+
     end if;
   end process;
 -- synthesis translate_on

@@ -107,8 +107,8 @@ architecture rtl of spi_master is
     signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
 
     signal cycle_phase_r      : std_logic;
-    signal cycle_phase0_r     : std_logic;
-    signal cycle_phase1_r     : std_logic;
+    signal cycle_posedge_r    : std_logic;
+    signal cycle_negedge_r    : std_logic;
 begin
 
   -----------------------------------------------------------------------------
@@ -121,9 +121,9 @@ begin
   --                                      ________________
   -- cycle_phase_r          _____________/                \_____
   --                                     ___                
-  -- cycle_phase0_r        _____________/   \______________________
+  -- cycle_posedge_r       _____________/   \______________________
   --                                                     ___
-  -- cycle_phase1_r        _____________________________/   \______
+  -- cycle_negedge_r       _____________________________/   \______
                                           
   -- In this architecture, SAMPLE & SHIFT phase is fix.
   -- SCLK Depend of this signals
@@ -137,21 +137,21 @@ begin
       prescaler_cnt_r  <= (others => '0');
 
       cycle_phase_r    <= '0';
-      cycle_phase0_r   <= '0';
-      cycle_phase1_r   <= '0';
+      cycle_posedge_r  <= '0';
+      cycle_negedge_r  <= '0';
       
     elsif rising_edge(clk_i)
     then
-      cycle_phase0_r   <= '0';
-      cycle_phase1_r   <= '0';
+      cycle_posedge_r  <= '0';
+      cycle_negedge_r  <= '0';
 
       if prescaler_is_min = '1'
       then
         prescaler_cnt_r <= unsigned(cfg_prescaler_ratio_i);
         cycle_phase_r   <= not cycle_phase_r;
-        cycle_phase0_r  <= '1' when cycle_phase_r='0' else
+        cycle_posedge_r <= '1' when cycle_phase_r='0' else
                            '0';
-        cycle_phase1_r  <= '1' when cycle_phase_r='1' else
+        cycle_negedge_r <= '1' when cycle_phase_r='1' else
                            '0';
       else
         prescaler_cnt_r <= prescaler_cnt_r - 1;
@@ -162,8 +162,8 @@ begin
   prescaler_is_min <= '1' when unsigned(prescaler_cnt_r) = 0 else
                       '0';
                                           
-  bit_sample       <= cycle_phase0_r;
-  bit_shift        <= cycle_phase1_r;
+  bit_sample       <= cycle_posedge_r;
+  bit_shift        <= cycle_negedge_r;
   
   -----------------------------------------------------------------------------
   -- FSM

@@ -52,6 +52,7 @@ entity spi_master is
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
+    cmd_size_i           : in  std_logic_vector;
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;
@@ -95,7 +96,9 @@ architecture rtl of spi_master is
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
     signal cnt_bit_r          : unsigned (3 downto 0);
+    signal cnt_bit_r_next     : unsigned (3 downto 0);
     signal cnt_byte_r         : unsigned (cmd_nb_bytes_i'range);
+    
     signal data_r             : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
@@ -105,6 +108,8 @@ architecture rtl of spi_master is
     signal cmd_enable_rx_r    : std_logic;
     signal cmd_enable_tx_r    : std_logic;
     signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
+    signal cmd_size_r         : unsigned (cmd_size_i'range);
+    signal cnt_bit_off        : unsigned (3 downto 0);
 
     signal cycle_phase_r      : std_logic;
     signal cycle_posedge_r    : std_logic;
@@ -217,6 +222,7 @@ begin
             cmd_enable_rx_r     <= cmd_enable_rx_i    ;
             cmd_enable_tx_r     <= cmd_enable_tx_i    ;
             cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
+            cmd_size_r          <= unsigned(cmd_size_i);
 
             if (cmd_tlast_i     = '1' and
                 cmd_enable_rx_i = '0' and
@@ -305,9 +311,9 @@ begin
           then
             sclk_r    <= not sclk_r;
             data_r    <= data_r(6 downto 0) & miso;
-            cnt_bit_r <= cnt_bit_r + 1;
+            cnt_bit_r <= cnt_bit_r_next;
 
-            if ((cfg_cpha_i = '1') and (cnt_bit_r = 7))
+            if ((cfg_cpha_i = '1') and (cnt_bit_r_next = 8))
             then
               state_r   <= POSTAMBLE;
             end if;
@@ -366,6 +372,12 @@ begin
 
     end if;
   end process;
+
+  -----------------------------------------------------------------------------
+  -- Bit Counter
+  -----------------------------------------------------------------------------
+  cnt_bit_off        <= shift_left(to_unsigned(1, 4), to_integer(cmd_size_r));
+  cnt_bit_r_next     <= cnt_bit_r + cnt_bit_off;
 
   -----------------------------------------------------------------------------
   -- Debug State

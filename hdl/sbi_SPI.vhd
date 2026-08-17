@@ -167,6 +167,7 @@ begin  -- architecture rtl
      ,cmd_enable_rx_i       =>       cmd_enable_rx
      ,cmd_enable_tx_i       =>       cmd_enable_tx
      ,cmd_nb_bytes_i        =>       cmd_nb_bytes
+     ,cmd_size_i            =>       cmd_size
      ,cfg_cpol_i            => sw2hw.cfg.cpol(0)
      ,cfg_cpha_i            => sw2hw.cfg.cpha(0)
      ,cfg_prescaler_ratio_i => sw2hw.prescaler.ratio

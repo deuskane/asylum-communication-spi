@@ -49,6 +49,7 @@ package tb_SPI_pkg is
     cmd_enable_tx_i      : std_logic;
     cmd_enable_rx_i      : std_logic;
     cmd_nb_bytes_i       : std_logic_vector;
+    cmd_size_i           : std_logic_vector(2-1 downto 0);
     cfg_cpol_i           : std_logic;
     cfg_cpha_i           : std_logic;
     cfg_prescaler_ratio_i: std_logic_vector;
@@ -189,6 +190,7 @@ package body tb_SPI_pkg is
     dut_ifi.cmd_enable_rx_i      <= cmd_enable_rx_i    ;
     dut_ifi.cmd_enable_tx_i      <= cmd_enable_tx_i    ;
     dut_ifi.cmd_nb_bytes_i       <= cmd_nb_bytes_i     ;
+    dut_ifi.cmd_size_i           <= "00"               ;
 
     run(1,"pos",clk_i);
     

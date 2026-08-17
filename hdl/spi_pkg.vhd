@@ -66,6 +66,7 @@ component spi_master is
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
+    cmd_size_i           : in  std_logic_vector;
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;

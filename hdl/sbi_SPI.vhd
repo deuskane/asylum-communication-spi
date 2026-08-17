@@ -39,6 +39,7 @@ entity sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
+    NB_IO                 : integer := 2;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -58,6 +59,14 @@ entity sbi_SPI is
     sclk_oe_o        : out std_logic;
     cs_b_o           : out std_logic;
     cs_b_oe_o        : out std_logic;
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o             : out std_logic_vector(NB_IO-1 downto 0);
+    io_i             : in  std_logic_vector(NB_IO-1 downto 0);
+    io_oe_o          : out std_logic_vector(NB_IO-1 downto 0);
     mosi_o           : out std_logic;
     mosi_oe_o        : out std_logic;
     miso_i           : in  std_logic
@@ -131,27 +140,29 @@ begin  -- architecture rtl
                                                                         sw2hw.cmd.nb_bytes     ;
 
   ins_csr : SPI_registers
-  generic map(
-    MODULE_NAME           => NAME,
-    USER_DEFINE_PRESCALER => USER_DEFINE_PRESCALER,
-    PRESCALER_RATIO       => PRESCALER_RATIO,
-    DEPTH_CMD             => DEPTH_CMD,
-    DEPTH_TX              => DEPTH_TX,
-    DEPTH_RX              => DEPTH_RX
+  generic map
+  ( MODULE_NAME           => NAME
+   ,USER_DEFINE_PRESCALER => USER_DEFINE_PRESCALER
+   ,PRESCALER_RATIO       => PRESCALER_RATIO
+   ,DEPTH_CMD             => DEPTH_CMD
+   ,DEPTH_TX              => DEPTH_TX
+   ,DEPTH_RX              => DEPTH_RX
     )
-  port map(
-    clk_i     => clk_i           ,
-    arst_b_i  => arst_b_i        ,
-    sbi_ini_i => sbi_ini_i       ,
-    sbi_tgt_o => sbi_tgt_o       ,
-    sw2hw_o   => sw2hw           ,
-    hw2sw_i   => hw2sw   
+  port map
+  (
+    clk_i     => clk_i    
+   ,arst_b_i  => arst_b_i 
+   ,sbi_ini_i => sbi_ini_i
+   ,sbi_tgt_o => sbi_tgt_o
+   ,sw2hw_o   => sw2hw    
+   ,hw2sw_i   => hw2sw   
   );
 
   ins_spi_master : spi_master
     generic map(
       PRESCALER_WIDTH      => 8
-      )
+     ,NB_IO                => NB_IO
+     )
     port map
     ( clk_i                 => clk_i
      ,arst_b_i              => sw2hw.cfg.spi_enable(0)
@@ -176,6 +187,9 @@ begin  -- architecture rtl
      ,sclk_oe_o             => sclk_oe_o
      ,cs_b_o                => cs_b_o   
      ,cs_b_oe_o             => cs_b_oe_o
+     ,io_i                  => io_i
+     ,io_o                  => io_o
+     ,io_oe_o               => io_oe_o
      ,mosi_o                => mosi_o
      ,mosi_oe_o             => mosi_oe_o
      ,miso_i                => miso_i   

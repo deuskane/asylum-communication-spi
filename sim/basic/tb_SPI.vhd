@@ -80,6 +80,9 @@ begin
       ,cmd_size_i           => dut_ifi.cmd_size_i
       ,sclk_o               => dut_ifo.sclk_o     
       ,cs_b_o               => dut_ifo.cs_b_o     
+      ,io_o                 => open
+      ,io_i                 => (others => '0')
+      ,io_oe_o              => open
       ,mosi_o               => dut_ifo.mosi_o     
       ,miso_i               => dut_ifo.mosi_o
       );

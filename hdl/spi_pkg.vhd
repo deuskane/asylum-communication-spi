@@ -14,6 +14,7 @@ component sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
+    NB_IO                 : integer := 2;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -33,6 +34,14 @@ component sbi_SPI is
     sclk_oe_o        : out std_logic;
     cs_b_o           : out std_logic;
     cs_b_oe_o        : out std_logic;
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o             : out std_logic_vector(NB_IO-1 downto 0);
+    io_i             : in  std_logic_vector(NB_IO-1 downto 0);
+    io_oe_o          : out std_logic_vector(NB_IO-1 downto 0);
     mosi_o           : out std_logic;
     mosi_oe_o        : out std_logic;
     miso_i           : in  std_logic
@@ -42,7 +51,8 @@ end component sbi_SPI;
 
 component spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8
+    PRESCALER_WIDTH      : integer := 8;
+    NB_IO                : integer := 2
     );
   port (
     -- Clock & Reset
@@ -79,6 +89,16 @@ component spi_master is
     sclk_oe_o            : out std_logic;
     cs_b_o               : out std_logic;
     cs_b_oe_o            : out std_logic;
+
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o                 : out std_logic_vector(NB_IO-1 downto 0);
+    io_i                 : in  std_logic_vector(NB_IO-1 downto 0);
+    io_oe_o              : out std_logic_vector(NB_IO-1 downto 0);
+
     mosi_o               : out std_logic;
     mosi_oe_o            : out std_logic;
     miso_i               : in  std_logic

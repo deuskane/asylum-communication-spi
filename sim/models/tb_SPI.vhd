@@ -99,6 +99,9 @@ begin
      ,sclk_oe_o  => sclk_oe_o
      ,cs_b_o     => cs_b_o
      ,cs_b_oe_o  => cs_b_oe_o
+     ,io_o       => open
+     ,io_i       => (others => '0')
+     ,io_oe_o    => open
      ,mosi_o     => mosi_o
      ,mosi_oe_o  => mosi_oe_o
      ,miso_i     => miso_i

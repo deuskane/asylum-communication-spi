@@ -28,7 +28,8 @@ use     asylum.math_pkg.all;
  
 entity spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8
+    PRESCALER_WIDTH      : integer := 8;
+    NB_IO                : integer := 2
     );
   port (
     -- Clock & Reset
@@ -65,6 +66,16 @@ entity spi_master is
     sclk_oe_o            : out std_logic;
     cs_b_o               : out std_logic;
     cs_b_oe_o            : out std_logic;
+
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o                 : out std_logic_vector(NB_IO-1 downto 0);
+    io_i                 : in  std_logic_vector(NB_IO-1 downto 0);
+    io_oe_o              : out std_logic_vector(NB_IO-1 downto 0);
+
     mosi_o               : out std_logic;
     mosi_oe_o            : out std_logic;
     miso_i               : in  std_logic
@@ -100,6 +111,7 @@ architecture rtl of spi_master is
     signal cnt_byte_r         : unsigned (cmd_nb_bytes_i'range);
     
     signal data_r             : std_logic_vector(8-1 downto 0);
+    signal data_r_next        : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
     signal rx_tvalid_r        : std_logic;
@@ -310,7 +322,7 @@ begin
           if (bit_sample = '1')
           then
             sclk_r    <= not sclk_r;
-            data_r    <= data_r(6 downto 0) & miso;
+            data_r    <= data_r_next;
             cnt_bit_r <= cnt_bit_r_next;
 
             if ((cfg_cpha_i = '1') and (cnt_bit_r_next = 8))
@@ -378,6 +390,12 @@ begin
   -----------------------------------------------------------------------------
   cnt_bit_off        <= shift_left(to_unsigned(1, 4), to_integer(cmd_size_r));
   cnt_bit_r_next     <= cnt_bit_r + cnt_bit_off;
+
+  -----------------------------------------------------------------------------
+  -- Data
+  -----------------------------------------------------------------------------
+  data_r_next        <= data_r(6 downto 0) & miso;
+
 
   -----------------------------------------------------------------------------
   -- Debug State

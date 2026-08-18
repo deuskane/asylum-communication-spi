@@ -47,7 +47,7 @@ architecture sim of tb is
   constant C_SCOPE         : string := "TB_SPI";
   constant SPI_ADDR_WIDTH  : natural := 2;
   constant SPI_DATA_WIDTH  : natural := 8;
-
+  
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
   signal arst_b_i          : std_logic := '0';
@@ -63,6 +63,9 @@ architecture sim of tb is
   signal sclk_oe_o         : std_logic;
   signal cs_b_o            : std_logic;
   signal cs_b_oe_o         : std_logic;
+  signal io_o              : std_logic_vector(8-1 downto 0);
+  signal io_i              : std_logic_vector(8-1 downto 0);
+  signal io_oe_o           : std_logic_vector(8-1 downto 0);
   signal mosi_o            : std_logic;
   signal mosi_oe_o         : std_logic;
   signal miso_i            : std_logic;
@@ -99,13 +102,15 @@ begin
      ,sclk_oe_o  => sclk_oe_o
      ,cs_b_o     => cs_b_o
      ,cs_b_oe_o  => cs_b_oe_o
-     ,io_o       => open
-     ,io_i       => (others => '0')
-     ,io_oe_o    => open
-     ,mosi_o     => mosi_o
-     ,mosi_oe_o  => mosi_oe_o
-     ,miso_i     => miso_i
+     ,io_o       => io_o
+     ,io_i       => io_i
+     ,io_oe_o    => io_oe_o
     );
+
+  mosi_o   <= io_o   (0);
+  mosi_oe_o<= io_oe_o(0);
+  io_i     <= (1      => miso_i
+              ,others => 'Z');
 
   RSTNeg   <= '1'; -- PULL UP
   WPNeg    <= '1'; -- PULL UP

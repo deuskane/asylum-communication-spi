@@ -14,7 +14,6 @@ component sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
-    NB_IO                 : integer := 2;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -39,20 +38,16 @@ component sbi_SPI is
     --                     1 - MISO
     --                     2 - Write Protect (active low)
     --                     3 - Hold (active low)
-    io_o             : out std_logic_vector(NB_IO-1 downto 0);
-    io_i             : in  std_logic_vector(NB_IO-1 downto 0);
-    io_oe_o          : out std_logic_vector(NB_IO-1 downto 0);
-    mosi_o           : out std_logic;
-    mosi_oe_o        : out std_logic;
-    miso_i           : in  std_logic
+    io_o             : out std_logic_vector(8-1 downto 0);
+    io_i             : in  std_logic_vector(8-1 downto 0);
+    io_oe_o          : out std_logic_vector(8-1 downto 0)
     );
 
 end component sbi_SPI;
 
 component spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8;
-    NB_IO                : integer := 2
+    PRESCALER_WIDTH      : integer := 8
     );
   port (
     -- Clock & Reset
@@ -76,7 +71,7 @@ component spi_master is
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
-    cmd_size_i           : in  std_logic_vector;
+    cmd_size_i           : in  std_logic_vector; -- 0 : Single / 1 : dual / 2 : quad / 3 : octo
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;
@@ -95,13 +90,9 @@ component spi_master is
     --                     1 - MISO
     --                     2 - Write Protect (active low)
     --                     3 - Hold (active low)
-    io_o                 : out std_logic_vector(NB_IO-1 downto 0);
-    io_i                 : in  std_logic_vector(NB_IO-1 downto 0);
-    io_oe_o              : out std_logic_vector(NB_IO-1 downto 0);
-
-    mosi_o               : out std_logic;
-    mosi_oe_o            : out std_logic;
-    miso_i               : in  std_logic
+    io_o                 : out std_logic_vector(8-1 downto 0);
+    io_i                 : in  std_logic_vector(8-1 downto 0);
+    io_oe_o              : out std_logic_vector(8-1 downto 0)
     );
 end component spi_master;
 

@@ -39,7 +39,6 @@ entity sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
-    NB_IO                 : integer := 2;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -64,12 +63,9 @@ entity sbi_SPI is
     --                     1 - MISO
     --                     2 - Write Protect (active low)
     --                     3 - Hold (active low)
-    io_o             : out std_logic_vector(NB_IO-1 downto 0);
-    io_i             : in  std_logic_vector(NB_IO-1 downto 0);
-    io_oe_o          : out std_logic_vector(NB_IO-1 downto 0);
-    mosi_o           : out std_logic;
-    mosi_oe_o        : out std_logic;
-    miso_i           : in  std_logic
+    io_o             : out std_logic_vector(8-1 downto 0);
+    io_i             : in  std_logic_vector(8-1 downto 0);
+    io_oe_o          : out std_logic_vector(8-1 downto 0)
     );
 
 end entity sbi_SPI;
@@ -161,7 +157,6 @@ begin  -- architecture rtl
   ins_spi_master : spi_master
     generic map(
       PRESCALER_WIDTH      => 8
-     ,NB_IO                => NB_IO
      )
     port map
     ( clk_i                 => clk_i
@@ -190,9 +185,6 @@ begin  -- architecture rtl
      ,io_i                  => io_i
      ,io_o                  => io_o
      ,io_oe_o               => io_oe_o
-     ,mosi_o                => mosi_o
-     ,mosi_oe_o             => mosi_oe_o
-     ,miso_i                => miso_i   
     );
 
 -- synthesis translate_off

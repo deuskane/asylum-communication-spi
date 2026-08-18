@@ -34,8 +34,8 @@ package tb_SPI_pkg is
     sclk_oe_o            : std_logic;
     cs_b_o               : std_logic;
     cs_b_oe_o            : std_logic;
-    mosi_o               : std_logic;
-    mosi_oe_o            : std_logic;
+    io_o                 : std_logic_vector(8-1 downto 0);
+    io_oe_o              : std_logic_vector(8-1 downto 0);
   end record spi_master_ifo_t;
 
   type spi_master_ifi_t is record
@@ -54,7 +54,7 @@ package tb_SPI_pkg is
     cfg_cpha_i           : std_logic;
     cfg_prescaler_ratio_i: std_logic_vector;
     cfg_loopback_i       : std_logic;
-    miso_i               : std_logic;
+    io_i                 : std_logic_vector(8-1 downto 0);
   end record spi_master_ifi_t;
 
   procedure xrun

@@ -47,7 +47,8 @@ architecture sim of tb is
   constant C_SCOPE         : string := "TB_SPI";
   constant SPI_ADDR_WIDTH  : natural := 2;
   constant SPI_DATA_WIDTH  : natural := 8;
-  
+  constant HANDLE_HOLD_WP  : boolean := false;
+
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
   signal arst_b_i          : std_logic := '0';
@@ -92,6 +93,7 @@ begin
      ,DEPTH_CMD             => 4
      ,DEPTH_TX              => 4
      ,DEPTH_RX              => 4
+     ,HANDLE_HOLD_WP        => HANDLE_HOLD_WP
     )
     port map (
       clk_i      => clk_i

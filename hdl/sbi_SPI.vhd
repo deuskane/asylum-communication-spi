@@ -39,6 +39,7 @@ entity sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
+    HANDLE_HOLD_WP        : boolean := false;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -157,6 +158,7 @@ begin  -- architecture rtl
   ins_spi_master : spi_master
     generic map(
       PRESCALER_WIDTH      => 8
+     ,HANDLE_HOLD_WP       => HANDLE_HOLD_WP
      )
     port map
     ( clk_i                 => clk_i

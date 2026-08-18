@@ -28,7 +28,8 @@ use     asylum.math_pkg.all;
  
 entity spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8
+    PRESCALER_WIDTH      : integer := 8;
+    HANDLE_HOLD_WP       : boolean := false
     );
   port (
     -- Clock & Reset
@@ -199,6 +200,14 @@ begin
       data_rx_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
       
+      if HANDLE_HOLD_WP = true 
+      then
+        io_oe_r(2) <= '1';
+        io_oe_r(3) <= '1';
+        io_o_r (2) <= '0';
+        io_o_r (3) <= '0';
+      end if;
+
     elsif rising_edge(clk_i)
     then
       cs_b_oe_r   <= '1'; -- Active pad
@@ -298,6 +307,16 @@ begin
               io_oe_r   <= (others => '0');
               state_r   <= TRANSFER;
             end if;
+
+            -- Manage HOLD/WP pins when requested by generic
+            if HANDLE_HOLD_WP = true 
+            then
+              io_oe_r(2) <= '1';
+              io_oe_r(3) <= '1';
+              io_o_r (2) <= '1';
+              io_o_r (3) <= '1';
+            end if;
+
           end if;
 
         -----------------------------------------------------------------------
@@ -309,11 +328,11 @@ begin
           -- Bit Shift Phase
           if (bit_shift = '1')
           then
-            io_o_r  <= (others => '0');
   
             -- Shift the transmit register after driving the current bit.
-            if cmd_enable_tx_r = '1' then
-              case to_integer(cmd_size_r) is
+            if cmd_enable_tx_r = '1' 
+            then
+                case to_integer(cmd_size_r) is
                 when 1 => -- DUAL
                   io_o_r (1 downto 0) <= data_tx_r(7 downto 6);
                   data_tx_r           <= data_tx_r(5 downto 0) & "00";
@@ -411,7 +430,17 @@ begin
             -- End of transaction
             cs_b_r      <= '1';
             io_oe_r     <= (others => '0');
+            io_o_r      <= (others => '0');
             state_r     <= IDLE;
+
+            if HANDLE_HOLD_WP = true 
+            then
+              io_oe_r(2) <= '1';
+              io_oe_r(3) <= '1';
+              io_o_r (2) <= '0';
+              io_o_r (3) <= '0';
+            end if;
+
           end if;
       end case;
 

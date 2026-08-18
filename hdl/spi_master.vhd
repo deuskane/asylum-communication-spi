@@ -25,6 +25,7 @@ use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
 library asylum;
 use     asylum.math_pkg.all;
+use     asylum.spi_pkg.all;
  
 entity spi_master is
   generic (
@@ -202,10 +203,10 @@ begin
       
       if HANDLE_HOLD_WP = true 
       then
-        io_oe_r(2) <= '1';
-        io_oe_r(3) <= '1';
-        io_o_r (2) <= '0';
-        io_o_r (3) <= '0';
+        io_oe_r(SPI_IO_HOLD_B) <= '1';
+        io_oe_r(SPI_IO_WP_B  ) <= '1';
+        io_o_r (SPI_IO_HOLD_B) <= '0';
+        io_o_r (SPI_IO_WP_B  ) <= '0';
       end if;
 
     elsif rising_edge(clk_i)
@@ -279,13 +280,13 @@ begin
     
               if cmd_enable_tx_r = '1' then
                 case to_integer(cmd_size_r) is
-                  when 1 => -- DUAL
+                  when SPI_DUAL  =>
                     io_oe_r(1 downto 0) <= (others => '1');
-                  when 2 => -- QUAD
+                  when SPI_QUAD  =>
                     io_oe_r(3 downto 0) <= (others => '1');
-                  when 3 => -- OCTAL
+                  when SPI_OCTAL =>
                     io_oe_r(7 downto 0) <= (others => '1');
-                  when others => -- SINGLE
+                  when others    => -- SPI_SINGLE
                     io_oe_r(0)          <= '1';
                 end case;
               end if;
@@ -311,10 +312,10 @@ begin
             -- Manage HOLD/WP pins when requested by generic
             if HANDLE_HOLD_WP = true 
             then
-              io_oe_r(2) <= '1';
-              io_oe_r(3) <= '1';
-              io_o_r (2) <= '1';
-              io_o_r (3) <= '1';
+              io_oe_r(SPI_IO_HOLD_B) <= '1';
+              io_oe_r(SPI_IO_WP_B  ) <= '1';
+              io_o_r (SPI_IO_HOLD_B) <= '1';
+              io_o_r (SPI_IO_WP_B  ) <= '1';
             end if;
 
           end if;
@@ -333,16 +334,16 @@ begin
             if cmd_enable_tx_r = '1' 
             then
                 case to_integer(cmd_size_r) is
-                when 1 => -- DUAL
+                when SPI_DUAL  =>
                   io_o_r (1 downto 0) <= data_tx_r(7 downto 6);
                   data_tx_r           <= data_tx_r(5 downto 0) & "00";
-                when 2 => -- QUAD
+                when SPI_QUAD  =>
                   io_o_r (3 downto 0) <= data_tx_r(7 downto 4);
                   data_tx_r           <= data_tx_r(3 downto 0) & X"0";
-                when 3 => -- OCTAL
+                when SPI_OCTAL =>
                   io_o_r (7 downto 0) <= data_tx_r;
                   data_tx_r           <= data_tx_r;
-                when others => -- SINGLE
+                when others    => -- SPI_SINGLE
                   io_o_r (0)          <= data_tx_r(7);
                   data_tx_r           <= data_tx_r(6 downto 0) & '0' ;
                end case;
@@ -370,9 +371,9 @@ begin
             sclk_r    <= not sclk_r;
 
             -- Data RX depends of the size
-            data_rx_r <= data_rx_r(6 downto 0) & miso             when to_integer(cmd_size_r) = 0 else
-                         data_rx_r(5 downto 0) & io_i(1 downto 0) when to_integer(cmd_size_r) = 1 else
-                         data_rx_r(3 downto 0) & io_i(3 downto 0) when to_integer(cmd_size_r) = 2 else
+            data_rx_r <= data_rx_r(6 downto 0) & miso             when to_integer(cmd_size_r) = SPI_SINGLE else
+                         data_rx_r(5 downto 0) & io_i(1 downto 0) when to_integer(cmd_size_r) = SPI_DUAL   else
+                         data_rx_r(3 downto 0) & io_i(3 downto 0) when to_integer(cmd_size_r) = SPI_QUAD   else
                                                  io_i(7 downto 0);
             cnt_bit_r <= cnt_bit_r_next;
 
@@ -435,10 +436,10 @@ begin
 
             if HANDLE_HOLD_WP = true 
             then
-              io_oe_r(2) <= '1';
-              io_oe_r(3) <= '1';
-              io_o_r (2) <= '0';
-              io_o_r (3) <= '0';
+              io_oe_r(SPI_IO_HOLD_B) <= '1';
+              io_oe_r(SPI_IO_WP_B  ) <= '1';
+              io_o_r (SPI_IO_HOLD_B) <= '0';
+              io_o_r (SPI_IO_WP_B  ) <= '0';
             end if;
 
           end if;

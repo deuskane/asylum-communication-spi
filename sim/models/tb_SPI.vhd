@@ -47,7 +47,7 @@ architecture sim of tb is
   constant C_SCOPE         : string := "TB_SPI";
   constant SPI_ADDR_WIDTH  : natural := 2;
   constant SPI_DATA_WIDTH  : natural := 8;
-  constant HANDLE_HOLD_WP  : boolean := false;
+  constant HANDLE_HOLD_WP  : boolean := true;
 
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
@@ -67,10 +67,7 @@ architecture sim of tb is
   signal io_o              : std_logic_vector(8-1 downto 0);
   signal io_i              : std_logic_vector(8-1 downto 0);
   signal io_oe_o           : std_logic_vector(8-1 downto 0);
-  signal mosi_o            : std_logic;
-  signal mosi_oe_o         : std_logic;
-  signal miso_i            : std_logic;
-
+  
   signal SCLK              : std_logic;
   signal CS_B              : std_logic;
   signal MOSI              : std_logic;
@@ -109,14 +106,9 @@ begin
      ,io_oe_o    => io_oe_o
     );
 
-  mosi_o   <= io_o   (0);
-  mosi_oe_o<= io_oe_o(0);
-  io_i     <= (1      => miso_i
-              ,others => 'Z');
-
   RSTNeg   <= '1'; -- PULL UP
-  WPNeg    <= '1'; -- PULL UP
-  HOLDNeg  <= '1'; -- PULL UP
+  WPNeg    <= 'H'; -- PULL UP
+  HOLDNeg  <= 'H'; -- PULL UP
   SCLK     <= 'H'; -- PULL UP
   CS_B     <= 'H'; -- PULL UP
   MISO     <= 'H'; -- PULL UP
@@ -131,7 +123,6 @@ begin
      ,ie_i       => '0'
   );
 
-
   IOBUF_CS_B : iobuf
     port map
      (buf_io     => CS_B
@@ -144,18 +135,36 @@ begin
   IOBUF_MOSI : iobuf
     port map
      (buf_io     => MOSI
-     ,d_i        => mosi_o
-     ,d_o        => open
-     ,oe_i       => mosi_oe_o
-     ,ie_i       => '0'
+     ,d_i        => io_o    (SPI_IO_MOSI)
+     ,d_o        => io_i    (SPI_IO_MOSI)
+     ,oe_i       => io_oe_o (SPI_IO_MOSI)
+     ,ie_i       => '1'
   );
   
   IOBUF_MISO : iobuf
     port map
      (buf_io     => MISO
-     ,d_i        => '0'
-     ,d_o        => miso_i
-     ,oe_i       => '0'
+     ,d_i        => io_o    (SPI_IO_MISO)
+     ,d_o        => io_i    (SPI_IO_MISO)
+     ,oe_i       => io_oe_o (SPI_IO_MISO)
+     ,ie_i       => '1'
+  );
+  
+  IOBUF_HOLDNeg : iobuf
+    port map
+     (buf_io     => HOLDNeg
+     ,d_i        => io_o    (SPI_IO_HOLD_B)
+     ,d_o        => io_i    (SPI_IO_HOLD_B)
+     ,oe_i       => io_oe_o (SPI_IO_HOLD_B)
+     ,ie_i       => '1'
+  );
+
+  IOBUF_WPNeg : iobuf
+    port map
+     (buf_io     => WPNeg
+     ,d_i        => io_o    (SPI_IO_WP_B)
+     ,d_o        => io_i    (SPI_IO_WP_B)
+     ,oe_i       => io_oe_o (SPI_IO_WP_B)
      ,ie_i       => '1'
   );
   

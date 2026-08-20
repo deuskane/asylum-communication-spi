@@ -310,7 +310,7 @@ begin
             end if;
 
             -- Manage HOLD/WP pins when requested by generic
-            if HANDLE_HOLD_WP = true 
+            if HANDLE_HOLD_WP = true and to_integer(cmd_size_r) <= SPI_DUAL
             then
               io_oe_r(SPI_IO_HOLD_B) <= '1';
               io_oe_r(SPI_IO_WP_B  ) <= '1';

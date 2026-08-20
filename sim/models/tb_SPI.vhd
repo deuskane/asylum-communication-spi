@@ -318,6 +318,7 @@ begin
        ,MsgOn          => true
        ,XOn            => true
        ,TimingModel    => "S25FL512SAGMFI010_F_30pF"
+       ,LongTimming    => false
       )
       PORT MAP
       (
@@ -429,6 +430,62 @@ begin
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"16", msg => "Read Byte @ 0x000015",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"17", msg => "Read Byte @ 0x000016",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"18", msg => "Read Byte @ 0x000017",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+    if MODEL = "s25fl512s" 
+    then
+
+      log(ID_LOG_HDR, "Perform DOR (0x3B) - At address 0x000020 (24b)", C_SCOPE);
+
+      sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"3B", msg => "SPI Instruction 0x3B",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"20", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+  
+      sbi_write(addr_value => SPI_CMD      , data_value => x"00", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+  
+      sbi_write(addr_value => SPI_CMD      , data_value => x"57", msg => "SPI RX 4 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"21", msg => "Read Byte @ 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"22", msg => "Read Byte @ 0x000021",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"23", msg => "Read Byte @ 0x000022",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"24", msg => "Read Byte @ 0x000023",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      wait for 10 us;
+      log(ID_LOG_HDR, "WREN Enable write", C_SCOPE);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"06", msg => "SPI Instruction 0x06",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      wait for 10 us;
+      log(ID_LOG_HDR, "WRR Enable QUAD - CR Bit 1 = 1", C_SCOPE);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"62", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"01", msg => "SPI Instruction 0x01",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "Status Register",          clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"02", msg => "Configuration Register",   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      wait for 10 us;
+      log(ID_LOG_HDR, "WRDI Disable write", C_SCOPE);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"04", msg => "SPI Instruction 0x04",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      wait for 200 us;
+      log(ID_LOG_HDR, "Perform QOR (0x6B) - At address 0x000020 (24b)", C_SCOPE);
+
+      sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"6B", msg => "SPI Instruction 0x3B",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"30", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+  
+      sbi_write(addr_value => SPI_CMD      , data_value => x"00", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+  
+      sbi_write(addr_value => SPI_CMD      , data_value => x"5b", msg => "SPI RX 4 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"31", msg => "Read Byte @ 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"32", msg => "Read Byte @ 0x000031",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"33", msg => "Read Byte @ 0x000032",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_check(addr_value => SPI_DATA     , data_exp   => x"34", msg => "Read Byte @ 0x000033",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      end if;
+
 
     for i in 1 to 10 
     loop

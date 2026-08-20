@@ -368,7 +368,8 @@ begin
   process
     
     variable V_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
-    
+    variable rdata                : std_logic_vector(8-1 downto 0);
+
   begin
 
     -- BFM Configuration
@@ -434,6 +435,9 @@ begin
     if MODEL = "s25fl512s" 
     then
 
+      -----------------------------------------------------------------------------------
+      -- Read 1-1-2
+      -----------------------------------------------------------------------------------
       log(ID_LOG_HDR, "Perform DOR (0x3B) - At address 0x000020 (24b)", C_SCOPE);
 
       sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
@@ -450,24 +454,39 @@ begin
       sbi_check(addr_value => SPI_DATA     , data_exp   => x"23", msg => "Read Byte @ 0x000022",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_check(addr_value => SPI_DATA     , data_exp   => x"24", msg => "Read Byte @ 0x000023",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-      wait for 10 us;
+      -----------------------------------------------------------------------------------
+      -- Read 1-1-4
+      -----------------------------------------------------------------------------------
+
       log(ID_LOG_HDR, "WREN Enable write", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 1 Byte with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"06", msg => "SPI Instruction 0x06",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-      wait for 10 us;
       log(ID_LOG_HDR, "WRR Enable QUAD - CR Bit 1 = 1", C_SCOPE);
       sbi_write(addr_value => SPI_CMD      , data_value => x"62", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"01", msg => "SPI Instruction 0x01",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "Status Register",          clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"02", msg => "Configuration Register",   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-      wait for 10 us;
       log(ID_LOG_HDR, "WRDI Disable write", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 1 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"04", msg => "SPI Instruction 0x04",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-      wait for 200 us;
+      log(ID_LOG_HDR, "RDSR1 until WIP is 0", C_SCOPE);
+      sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Byte",            clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Instruction 0x05",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+
+      -- Poll SR1 until WIP (bit) is 0: loop while rdata /= x"00"
+      rdata := x"FF";
+      while rdata /= x"00" loop
+        -- small delay between polls
+        --wait for 1 us;
+        sbi_write(addr_value => SPI_CMD      , data_value => x"10", msg => "SPI RX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+        sbi_read (addr_value => SPI_DATA     , data_value => rdata, msg => "SR1 -> WIP",               clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      end loop;
+  
+      sbi_write(addr_value => SPI_CMD      , data_value => x"40", msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+      
       log(ID_LOG_HDR, "Perform QOR (0x6B) - At address 0x000020 (24b)", C_SCOPE);
 
       sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);

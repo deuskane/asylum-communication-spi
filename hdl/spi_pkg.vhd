@@ -5,6 +5,17 @@ library asylum;
 use     asylum.sbi_pkg.all;
 
 package spi_pkg is
+
+constant SPI_IO_MOSI      : natural := 0;
+constant SPI_IO_MISO      : natural := 1;
+constant SPI_IO_WP_B      : natural := 2;
+constant SPI_IO_HOLD_B    : natural := 3;
+
+constant SPI_SINGLE       : natural := 0;
+constant SPI_DUAL         : natural := 1;
+constant SPI_QUAD         : natural := 2;
+constant SPI_OCTAL        : natural := 3;
+
 -- [COMPONENT_INSERT][BEGIN]
 component sbi_SPI is
   generic(
@@ -14,6 +25,7 @@ component sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
+    HANDLE_HOLD_WP        : boolean := false;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -33,16 +45,22 @@ component sbi_SPI is
     sclk_oe_o        : out std_logic;
     cs_b_o           : out std_logic;
     cs_b_oe_o        : out std_logic;
-    mosi_o           : out std_logic;
-    mosi_oe_o        : out std_logic;
-    miso_i           : in  std_logic
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o             : out std_logic_vector(8-1 downto 0);
+    io_i             : in  std_logic_vector(8-1 downto 0);
+    io_oe_o          : out std_logic_vector(8-1 downto 0)
     );
 
 end component sbi_SPI;
 
 component spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8
+    PRESCALER_WIDTH      : integer := 8;
+    HANDLE_HOLD_WP       : boolean := false
     );
   port (
     -- Clock & Reset
@@ -66,6 +84,7 @@ component spi_master is
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
+    cmd_size_i           : in  std_logic_vector; -- 0 : Single / 1 : dual / 2 : quad / 3 : octo
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;
@@ -78,9 +97,15 @@ component spi_master is
     sclk_oe_o            : out std_logic;
     cs_b_o               : out std_logic;
     cs_b_oe_o            : out std_logic;
-    mosi_o               : out std_logic;
-    mosi_oe_o            : out std_logic;
-    miso_i               : in  std_logic
+
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o                 : out std_logic_vector(8-1 downto 0);
+    io_i                 : in  std_logic_vector(8-1 downto 0);
+    io_oe_o              : out std_logic_vector(8-1 downto 0)
     );
 end component spi_master;
 

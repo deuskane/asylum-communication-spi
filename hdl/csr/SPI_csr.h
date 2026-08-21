@@ -28,28 +28,40 @@
 #define SPI_CMD 0x1
 
 // Field       : cmd.nb_bytes
-// Description : Transfert Length in bytes
-// Range       : [4:0]
+// Description : Transfert Length in bytes (N+1)
+// Range       : [1:0]
 #define SPI_CMD_NB_BYTES      0
-#define SPI_CMD_NB_BYTES_MASK 31
+#define SPI_CMD_NB_BYTES_MASK 3
 
-// Field       : cmd.last
-// Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
-// Range       : [5]
-#define SPI_CMD_LAST      5
-#define SPI_CMD_LAST_MASK 1
+// Field       : cmd.size
+// Description : Transfert Size : 1/2/4/Reserved
+// Range       : [3:2]
+#define SPI_CMD_SIZE      2
+#define SPI_CMD_SIZE_MASK 3
 
 // Field       : cmd.enable_rx
 // Description : Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte
-// Range       : [6]
-#define SPI_CMD_ENABLE_RX      6
+// Range       : [4]
+#define SPI_CMD_ENABLE_RX      4
 #define SPI_CMD_ENABLE_RX_MASK 1
 
 // Field       : cmd.enable_tx
 // Description : POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert
-// Range       : [7]
-#define SPI_CMD_ENABLE_TX      7
+// Range       : [5]
+#define SPI_CMD_ENABLE_TX      5
 #define SPI_CMD_ENABLE_TX_MASK 1
+
+// Field       : cmd.last
+// Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
+// Range       : [6]
+#define SPI_CMD_LAST      6
+#define SPI_CMD_LAST_MASK 1
+
+// Field       : cmd.cfg
+// Description : Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_tx/enable_rx and size by nb_bytes[5:2]
+// Range       : [7]
+#define SPI_CMD_CFG      7
+#define SPI_CMD_CFG_MASK 1
 
 //==================================
 // Register    : cfg

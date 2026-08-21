@@ -22,9 +22,10 @@ CAPI=2:
 # 2026-01-17  1.2.3    mrosiere Move loopback from sbi_SPI to spi_master
 # 2026-06-06  1.2.4    mrosiere Add Name
 # 2026-08-02  1.2.5    mrosiere Testbench : use UVVM sbi, dut is sbi_spi instead spi_master
+# 2026-08-17  2.0.0    mrosiere Add multiple data
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:1.2.5
+name        : asylum:communication:SPI:2.0.0
 description : SPI Module
 
 #=========================================
@@ -74,8 +75,8 @@ filesets:
       - sim/basic/tb_SPI_pkg.vhd
       - sim/models/tb_SPI.vhd
       - sim/models/mem/memory_1KB.mem    : {file_type : user, copyto : memory.mem   }
-      - sim/models/mem/memoryOTP.mem      : {file_type : user, copyto : memoryOTP.mem}
-      - sim/models/mem/none               : {file_type : user, copyto : none         }
+      - sim/models/mem/memoryOTP.mem     : {file_type : user, copyto : memoryOTP.mem}
+      - sim/models/mem/none              : {file_type : user, copyto : none         }
 #    logical_name : work
     file_type    : vhdlSource-2008
     depend       :

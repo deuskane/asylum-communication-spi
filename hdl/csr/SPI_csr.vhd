@@ -81,10 +81,12 @@ architecture rtl of SPI_registers is
     return std_logic_vector is
     variable tmp : std_logic_vector(8-1 downto 0);
   begin  -- function INIT_cmd
-    tmp(4 downto 0) := "00000"; -- nb_bytes
-    tmp(5 downto 5) := "0"; -- last
-    tmp(6 downto 6) := "0"; -- enable_rx
-    tmp(7 downto 7) := "0"; -- enable_tx
+    tmp(1 downto 0) := "00"; -- nb_bytes
+    tmp(3 downto 2) := "00"; -- size
+    tmp(4 downto 4) := "0"; -- enable_rx
+    tmp(5 downto 5) := "0"; -- enable_tx
+    tmp(6 downto 6) := "0"; -- last
+    tmp(7 downto 7) := "0"; -- cfg
     return tmp;
   end function INIT_cmd;
 
@@ -261,14 +263,14 @@ begin  -- architecture rtl
   --==================================
   --==================================
   -- Field       : nb_bytes
-  -- Description : Transfert Length in bytes
-  -- Width       : 5
+  -- Description : Transfert Length in bytes (N+1)
+  -- Width       : 2
   --==================================
 
   --==================================
-  -- Field       : last
-  -- Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
-  -- Width       : 1
+  -- Field       : size
+  -- Description : Transfert Size : 1/2/4/Reserved
+  -- Width       : 2
   --==================================
 
   --==================================
@@ -283,6 +285,18 @@ begin  -- architecture rtl
   -- Width       : 1
   --==================================
 
+  --==================================
+  -- Field       : last
+  -- Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : cfg
+  -- Description : Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_tx/enable_rx and size by nb_bytes[5:2]
+  -- Width       : 1
+  --==================================
+
 
     cmd_rcs     <= '0';
     cmd_re      <= '0';
@@ -291,14 +305,18 @@ begin  -- architecture rtl
     cmd_wcs     <= '1' when       (sig_waddr = SPI_CMD)   else '0';
     cmd_we      <= sig_wcs and sig_we and cmd_wcs;
     cmd_wdata   <= sig_wdata;
-    cmd_wdata_sw(4 downto 0) <= cmd_wdata(4 downto 0); -- nb_bytes
-    cmd_wdata_sw(5 downto 5) <= cmd_wdata(5 downto 5); -- last
-    cmd_wdata_sw(6 downto 6) <= cmd_wdata(6 downto 6); -- enable_rx
-    cmd_wdata_sw(7 downto 7) <= cmd_wdata(7 downto 7); -- enable_tx
-    sw2hw_o.cmd.nb_bytes <= cmd_rdata_hw(4 downto 0); -- nb_bytes
-    sw2hw_o.cmd.last <= cmd_rdata_hw(5 downto 5); -- last
-    sw2hw_o.cmd.enable_rx <= cmd_rdata_hw(6 downto 6); -- enable_rx
-    sw2hw_o.cmd.enable_tx <= cmd_rdata_hw(7 downto 7); -- enable_tx
+    cmd_wdata_sw(1 downto 0) <= cmd_wdata(1 downto 0); -- nb_bytes
+    cmd_wdata_sw(3 downto 2) <= cmd_wdata(3 downto 2); -- size
+    cmd_wdata_sw(4 downto 4) <= cmd_wdata(4 downto 4); -- enable_rx
+    cmd_wdata_sw(5 downto 5) <= cmd_wdata(5 downto 5); -- enable_tx
+    cmd_wdata_sw(6 downto 6) <= cmd_wdata(6 downto 6); -- last
+    cmd_wdata_sw(7 downto 7) <= cmd_wdata(7 downto 7); -- cfg
+    sw2hw_o.cmd.nb_bytes <= cmd_rdata_hw(1 downto 0); -- nb_bytes
+    sw2hw_o.cmd.size <= cmd_rdata_hw(3 downto 2); -- size
+    sw2hw_o.cmd.enable_rx <= cmd_rdata_hw(4 downto 4); -- enable_rx
+    sw2hw_o.cmd.enable_tx <= cmd_rdata_hw(5 downto 5); -- enable_tx
+    sw2hw_o.cmd.last <= cmd_rdata_hw(6 downto 6); -- last
+    sw2hw_o.cmd.cfg <= cmd_rdata_hw(7 downto 7); -- cfg
 
     ins_cmd : csr_fifo
       generic map
@@ -337,10 +355,12 @@ begin  -- architecture rtl
     cmd_rdata   <= (others => '0');
     cmd_wcs      <= '0';
     cmd_wbusy    <= '0';
-    sw2hw_o.cmd.nb_bytes <= "00000";
-    sw2hw_o.cmd.last <= "0";
+    sw2hw_o.cmd.nb_bytes <= "00";
+    sw2hw_o.cmd.size <= "00";
     sw2hw_o.cmd.enable_rx <= "0";
     sw2hw_o.cmd.enable_tx <= "0";
+    sw2hw_o.cmd.last <= "0";
+    sw2hw_o.cmd.cfg <= "0";
     sw2hw_o.cmd.valid <= '0';
   end generate gen_cmd_b;
 

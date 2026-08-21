@@ -77,11 +77,14 @@ begin
       ,cmd_enable_tx_i      => dut_ifi.cmd_enable_tx_i
       ,cmd_enable_rx_i      => dut_ifi.cmd_enable_rx_i
       ,cmd_nb_bytes_i       => dut_ifi.cmd_nb_bytes_i
+      ,cmd_size_i           => dut_ifi.cmd_size_i
       ,sclk_o               => dut_ifo.sclk_o     
       ,cs_b_o               => dut_ifo.cs_b_o     
-      ,mosi_o               => dut_ifo.mosi_o     
-      ,miso_i               => dut_ifo.mosi_o
-      );
+      ,io_o                 => dut_ifo.io_o
+      ,io_i                 => dut_ifi.io_i
+      ,io_oe_o              => dut_ifo.io_oe_o
+    );
+
 
   ------------------------------------------------
   -- Clock process

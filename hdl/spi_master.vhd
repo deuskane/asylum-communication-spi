@@ -25,10 +25,12 @@ use     IEEE.STD_LOGIC_1164.ALL;
 use     IEEE.numeric_std.ALL;
 library asylum;
 use     asylum.math_pkg.all;
+use     asylum.spi_pkg.all;
  
 entity spi_master is
   generic (
-    PRESCALER_WIDTH      : integer := 8
+    PRESCALER_WIDTH      : integer := 8;
+    HANDLE_HOLD_WP       : boolean := false
     );
   port (
     -- Clock & Reset
@@ -52,6 +54,7 @@ entity spi_master is
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;
+    cmd_size_i           : in  std_logic_vector; -- 0 : Single / 1 : dual / 2 : quad / 3 : octo
 
     -- Configuration
     cfg_cpol_i           : in  std_logic;
@@ -64,9 +67,15 @@ entity spi_master is
     sclk_oe_o            : out std_logic;
     cs_b_o               : out std_logic;
     cs_b_oe_o            : out std_logic;
-    mosi_o               : out std_logic;
-    mosi_oe_o            : out std_logic;
-    miso_i               : in  std_logic
+
+    --                     Input/Ouput
+    --                     0 - MOSI
+    --                     1 - MISO
+    --                     2 - Write Protect (active low)
+    --                     3 - Hold (active low)
+    io_o                 : out std_logic_vector(8-1 downto 0);
+    io_i                 : in  std_logic_vector(8-1 downto 0);
+    io_oe_o              : out std_logic_vector(8-1 downto 0)
     );
 end entity spi_master;
  
@@ -82,12 +91,11 @@ architecture rtl of spi_master is
     signal state_is_DONE      : std_logic;
 
     signal miso               : std_logic;
-    signal mosi               : std_logic;
     
     signal sclk_r             : std_logic;
     signal sclk_oe_r          : std_logic;
-    signal mosi_r             : std_logic;
-    signal mosi_oe_r          : std_logic;
+    signal io_o_r             : std_logic_vector(8-1 downto 0);
+    signal io_oe_r            : std_logic_vector(8-1 downto 0);
     signal cs_b_r             : std_logic;
     signal cs_b_oe_r          : std_logic;
     signal prescaler_cnt_r    : unsigned (PRESCALER_WIDTH-1 downto 0);
@@ -95,8 +103,11 @@ architecture rtl of spi_master is
     signal bit_sample         : std_logic;
     signal bit_shift          : std_logic;
     signal cnt_bit_r          : unsigned (3 downto 0);
+    signal cnt_bit_r_next     : unsigned (3 downto 0);
     signal cnt_byte_r         : unsigned (cmd_nb_bytes_i'range);
-    signal data_r             : std_logic_vector(8-1 downto 0);
+    
+    signal data_tx_r          : std_logic_vector(8-1 downto 0);
+    signal data_rx_r          : std_logic_vector(8-1 downto 0);
     signal tx_tready_r        : std_logic;
     signal rx_tdata_r         : std_logic_vector(8-1 downto 0);
     signal rx_tvalid_r        : std_logic;
@@ -105,10 +116,12 @@ architecture rtl of spi_master is
     signal cmd_enable_rx_r    : std_logic;
     signal cmd_enable_tx_r    : std_logic;
     signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
+    signal cmd_size_r         : unsigned (cmd_size_i'range);
+    signal cnt_bit_off        : unsigned (3 downto 0);
 
     signal cycle_phase_r      : std_logic;
-    signal cycle_phase0_r     : std_logic;
-    signal cycle_phase1_r     : std_logic;
+    signal cycle_posedge_r    : std_logic;
+    signal cycle_negedge_r    : std_logic;
 begin
 
   -----------------------------------------------------------------------------
@@ -121,9 +134,9 @@ begin
   --                                      ________________
   -- cycle_phase_r          _____________/                \_____
   --                                     ___                
-  -- cycle_phase0_r        _____________/   \______________________
+  -- cycle_posedge_r       _____________/   \______________________
   --                                                     ___
-  -- cycle_phase1_r        _____________________________/   \______
+  -- cycle_negedge_r       _____________________________/   \______
                                           
   -- In this architecture, SAMPLE & SHIFT phase is fix.
   -- SCLK Depend of this signals
@@ -137,21 +150,21 @@ begin
       prescaler_cnt_r  <= (others => '0');
 
       cycle_phase_r    <= '0';
-      cycle_phase0_r   <= '0';
-      cycle_phase1_r   <= '0';
+      cycle_posedge_r  <= '0';
+      cycle_negedge_r  <= '0';
       
     elsif rising_edge(clk_i)
     then
-      cycle_phase0_r   <= '0';
-      cycle_phase1_r   <= '0';
+      cycle_posedge_r  <= '0';
+      cycle_negedge_r  <= '0';
 
       if prescaler_is_min = '1'
       then
         prescaler_cnt_r <= unsigned(cfg_prescaler_ratio_i);
         cycle_phase_r   <= not cycle_phase_r;
-        cycle_phase0_r  <= '1' when cycle_phase_r='0' else
+        cycle_posedge_r <= '1' when cycle_phase_r='0' else
                            '0';
-        cycle_phase1_r  <= '1' when cycle_phase_r='1' else
+        cycle_negedge_r <= '1' when cycle_phase_r='1' else
                            '0';
       else
         prescaler_cnt_r <= prescaler_cnt_r - 1;
@@ -162,8 +175,8 @@ begin
   prescaler_is_min <= '1' when unsigned(prescaler_cnt_r) = 0 else
                       '0';
                                           
-  bit_sample       <= cycle_phase0_r;
-  bit_shift        <= cycle_phase1_r;
+  bit_sample       <= cycle_posedge_r;
+  bit_shift        <= cycle_negedge_r;
   
   -----------------------------------------------------------------------------
   -- FSM
@@ -177,15 +190,25 @@ begin
       cs_b_oe_r   <= '0'; -- Inactive pad
       sclk_r      <= '0';
       sclk_oe_r   <= '0'; -- Inactive pad
-      mosi_r      <= '0';
-      mosi_oe_r   <= '0'; -- Inactive pad
+      io_o_r      <= (others => '0');
+      io_oe_r     <= (others => '0');
       tx_tready_r <= '0'; -- Never Ready during reset
       rx_tvalid_r <= '0'; -- Never Valid during reset (compliance with AXI-STREAM Protocol Specification)
       cmd_tready_r<= '0'; -- Never Ready during reset
       cnt_bit_r   <= (others => '0');
       cnt_byte_r  <= (others => '0');
+      data_tx_r   <= (others => '0');
+      data_rx_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
       
+      if HANDLE_HOLD_WP = true 
+      then
+        io_oe_r(SPI_IO_HOLD_B) <= '1';
+        io_oe_r(SPI_IO_WP_B  ) <= '1';
+        io_o_r (SPI_IO_HOLD_B) <= '0';
+        io_o_r (SPI_IO_WP_B  ) <= '0';
+      end if;
+
     elsif rising_edge(clk_i)
     then
       cs_b_oe_r   <= '1'; -- Active pad
@@ -217,6 +240,7 @@ begin
             cmd_enable_rx_r     <= cmd_enable_rx_i    ;
             cmd_enable_tx_r     <= cmd_enable_tx_i    ;
             cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
+            cmd_size_r          <= unsigned(cmd_size_i);
 
             if (cmd_tlast_i     = '1' and
                 cmd_enable_rx_i = '0' and
@@ -244,31 +268,56 @@ begin
             cnt_bit_r <= (others => '0');
 
             -- Need TX ? Active MOSI oe pad
+            io_o_r      <= (others => '0');
+            io_oe_r     <= (others => '0');
+
             if cmd_enable_tx_r = '1'
             then
-              -- Need TX
-              --  * Active PAD
-              --  * Wait Data
-              
-              mosi_oe_r <= '1'; -- Active pad
-              
+              -- Need TX.
+              -- For single SPI the scalar MOSI output is kept for compatibility,
+              -- while the multi-lane IO bus is used for dual/quad/octo modes.
+              io_oe_r <= (others => '0');
+    
+              if cmd_enable_tx_r = '1' then
+                case to_integer(cmd_size_r) is
+                  when SPI_DUAL  =>
+                    io_oe_r(1 downto 0) <= (others => '1');
+                  when SPI_QUAD  =>
+                    io_oe_r(3 downto 0) <= (others => '1');
+                  when SPI_OCTAL =>
+                    io_oe_r(7 downto 0) <= (others => '1');
+                  when others    => -- SPI_SINGLE
+                    io_oe_r(0)          <= '1';
+                end case;
+              end if;
+
               -- Wait TX Data
               if tx_tvalid_i = '1'
               then
                 state_r   <= TRANSFER;
                 
                 -- Ack the axistream transfert
-                tx_tready_r <= '1';              
-                -- Save the Data
-                data_r      <= tx_tdata_i;
+                tx_tready_r <= '1';
+                -- Save the data to be shifted out.
+                data_tx_r   <= tx_tdata_i;
+                data_rx_r   <= (others => '0');
               end if;
             else
               -- Don't Need TX
               --  * Disable PAD
-              
-              mosi_oe_r <= '0'; -- Inactive pad
+              io_oe_r   <= (others => '0');
               state_r   <= TRANSFER;
             end if;
+
+            -- Manage HOLD/WP pins when requested by generic
+            if HANDLE_HOLD_WP = true and to_integer(cmd_size_r) <= SPI_DUAL
+            then
+              io_oe_r(SPI_IO_HOLD_B) <= '1';
+              io_oe_r(SPI_IO_WP_B  ) <= '1';
+              io_o_r (SPI_IO_HOLD_B) <= '1';
+              io_o_r (SPI_IO_WP_B  ) <= '1';
+            end if;
+
           end if;
 
         -----------------------------------------------------------------------
@@ -280,22 +329,38 @@ begin
           -- Bit Shift Phase
           if (bit_shift = '1')
           then
-            -- MSB First
-            mosi_r    <= data_r(7);
-
-            -- Special Case :
-            -- If CPHA = 0, then sample into the first clock edge
-            -- So shift the clock
+  
+            -- Shift the transmit register after driving the current bit.
+            if cmd_enable_tx_r = '1' 
+            then
+                case to_integer(cmd_size_r) is
+                when SPI_DUAL  =>
+                  io_o_r (1 downto 0) <= data_tx_r(7 downto 6);
+                  data_tx_r           <= data_tx_r(5 downto 0) & "00";
+                when SPI_QUAD  =>
+                  io_o_r (3 downto 0) <= data_tx_r(7 downto 4);
+                  data_tx_r           <= data_tx_r(3 downto 0) & X"0";
+                when SPI_OCTAL =>
+                  io_o_r (7 downto 0) <= data_tx_r;
+                  data_tx_r           <= data_tx_r;
+                when others    => -- SPI_SINGLE
+                  io_o_r (0)          <= data_tx_r(7);
+                  data_tx_r           <= data_tx_r(6 downto 0) & '0' ;
+               end case;
+            end if;
+            -- Special case:
+            -- If CPHA = 0, the first sample occurs on the first clock edge, so the
+            -- clock must still be toggled before the transfer can continue.
             if not (cfg_cpha_i = '0' and cnt_bit_r = 0)
             then
-              sclk_r    <= not sclk_r;
+              sclk_r <= not sclk_r;
             end if;
 
-            -- If CPHA = 0, then the clock is shifted, then missing one edge
+            -- If CPHA = 0, the clock is shifted and one edge is skipped.
             if ((cfg_cpha_i = '0') and (cnt_bit_r = 8))
             then
-              sclk_r    <= not sclk_r;
-              state_r   <= POSTAMBLE;
+              sclk_r  <= not sclk_r;
+              state_r <= POSTAMBLE;
             end if;
             
           end if;
@@ -304,10 +369,15 @@ begin
           if (bit_sample = '1')
           then
             sclk_r    <= not sclk_r;
-            data_r    <= data_r(6 downto 0) & miso;
-            cnt_bit_r <= cnt_bit_r + 1;
 
-            if ((cfg_cpha_i = '1') and (cnt_bit_r = 7))
+            -- Data RX depends of the size
+            data_rx_r <= data_rx_r(6 downto 0) & miso             when to_integer(cmd_size_r) = SPI_SINGLE else
+                         data_rx_r(5 downto 0) & io_i(1 downto 0) when to_integer(cmd_size_r) = SPI_DUAL   else
+                         data_rx_r(3 downto 0) & io_i(3 downto 0) when to_integer(cmd_size_r) = SPI_QUAD   else
+                                                 io_i(7 downto 0);
+            cnt_bit_r <= cnt_bit_r_next;
+
+            if ((cfg_cpha_i = '1') and (cnt_bit_r_next = 8))
             then
               state_r   <= POSTAMBLE;
             end if;
@@ -327,7 +397,7 @@ begin
             if (cmd_enable_rx_r = '1')
             then
               rx_tvalid_r <= '1'; -- Valid
-              rx_tdata_r  <= data_r;
+              rx_tdata_r  <= data_rx_r;
             end if;
 
             -- Last BYTE ?
@@ -358,15 +428,33 @@ begin
         when DONE =>
           if (bit_sample = '1')
           then
+            -- End of transaction
             cs_b_r      <= '1';
-            mosi_oe_r   <= '0';
+            io_oe_r     <= (others => '0');
+            io_o_r      <= (others => '0');
             state_r     <= IDLE;
+
+            if HANDLE_HOLD_WP = true 
+            then
+              io_oe_r(SPI_IO_HOLD_B) <= '1';
+              io_oe_r(SPI_IO_WP_B  ) <= '1';
+              io_o_r (SPI_IO_HOLD_B) <= '0';
+              io_o_r (SPI_IO_WP_B  ) <= '0';
+            end if;
+
           end if;
       end case;
 
     end if;
   end process;
 
+  -----------------------------------------------------------------------------
+  -- Bit Counter
+  -----------------------------------------------------------------------------
+  cnt_bit_off        <= shift_left(to_unsigned(1, 4), to_integer(cmd_size_r));
+  cnt_bit_r_next     <= cnt_bit_r + cnt_bit_off;
+
+  -----------------------------------------------------------------------------
   -----------------------------------------------------------------------------
   -- Debug State
   -----------------------------------------------------------------------------
@@ -379,22 +467,20 @@ begin
   -----------------------------------------------------------------------------
   -- Loopback
   -----------------------------------------------------------------------------
-  miso         <= mosi when cfg_loopback_i = '1' else
-                  miso_i;
-            
-  mosi         <= mosi_r;
+  miso <= io_o_r(0) when cfg_loopback_i = '1' else
+          io_i  (1);
 
   -----------------------------------------------------------------------------
   -- Output assignments
   -----------------------------------------------------------------------------
   sclk_o       <= sclk_r xor cfg_cpol_i; -- need cgate
-  mosi_o       <= mosi;
   cs_b_o       <= cs_b_r;
-               
+
   sclk_oe_o    <= sclk_oe_r;
-  mosi_oe_o    <= mosi_oe_r;
   cs_b_oe_o    <= cs_b_oe_r;
-               
+  io_o         <= io_o_r;
+  io_oe_o      <= io_oe_r;
+
   tx_tready_o  <= tx_tready_r;
   rx_tdata_o   <= rx_tdata_r ;
   rx_tvalid_o  <= rx_tvalid_r;

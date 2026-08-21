@@ -26,6 +26,7 @@ use     IEEE.numeric_std.ALL;
 library asylum;
 use     asylum.math_pkg.all;
 use     asylum.spi_pkg.all;
+use     asylum.spi_csr_pkg.all;
  
 entity spi_master is
   generic (
@@ -116,7 +117,7 @@ architecture rtl of spi_master is
     signal cmd_enable_rx_r    : std_logic;
     signal cmd_enable_tx_r    : std_logic;
     signal cmd_nb_bytes_r     : unsigned (cmd_nb_bytes_i'range);
-    signal cmd_size_r         : unsigned (cmd_size_i'range);
+    signal cmd_size_r         : std_logic_vector(cmd_size_i'range);
     signal cnt_bit_off        : unsigned (3 downto 0);
 
     signal cycle_phase_r      : std_logic;
@@ -240,7 +241,7 @@ begin
             cmd_enable_rx_r     <= cmd_enable_rx_i    ;
             cmd_enable_tx_r     <= cmd_enable_tx_i    ;
             cmd_nb_bytes_r      <= unsigned(cmd_nb_bytes_i);
-            cmd_size_r          <= unsigned(cmd_size_i);
+            cmd_size_r          <= cmd_size_i;
 
             if (cmd_tlast_i     = '1' and
                 cmd_enable_rx_i = '0' and
@@ -279,14 +280,14 @@ begin
               io_oe_r <= (others => '0');
     
               if cmd_enable_tx_r = '1' then
-                case to_integer(cmd_size_r) is
-                  when SPI_DUAL  =>
+                case cmd_size_r is
+                  when SPI_CMD_SIZE_DUAL  =>
                     io_oe_r(1 downto 0) <= (others => '1');
-                  when SPI_QUAD  =>
+                  when SPI_CMD_SIZE_QUAD  =>
                     io_oe_r(3 downto 0) <= (others => '1');
-                  when SPI_OCTAL =>
+                  when SPI_CMD_SIZE_OCTAL =>
                     io_oe_r(7 downto 0) <= (others => '1');
-                  when others    => -- SPI_SINGLE
+                  when others    => -- SPI_CMD_SIZE_SINGLE
                     io_oe_r(0)          <= '1';
                 end case;
               end if;
@@ -310,7 +311,7 @@ begin
             end if;
 
             -- Manage HOLD/WP pins when requested by generic
-            if HANDLE_HOLD_WP = true and to_integer(cmd_size_r) <= SPI_DUAL
+            if HANDLE_HOLD_WP = true and cmd_size_r <= SPI_CMD_SIZE_DUAL
             then
               io_oe_r(SPI_IO_HOLD_B) <= '1';
               io_oe_r(SPI_IO_WP_B  ) <= '1';
@@ -333,17 +334,17 @@ begin
             -- Shift the transmit register after driving the current bit.
             if cmd_enable_tx_r = '1' 
             then
-                case to_integer(cmd_size_r) is
-                when SPI_DUAL  =>
+                case cmd_size_r is
+                when SPI_CMD_SIZE_DUAL  =>
                   io_o_r (1 downto 0) <= data_tx_r(7 downto 6);
                   data_tx_r           <= data_tx_r(5 downto 0) & "00";
-                when SPI_QUAD  =>
+                when SPI_CMD_SIZE_QUAD  =>
                   io_o_r (3 downto 0) <= data_tx_r(7 downto 4);
                   data_tx_r           <= data_tx_r(3 downto 0) & X"0";
-                when SPI_OCTAL =>
+                when SPI_CMD_SIZE_OCTAL =>
                   io_o_r (7 downto 0) <= data_tx_r;
                   data_tx_r           <= data_tx_r;
-                when others    => -- SPI_SINGLE
+                when others    => -- SPI_CMD_SIZE_SINGLE
                   io_o_r (0)          <= data_tx_r(7);
                   data_tx_r           <= data_tx_r(6 downto 0) & '0' ;
                end case;
@@ -371,9 +372,9 @@ begin
             sclk_r    <= not sclk_r;
 
             -- Data RX depends of the size
-            data_rx_r <= data_rx_r(6 downto 0) & miso             when to_integer(cmd_size_r) = SPI_SINGLE else
-                         data_rx_r(5 downto 0) & io_i(1 downto 0) when to_integer(cmd_size_r) = SPI_DUAL   else
-                         data_rx_r(3 downto 0) & io_i(3 downto 0) when to_integer(cmd_size_r) = SPI_QUAD   else
+            data_rx_r <= data_rx_r(6 downto 0) & miso             when cmd_size_r = SPI_CMD_SIZE_SINGLE else
+                         data_rx_r(5 downto 0) & io_i(1 downto 0) when cmd_size_r = SPI_CMD_SIZE_DUAL   else
+                         data_rx_r(3 downto 0) & io_i(3 downto 0) when cmd_size_r = SPI_CMD_SIZE_QUAD   else
                                                  io_i(7 downto 0);
             cnt_bit_r <= cnt_bit_r_next;
 
@@ -451,7 +452,7 @@ begin
   -----------------------------------------------------------------------------
   -- Bit Counter
   -----------------------------------------------------------------------------
-  cnt_bit_off        <= shift_left(to_unsigned(1, 4), to_integer(cmd_size_r));
+  cnt_bit_off        <= shift_left(to_unsigned(1, 4), to_integer(unsigned(cmd_size_r)));
   cnt_bit_r_next     <= cnt_bit_r + cnt_bit_off;
 
   -----------------------------------------------------------------------------

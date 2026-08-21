@@ -269,7 +269,7 @@ begin  -- architecture rtl
 
   --==================================
   -- Field       : size
-  -- Description : Transfert Size : 1/2/4/Reserved
+  -- Description : Transfert Size : 1/2/4/8
   -- Width       : 2
   --==================================
 

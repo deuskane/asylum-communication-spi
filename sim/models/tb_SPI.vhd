@@ -368,6 +368,7 @@ begin
   process
     
     variable V_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
+    variable wdata                : std_logic_vector(8-1 downto 0);
     variable rdata                : std_logic_vector(8-1 downto 0);
 
   begin
@@ -394,19 +395,40 @@ begin
 
     log(ID_LOG_HDR, "Perform Single Read (0x03) - At address 0x000005 (24b)", C_SCOPE);
 
-    sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
+              or SPI_CMD_LAST_DISABLE_RAW
+              or SPI_CMD_ENABLE_TX_ENABLE_RAW
+              or SPI_CMD_ENABLE_RX_DISABLE_RAW
+              or SPI_CMD_SIZE_SINGLE_RAW
+              or x"03");
+
+    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_write(addr_value => SPI_DATA     , data_value => x"03", msg => "SPI Instruction 0x03",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-    sbi_write(addr_value => SPI_CMD      , data_value => x"13", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
+              or SPI_CMD_LAST_DISABLE_RAW
+              or SPI_CMD_ENABLE_TX_DISABLE_RAW
+              or SPI_CMD_ENABLE_RX_ENABLE_RAW
+              or SPI_CMD_SIZE_SINGLE_RAW
+              or x"03");
+
+    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"06", msg => "Read Byte @ 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"07", msg => "Read Byte @ 0x000006",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"08", msg => "Read Byte @ 0x000007",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
     sbi_check(addr_value => SPI_DATA     , data_exp   => x"09", msg => "Read Byte @ 0x000008",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-    sbi_write(addr_value => SPI_CMD      , data_value => x"40", msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
+              or SPI_CMD_LAST_ENABLE_RAW
+              or SPI_CMD_ENABLE_TX_DISABLE_RAW
+              or SPI_CMD_ENABLE_RX_DISABLE_RAW
+              or SPI_CMD_SIZE_SINGLE_RAW
+              or x"00");
+
+    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
     log(ID_LOG_HDR, "Configuration of the Prescaler (Divide by 2)", C_SCOPE);
     sbi_write(addr_value => SPI_PRESCALER, data_value => x"00", msg => "Set prescaler",            clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);

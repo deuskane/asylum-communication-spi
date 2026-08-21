@@ -11,11 +11,6 @@ constant SPI_IO_MISO      : natural := 1;
 constant SPI_IO_WP_B      : natural := 2;
 constant SPI_IO_HOLD_B    : natural := 3;
 
-constant SPI_SINGLE       : natural := 0;
-constant SPI_DUAL         : natural := 1;
-constant SPI_QUAD         : natural := 2;
-constant SPI_OCTAL        : natural := 3;
-
 -- [COMPONENT_INSERT][BEGIN]
 component sbi_SPI is
   generic(

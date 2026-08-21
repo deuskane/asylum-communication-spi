@@ -21,7 +21,7 @@ Command FIFO
 Transfert Length in bytes (N+1)
 
 ### [3:2] size
-Transfert Size : 1/2/4/Reserved
+Transfert Size : 1/2/4/8
 
 ### [4:4] enable_rx
 Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte

@@ -79,7 +79,7 @@ package SPI_csr_pkg is
     nb_bytes : std_logic_vector(2-1 downto 0);
   --==================================
   -- Field       : size
-  -- Description : Transfert Size : 1/2/4/Reserved
+  -- Description : Transfert Size : 1/2/4/8
   -- Width       : 2
   --==================================
     size : std_logic_vector(2-1 downto 0);
@@ -114,6 +114,66 @@ package SPI_csr_pkg is
   type SPI_cmd_hw2sw_t is record
     ready : std_logic;
   end record SPI_cmd_hw2sw_t;
+
+-- Enum        : cmd.size.SINGLE
+-- Description : SPI SINGLE Legacy (MISO/MOSI) mode
+constant SPI_CMD_SIZE_SINGLE     : std_logic_vector(2-1 downto 0) := "00";
+constant SPI_CMD_SIZE_SINGLE_RAW : std_logic_vector(8-1 downto 0) := "00000000";
+
+-- Enum        : cmd.size.DUAL
+-- Description : SPI DUAL (2b) mode
+constant SPI_CMD_SIZE_DUAL     : std_logic_vector(2-1 downto 0) := "01";
+constant SPI_CMD_SIZE_DUAL_RAW : std_logic_vector(8-1 downto 0) := "00000100";
+
+-- Enum        : cmd.size.QUAD
+-- Description : SPI QUAD (4b) mode
+constant SPI_CMD_SIZE_QUAD     : std_logic_vector(2-1 downto 0) := "10";
+constant SPI_CMD_SIZE_QUAD_RAW : std_logic_vector(8-1 downto 0) := "00001000";
+
+-- Enum        : cmd.size.OCTAL
+-- Description : SPI OCTAL (8b) mode
+constant SPI_CMD_SIZE_OCTAL     : std_logic_vector(2-1 downto 0) := "11";
+constant SPI_CMD_SIZE_OCTAL_RAW : std_logic_vector(8-1 downto 0) := "00001100";
+
+-- Enum        : cmd.enable_rx.DISABLE
+-- Description : don't push in RX FIFO
+constant SPI_CMD_ENABLE_RX_DISABLE     : std_logic_vector(1-1 downto 0) := "0";
+constant SPI_CMD_ENABLE_RX_DISABLE_RAW : std_logic_vector(8-1 downto 0) := "00000000";
+
+-- Enum        : cmd.enable_rx.ENABLE
+-- Description : push in RX FIFO when receive byte
+constant SPI_CMD_ENABLE_RX_ENABLE     : std_logic_vector(1-1 downto 0) := "1";
+constant SPI_CMD_ENABLE_RX_ENABLE_RAW : std_logic_vector(8-1 downto 0) := "00010000";
+
+-- Enum        : cmd.enable_tx.DISABLE
+-- Description : don't pop TX FIFO and keep mosi_oe to 0
+constant SPI_CMD_ENABLE_TX_DISABLE     : std_logic_vector(1-1 downto 0) := "0";
+constant SPI_CMD_ENABLE_TX_DISABLE_RAW : std_logic_vector(8-1 downto 0) := "00000000";
+
+-- Enum        : cmd.enable_tx.ENABLE
+-- Description : pop TX FIFO and mosi_oe_o is 1 during the transfert
+constant SPI_CMD_ENABLE_TX_ENABLE     : std_logic_vector(1-1 downto 0) := "1";
+constant SPI_CMD_ENABLE_TX_ENABLE_RAW : std_logic_vector(8-1 downto 0) := "00100000";
+
+-- Enum        : cmd.last.DISABLE
+-- Description : not last cs keep active after transfer
+constant SPI_CMD_LAST_DISABLE     : std_logic_vector(1-1 downto 0) := "0";
+constant SPI_CMD_LAST_DISABLE_RAW : std_logic_vector(8-1 downto 0) := "00000000";
+
+-- Enum        : cmd.last.ENABLE
+-- Description : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
+constant SPI_CMD_LAST_ENABLE     : std_logic_vector(1-1 downto 0) := "1";
+constant SPI_CMD_LAST_ENABLE_RAW : std_logic_vector(8-1 downto 0) := "01000000";
+
+-- Enum        : cmd.cfg.CONFIG
+-- Description : configure enable_tx/enable_rx and size
+constant SPI_CMD_CFG_CONFIG     : std_logic_vector(1-1 downto 0) := "0";
+constant SPI_CMD_CFG_CONFIG_RAW : std_logic_vector(8-1 downto 0) := "00000000";
+
+-- Enum        : cmd.cfg.KEEP
+-- Description : replace enable_tx/enable_rx and size by nb_bytes[5:2]
+constant SPI_CMD_CFG_KEEP     : std_logic_vector(1-1 downto 0) := "1";
+constant SPI_CMD_CFG_KEEP_RAW : std_logic_vector(8-1 downto 0) := "10000000";
 
   --==================================
   -- Register    : cfg

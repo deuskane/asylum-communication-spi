@@ -34,10 +34,30 @@
 #define SPI_CMD_NB_BYTES_MASK 3
 
 // Field       : cmd.size
-// Description : Transfert Size : 1/2/4/Reserved
+// Description : Transfert Size : 1/2/4/8
 // Range       : [3:2]
 #define SPI_CMD_SIZE      2
 #define SPI_CMD_SIZE_MASK 3
+
+// Enum        : cmd.size.SINGLE
+// Description : SPI SINGLE Legacy (MISO/MOSI) mode
+#define SPI_CMD_SIZE_SINGLE     0
+#define SPI_CMD_SIZE_SINGLE_RAW (0<<2)
+
+// Enum        : cmd.size.DUAL
+// Description : SPI DUAL (2b) mode
+#define SPI_CMD_SIZE_DUAL     1
+#define SPI_CMD_SIZE_DUAL_RAW (1<<2)
+
+// Enum        : cmd.size.QUAD
+// Description : SPI QUAD (4b) mode
+#define SPI_CMD_SIZE_QUAD     2
+#define SPI_CMD_SIZE_QUAD_RAW (2<<2)
+
+// Enum        : cmd.size.OCTAL
+// Description : SPI OCTAL (8b) mode
+#define SPI_CMD_SIZE_OCTAL     3
+#define SPI_CMD_SIZE_OCTAL_RAW (3<<2)
 
 // Field       : cmd.enable_rx
 // Description : Push in RX FIFO - 0 : don't push in RX FIFO, 1 : push in RX FIFO when receive byte
@@ -45,11 +65,31 @@
 #define SPI_CMD_ENABLE_RX      4
 #define SPI_CMD_ENABLE_RX_MASK 1
 
+// Enum        : cmd.enable_rx.DISABLE
+// Description : don't push in RX FIFO
+#define SPI_CMD_ENABLE_RX_DISABLE     0
+#define SPI_CMD_ENABLE_RX_DISABLE_RAW (0<<4)
+
+// Enum        : cmd.enable_rx.ENABLE
+// Description : push in RX FIFO when receive byte
+#define SPI_CMD_ENABLE_RX_ENABLE     1
+#define SPI_CMD_ENABLE_RX_ENABLE_RAW (1<<4)
+
 // Field       : cmd.enable_tx
 // Description : POP from TX FIFO - 0 : don't pop TX FIFO and keep mosi_oe to 0, 1 pop TX FIFO and mosi_oe_o is 1 during the transfert
 // Range       : [5]
 #define SPI_CMD_ENABLE_TX      5
 #define SPI_CMD_ENABLE_TX_MASK 1
+
+// Enum        : cmd.enable_tx.DISABLE
+// Description : don't pop TX FIFO and keep mosi_oe to 0
+#define SPI_CMD_ENABLE_TX_DISABLE     0
+#define SPI_CMD_ENABLE_TX_DISABLE_RAW (0<<5)
+
+// Enum        : cmd.enable_tx.ENABLE
+// Description : pop TX FIFO and mosi_oe_o is 1 during the transfert
+#define SPI_CMD_ENABLE_TX_ENABLE     1
+#define SPI_CMD_ENABLE_TX_ENABLE_RAW (1<<5)
 
 // Field       : cmd.last
 // Description : Last Transfert - 0 : not last cs keep active after transfer, 1 : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
@@ -57,11 +97,31 @@
 #define SPI_CMD_LAST      6
 #define SPI_CMD_LAST_MASK 1
 
+// Enum        : cmd.last.DISABLE
+// Description : not last cs keep active after transfer
+#define SPI_CMD_LAST_DISABLE     0
+#define SPI_CMD_LAST_DISABLE_RAW (0<<6)
+
+// Enum        : cmd.last.ENABLE
+// Description : last packet to transfer cs go inactive after transfer. SPECIAL CASE if last = enable_rx = enable_tx = 0 then stop the transfert
+#define SPI_CMD_LAST_ENABLE     1
+#define SPI_CMD_LAST_ENABLE_RAW (1<<6)
+
 // Field       : cmd.cfg
 // Description : Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_tx/enable_rx and size by nb_bytes[5:2]
 // Range       : [7]
 #define SPI_CMD_CFG      7
 #define SPI_CMD_CFG_MASK 1
+
+// Enum        : cmd.cfg.CONFIG
+// Description : configure enable_tx/enable_rx and size
+#define SPI_CMD_CFG_CONFIG     0
+#define SPI_CMD_CFG_CONFIG_RAW (0<<7)
+
+// Enum        : cmd.cfg.KEEP
+// Description : replace enable_tx/enable_rx and size by nb_bytes[5:2]
+#define SPI_CMD_CFG_KEEP     1
+#define SPI_CMD_CFG_KEEP_RAW (1<<7)
 
 //==================================
 // Register    : cfg

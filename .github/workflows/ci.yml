@@ -9,6 +9,6 @@ on:
 jobs:
   nonreg:
     # Call the workflow from CI repo
-    uses: deuskane/asylum-ci/github-ci/vhdl-ci.yml@main
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       target_name: "nonreg"

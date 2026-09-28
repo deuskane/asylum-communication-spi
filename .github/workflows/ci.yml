@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  nonreg:
+    # Call the workflow from CI repo
+    uses: deuskane/asylum-ci/github-ci/vhdl-ci.yml@main
+    with:
+      target_name: "nonreg"

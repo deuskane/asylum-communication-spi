@@ -46,6 +46,7 @@ FUSESOC_OPT     += --build-root $(PATH_BUILD)
 FUSESOC_OPT     += --no-export
 
 NONREG          ?= SIM
+STEP            ?= setup build run
 
 #=============================================================================
 # Rules
@@ -144,7 +145,7 @@ setup build run :
 #--------------------------------------------------------
 $(TARGETS_ALL) :
 #--------------------------------------------------------
-	@fusesoc run $(FUSESOC_OPT) --target $@ $(VLNV)
+	@fusesoc run $(FUSESOC_OPT) $(addprefix --,$(STEP)) --target $@ $(VLNV)
 
 .PHONY : $(TARGETS_ALL)
 

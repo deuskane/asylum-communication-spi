@@ -172,16 +172,12 @@ NONREG_UPPER = $(shell printf '%s' '$(1)' | tr '[:lower:]' '[:upper:]')
 
 define NONREG_GROUP_TEMPLATE
 nonreg_$(1) :
-	@for step in $(NONREG_STEPS); do \
-		+$(MAKE) --no-print-directory nonreg_$(1)_$$$${step}; \
-	done
+	+$(MAKE) --no-print-directory $(addprefix nonreg_$(1)_,$(NONREG_STEPS));
 endef
 
 define NONREG_STEP_TEMPLATE
 nonreg_$(1)_$(2) :
-	@for target in $$(TARGETS_$(call NONREG_UPPER,$(1))); do \
-		+$(MAKE) --no-print-directory "$$$${target}" STEP=$(2); \
-	done
+	+$(MAKE) --no-print-directory $$(TARGETS_$(call NONREG_UPPER,$(1))) STEP=$(2);
 endef
 
 $(foreach type,$(NONREG_TYPES),$(eval $(call NONREG_GROUP_TEMPLATE,$(type))))

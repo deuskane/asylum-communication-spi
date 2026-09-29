@@ -11,4 +11,4 @@ jobs:
     # Call the workflow from CI repo
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
-      target_name: "nonreg"
+      nonreg_type: sim

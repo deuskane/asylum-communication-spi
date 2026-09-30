@@ -1,3 +1,5 @@
+[![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+
 # SPI Communication Module
 
 ## Table of Contents

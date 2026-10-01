@@ -14,6 +14,7 @@
 # 2024-12-31  1.0      mrosiere	Created
 # 2025-01-22  1.1      mrosiere Delete impulse target
 # 2026-09-29  1.2      mrosiere Add all nonreg variant depends of type and step
+# 2026-10-01  1.3      mrosiere Add log directory and log file for each target
 #-----------------------------------------------------------------------------
 
 #=============================================================================
@@ -25,11 +26,15 @@ include mk/defs.mk
 
 # Fusesoc Options
 PATH_BUILD      ?= $(CURDIR)/build
+PATH_LOG        ?= $(CURDIR)/log
 
 FUSESOC_CACHE    = ~/.cache/fusesoc
 FUSESOC_OPT      = --cores-root .
 FUSESOC_RUN_OPT += --build-root $(PATH_BUILD)
 FUSESOC_RUN_OPT += --no-export
+ifeq ($(CI),yes)
+FUSESOC_RUN_OPT += --flag CI
+endif
 
 # IP parameters
 CORE_NAME       := $(shell grep ^name $(FILE_CORE) | head -n1 | tr -d ' ')
@@ -39,6 +44,9 @@ IP_LIBRARY       = $(shell echo $(CORE_NAME) | cut -d':' -f3)
 IP_NAME          = $(shell echo $(CORE_NAME) | cut -d':' -f4)
 IP_VERSION       = $(shell echo $(CORE_NAME) | cut -d':' -f5)
 VLNV             = $(IP_VENDOR):$(IP_LIBRARY):$(IP_NAME):$(IP_VERSION)
+
+space           := $(empty) $(empty)
+LOG_NAME         = $@-$(if $(strip $(STEP)),$(subst $(space),_,$(strip $(STEP))),$(empty)).log
 
 # Targets generations
 FILE_TARGETS     = mk/targets.txt
@@ -160,11 +168,16 @@ setup build run :
 .PHONY : setup build run
 
 #--------------------------------------------------------
-$(TARGETS_ALL) :
+$(TARGETS_ALL) : | $(PATH_LOG)
 #--------------------------------------------------------
-	@fusesoc $(FUSESOC_OPT) run $(FUSESOC_RUN_OPT) $(addprefix --,$(STEP)) --target $@ $(VLNV)
+	@set -o pipefail; fusesoc $(FUSESOC_OPT) run $(FUSESOC_RUN_OPT) $(addprefix --,$(STEP)) --target $@ $(VLNV) | tee $(PATH_LOG)/$(LOG_NAME)
 
 .PHONY : $(TARGETS_ALL)
+
+#--------------------------------------------------------
+$(PATH_LOG) :
+#--------------------------------------------------------
+	@mkdir -p $@
 
 #--------------------------------------------------------
 # Generate nonreg_<type> and nonreg_<type>_<stage> rules
@@ -212,5 +225,6 @@ clean :
 #--------------------------------------------------------
 	rm -fr $(FUSESOC_CACHE)/generator_cache
 	rm -fr $(PATH_BUILD)
+	rm -fr $(PATH_LOG)
 
 .PHONY : clean

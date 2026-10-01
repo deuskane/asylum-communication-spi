@@ -32,9 +32,14 @@ FUSESOC_CACHE    = ~/.cache/fusesoc
 FUSESOC_OPT      = --cores-root .
 FUSESOC_RUN_OPT += --build-root $(PATH_BUILD)
 FUSESOC_RUN_OPT += --no-export
-ifeq ($(CI),yes)
-FUSESOC_RUN_OPT += --flag CI
+
+ifneq ($(CI),yes)
+# If not CI, add option to generate waveform file for GHDL simulation
+GHDL_RUN_OPTION += --fst=dut.fst
 endif
+
+export GHDL_ANALYZE_OPTION
+export GHDL_RUN_OPTION
 
 # IP parameters
 CORE_NAME       := $(shell grep ^name $(FILE_CORE) | head -n1 | tr -d ' ')

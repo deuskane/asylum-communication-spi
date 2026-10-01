@@ -113,13 +113,14 @@ targets:
     tools :
       ghdl :
         analyze_options :
+          - "$(GHDL_ANALYZE_OPTION)"
           - "-frelaxed"
           - "--no-vital-checks"
           - "-Wno-shared"
           - "-Wno-hide"
           - "-Wno-pure"
         run_options     : 
-          - "!CI ? (--fst=dut.fst)"
+          - "$(GHDL_RUN_OPTION)"
           - "--ieee-asserts=disable"
 
   #---------------------------------------
@@ -134,9 +135,10 @@ targets:
     tools :
       ghdl :
         analyze_options :
+          - "$(GHDL_ANALYZE_OPTION)"
           - "-Wall"
         run_options     :
-          - "!CI ? (--fst=dut.fst)"
+          - "$(GHDL_RUN_OPTION)"
 
 
   #---------------------------------------

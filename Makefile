@@ -36,7 +36,7 @@ FUSESOC_RUN_OPT     += --no-export
 GHDL_ANALYZE_OPTION :=
 GHDL_RUN_OPTION     :=
 
-ifneq ($(CI),yes)
+ifneq ($(CI),true)
 # If not CI, add option to generate waveform file for GHDL simulation
 GHDL_RUN_OPTION     += --fst=dut.fst
 endif

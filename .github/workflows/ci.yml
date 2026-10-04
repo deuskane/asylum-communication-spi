@@ -7,51 +7,50 @@ on:
     branches: [ main, develop ]
 
 jobs:
-
-  #<GENERATE_BEGIN>
-  nonreg-sim_at25df161:
+#<GENERATE_BEGIN>
+  sim_at25df161:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_at25df161
 
-  nonreg-sim_basic:
+  sim_basic:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_basic
 
-  nonreg-sim_cy15b104qs:
+  sim_cy15b104qs:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_cy15b104qs
 
-  nonreg-sim_cy15v104qs:
+  sim_cy15v104qs:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_cy15v104qs
 
-  nonreg-sim_m25p40:
+  sim_m25p40:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_m25p40
 
-  nonreg-sim_m45pe80:
+  sim_m45pe80:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_m45pe80
 
-  nonreg-sim_s25fl064p:
+  sim_s25fl064p:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_s25fl064p
 
-  nonreg-sim_s25fl512s:
+  sim_s25fl512s:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_s25fl512s
 
-  nonreg-sim_s35hl256t:
+  sim_s35hl256t:
     uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
     with:
       name: sim_s35hl256t
 
-#<GENERATE_END>      
+#<GENERATE_END>

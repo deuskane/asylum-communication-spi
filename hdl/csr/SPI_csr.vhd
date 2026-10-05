@@ -377,7 +377,7 @@ begin  -- architecture rtl
   --==================================
   --==================================
   -- Field       : spi_enable
-  -- Description : 0 : Parity is even, 1 : Parity is odd
+  -- Description : 0 : SPI master is disabled (held in reset), 1 : SPI master is enabled
   -- Width       : 1
   --==================================
 

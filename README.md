@@ -1,484 +1,352 @@
+<!--
+  README GENERATION INSTRUCTIONS (for the next regeneration run)
+  ----------------------------------------------------------------
+  This README follows the common Asylum IP model. Regenerate it from the
+  sources, never from the previous README text alone.
+
+  Sources of truth (in priority order):
+    1. hdl/*.vhd            : entities, generics, ports, packages
+    2. hdl/csr/*.hjson      : register map (regtool); *_csr.md/.h are generated
+    3. <IP>.core            : VLNV (name), filesets, targets, depends, revisions
+    4. mk/targets.txt       : target list shown by `make help`; mk/defs.mk
+    5. sim/, syn/, esw/, boards/ : testbenches, constraints, software
+  Section order (keep it, same headings in every IP):
+    CI badge / Title + one-line description + VLNV / Table of Contents /
+    Introduction (Key Features) / Block Diagram / Top-Level (Parameters,
+    Ports, Instantiation Example) / HDL Modules / Register Map /
+    Verification / Synthesis / Design Notes (optional) /
+    Directory Structure / Dependencies
+  Rules:
+    - Language: English. Tables: Parameters = Name|Type|Default|Description,
+      Ports = Name|Direction|Type|Description (grouped by interface).
+    - Register Map: link to the generated hdl/csr/<X>_csr.md (plus the
+      .hjson source and _csr.h header); never copy register tables here.
+    - Top-Level = sbi_* wrapper if present, else the entity used by the
+      `default` target, else the main entity (libraries: list packages).
+    - Write "This IP has no software-visible registers." / "No dedicated
+      synthesis target ..." instead of removing a section.
+    - Keep still-accurate hand-written content (ISA tables, results,
+      images) in "Design Notes"; drop anything not backed by the sources.
+    - Block diagram: doc/<NAME>.drawio (NAME = 4th field of the VLNV),
+      top entity box with generics on top, inputs left, outputs right,
+      bus interfaces as bold arrows, internal blocks colour-coded
+      (CSR yellow, FIFO/memory green, core logic blue, external grey).
+      Update it whenever ports/generics/sub-blocks change.
+    - Do not edit generated files (hdl/csr/*_csr.*) or the CI badge URL.
+-->
 [![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 
-# SPI Communication Module
+# asylum-communication-spi
+
+**SPI master (single / dual / quad / octal) with CSR access over the SBI bus and TX / RX / command FIFOs.**
+
+VLNV: `asylum:communication:SPI:2.0.1`
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [HDL Modules](#hdl-modules)
-   - [spi_master](#spi_master)
-   - [sbi_SPI](#sbi_spi)
-   - [spi_pkg](#spi_pkg)
-3. [Register Map](#register-map)
-4. [Verification](#verification)
-
----
+2. [Block Diagram](#block-diagram)
+3. [Top-Level](#top-level)
+4. [HDL Modules](#hdl-modules)
+5. [Register Map](#register-map)
+6. [Verification](#verification)
+7. [Synthesis](#synthesis)
+8. [Design Notes](#design-notes)
+9. [Directory Structure](#directory-structure)
+10. [Dependencies](#dependencies)
 
 ## Introduction
 
-This repository contains a complete SPI (Serial Peripheral Interface) communication module for the Asylum project. The module provides a full-featured SPI master interface with configurable clock polarity and phase, programmable prescaler, and integrated FIFOs for transmit and receive data paths.
-
-The design is implemented in VHDL and follows a modular architecture:
-- **spi_master**: Low-level SPI protocol engine
-- **sbi_SPI**: Integration wrapper with register-based control and FIFO management
-- **spi_pkg**: Package containing component declarations
+This IP is the SPI controller of the Asylum project. Software drives it through a small CSR bank on the SBI bus: bytes to transmit are pushed in a TX FIFO, transfers are described by commands pushed in a command FIFO, and received bytes are read back from an RX FIFO. The protocol engine (`spi_master`) supports the four SPI modes (CPOL/CPHA), a programmable clock prescaler and multi-lane transfers (1, 2, 4 or 8 data lines) so it can talk to standard, dual, quad and octal SPI flash memories.
 
 ### Key Features
 
-- Configurable SPI Mode (CPOL, CPHA)
-- Programmable clock prescaler for flexible clock frequency control
-- Separate FIFOs for transmit (TX) and receive (RX) data streams
-- Command FIFO for controlling transfer parameters
-- AXI-Stream compatible data interfaces
-- Full-duplex SPI communication
-- Loopback mode support for testing
-- GHDL simulation support via FuseSoC
+- SPI master, modes 0 to 3 (CPOL / CPHA), MSB first
+- Single, dual, quad and octal data lanes, selected per command (`cmd.size`)
+- Programmable SCLK prescaler: `f_sclk = f_clk / (2 x (ratio + 1))`; software-writable when `USER_DEFINE_PRESCALER = true`
+- Command FIFO: byte count, RX/TX enable, chip-select hold (`last`), STOP special case, and a `KEEP` mode giving up to 64 bytes per command
+- Configurable FIFO depths (`DEPTH_CMD`, `DEPTH_TX`, `DEPTH_RX`, 0 = no FIFO)
+- Optional driving of the flash WP# / HOLD# lines (`HANDLE_HOLD_WP`)
+- Internal loopback (MOSI to MISO) for self-test
+- Output enables on every pad for tri-state / IO-buffer connection
+- Simulation-only dump of CMD / TX / RX FIFO traffic into text files
 
-### Project Structure
+## Block Diagram
 
+Diagram: [doc/SPI.drawio](doc/SPI.drawio) (open with diagrams.net or the VS Code Draw.io extension).
+
+- The SBI bus accesses `SPI_registers` (generated by regtool from [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson)).
+- The `data` register is a bidirectional `csr_fifo`: writes fill the TX FIFO, reads drain the RX FIFO. The `cmd` register is a write-only FIFO.
+- A small command decoder in `sbi_SPI` expands the `cmd` word (handling of `cmd.cfg = KEEP`) before it reaches `spi_master`.
+- `spi_master` consumes TX bytes and commands as AXI-Stream-like valid/ready channels, drives SCLK / CS# / IO lanes and pushes received bytes into the RX FIFO.
+- `cfg.spi_enable` is used as the reset of `spi_master`; `cfg.cpol`, `cfg.cpha`, `cfg.loopback` and `prescaler.ratio` configure it.
+
+## Top-Level
+
+Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), library `asylum`, component declared in `asylum.spi_pkg`.
+
+### Parameters
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `NAME` | string | `""` | Instance name, forwarded to the CSR block (`MODULE_NAME`, visible in `sbi_tgt_o.info`) |
+| `USER_DEFINE_PRESCALER` | boolean | *(none)* | `true`: the `prescaler` register exists and is software-writable; `false`: the ratio is fixed to `PRESCALER_RATIO` |
+| `PRESCALER_RATIO` | std_logic_vector(7 downto 0) | *(none)* | Reset / fixed value of the prescaler ratio |
+| `DEPTH_CMD` | natural | `0` | Depth of the command FIFO (0 = no FIFO) |
+| `DEPTH_TX` | natural | `0` | Depth of the TX FIFO (software to hardware, 0 = no FIFO) |
+| `DEPTH_RX` | natural | `0` | Depth of the RX FIFO (hardware to software, 0 = no FIFO) |
+| `HANDLE_HOLD_WP` | boolean | `false` | `true`: `io(2)` (WP#) and `io(3)` (HOLD#) are driven high during single/dual transfers and low in reset |
+| `FILENAME_CMD` | string | `"dump_spi_cmd.txt"` | Simulation only: dump file of accepted commands |
+| `FILENAME_TX` | string | `"dump_spi_tx.txt"` | Simulation only: dump file of transmitted bytes |
+| `FILENAME_RX` | string | `"dump_spi_rx.txt"` | Simulation only: dump file of received bytes |
+
+### Ports
+
+#### Clock & Reset
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `clk_i` | in | std_logic | System clock |
+| `arst_b_i` | in | std_logic | Asynchronous reset, active low |
+
+#### Bus (SBI)
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `sbi_ini_i` | in | sbi_ini_t | SBI request from the initiator (`cs`, `re`, `we`, `addr`, `wdata`) |
+| `sbi_tgt_o` | out | sbi_tgt_t | SBI response to the initiator (`ready`, `rdata`, `info`) |
+
+#### SPI
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `sclk_o` | out | std_logic | SPI clock |
+| `sclk_oe_o` | out | std_logic | SPI clock output enable |
+| `cs_b_o` | out | std_logic | Chip select, active low |
+| `cs_b_oe_o` | out | std_logic | Chip select output enable |
+| `io_o` | out | std_logic_vector(7 downto 0) | Data lanes output: 0 = MOSI, 1 = MISO, 2 = WP#, 3 = HOLD# in single mode; lanes 0..1 / 0..3 / 0..7 in dual / quad / octal mode |
+| `io_i` | in | std_logic_vector(7 downto 0) | Data lanes input (same mapping, MISO = `io_i(1)` in single mode) |
+| `io_oe_o` | out | std_logic_vector(7 downto 0) | Per-lane output enable |
+
+### Instantiation Example
+
+```vhdl
+library asylum;
+use     asylum.sbi_pkg.all;
+use     asylum.spi_pkg.all;
+
+  ins_spi : entity asylum.sbi_SPI
+    generic map
+    ( NAME                  => "SPI0"
+     ,USER_DEFINE_PRESCALER => true
+     ,PRESCALER_RATIO       => x"0F"
+     ,DEPTH_CMD             => 4
+     ,DEPTH_TX              => 4
+     ,DEPTH_RX              => 4
+     ,HANDLE_HOLD_WP        => true
+     ,FILENAME_CMD          => "dump_spi0_cmd.txt"
+     ,FILENAME_TX           => "dump_spi0_tx.txt"
+     ,FILENAME_RX           => "dump_spi0_rx.txt"
+    )
+    port map
+    ( clk_i     => clk
+     ,arst_b_i  => arst_b
+     ,sbi_ini_i => sbi_inis(SPI0_ID)  -- sbi_ini_t(addr(1 downto 0), wdata(7 downto 0))
+     ,sbi_tgt_o => sbi_tgts(SPI0_ID)  -- sbi_tgt_t(rdata(7 downto 0))
+     ,sclk_o    => spi_sclk
+     ,sclk_oe_o => spi_sclk_oe
+     ,cs_b_o    => spi_cs_b
+     ,cs_b_oe_o => spi_cs_b_oe
+     ,io_o      => spi_io_o
+     ,io_i      => spi_io_i
+     ,io_oe_o   => spi_io_oe
+    );
 ```
-hdl/                      # HDL source files
-├── spi_master.vhd       # SPI protocol engine
-├── sbi_SPI.vhd          # Register-based wrapper and integration layer
-├── spi_pkg.vhd          # Package with component declarations
-└── csr/                 # Control Status Register definitions
-    ├── SPI.hjson        # Register map in JSON format
-    ├── SPI_csr.md       # Register documentation (auto-generated)
-    ├── SPI_csr.vhd      # CSR implementation (auto-generated)
-    └── SPI_csr.h        # C header for register definitions (auto-generated)
 
-sim/                      # Simulation files
-├── basic/               # Basic testbenches
-│   ├── tb_SPI.vhd      # Main SPI testbench
-│   └── tb_SPI_pkg.vhd  # Testbench package
-├── models/              # Flash memory models and utilities
-│   ├── m25p40.vhd      # M25P40 Flash model
-│   ├── m45pe80.vhd     # M45PE80 Flash model
-│   ├── s25fl064p.vhd   # S25FL064P Flash model
-│   ├── s25fl512s.vhd   # S25FL512S Flash model
-│   ├── s35hl256t.vhd   # S35HL256T Flash model
-│   ├── memory.mem      # Memory initialization file
-│   └── memoryOTP.mem   # OTP memory initialization file
-└── utilities/           # Simulation utilities
-    ├── conversions.vhd  # Data conversion utilities
-    └── gen_utils.vhd    # General utility functions
-
-mk/                       # Build configuration
-├── defs.mk              # Build definitions
-└── targets.txt          # Build targets
-
-SPI.core                  # FuseSoC core file (main project)
-SPI_models.core           # FuseSoC core file (memory models)
-Makefile                  # Build and simulation automation
-```
-
----
+The CSR bank uses 2 address bits (`SPI_ADDR_WIDTH = 2`) and 8-bit data (`SPI_DATA_WIDTH = 8`), see `asylum.SPI_csr_pkg`.
 
 ## HDL Modules
 
+| File | Unit | Kind | Role |
+|------|------|------|------|
+| [hdl/spi_pkg.vhd](hdl/spi_pkg.vhd) | `spi_pkg` | package | Component declarations of `sbi_SPI` and `spi_master`, IO lane index constants (`SPI_IO_MOSI`, `SPI_IO_MISO`, `SPI_IO_WP_B`, `SPI_IO_HOLD_B`) |
+| [hdl/spi_master.vhd](hdl/spi_master.vhd) | `spi_master` | entity | SPI protocol engine (prescaler, FSM, shift registers) |
+| [hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd) | `sbi_SPI` | entity | Top-level: CSR + command decoder + `spi_master`, simulation dumps |
+| hdl/csr/SPI_csr.vhd | `SPI_registers` | entity | Generated CSR bank (regtool), FIFOs included |
+| hdl/csr/SPI_csr_pkg.vhd | `SPI_csr_pkg` | package | Generated types (`SPI_sw2hw_t`, `SPI_hw2sw_t`), addresses and field constants (`SPI_CMD_SIZE_*`) |
+
 ### spi_master
 
-**File**: `hdl/spi_master.vhd`
+#### Parameters
 
-The `spi_master` entity implements the low-level SPI protocol engine. It handles all timing and bit-level operations for SPI communication, including clock generation, data shifting, and chip select control.
-
-#### Generics
-
-| Generic | Type | Default | Description |
-|---------|------|---------|-------------|
-| `PRESCALER_WIDTH` | integer | 8 | Width of the prescaler ratio input |
-
-#### Ports - Clock & Reset
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `clk_i` | in | std_logic | System clock |
-| `arst_b_i` | in | std_logic | Asynchronous active-low reset |
-
-#### Ports - TX Data (AXI-Stream)
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `tx_tvalid_i` | in | std_logic | TX data valid flag |
-| `tx_tready_o` | out | std_logic | TX data ready flag (receiver can accept data) |
-| `tx_tdata_i` | in | std_logic_vector(7 downto 0) | TX data byte |
-
-#### Ports - RX Data (AXI-Stream)
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `rx_tvalid_o` | out | std_logic | RX data valid flag |
-| `rx_tready_i` | in | std_logic | RX data ready flag (receiver can accept data) |
-| `rx_tdata_o` | out | std_logic_vector(7 downto 0) | RX data byte |
-
-#### Ports - Command
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `cmd_tvalid_i` | in | std_logic | Command valid flag |
-| `cmd_tready_o` | out | std_logic | Command ready flag |
-| `cmd_tlast_i` | in | std_logic | Last command flag (0: keep CS active, 1: deassert CS after transfer) |
-| `cmd_enable_rx_i` | in | std_logic | Enable RX FIFO push (1: push received bytes to RX FIFO) |
-| `cmd_enable_tx_i` | in | std_logic | Enable TX FIFO pop (1: transmit from TX FIFO, MOSI driven) |
-| `cmd_nb_bytes_i` | in | std_logic_vector | Number of bytes to transfer |
-
-#### Ports - Configuration
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `cfg_cpol_i` | in | std_logic | SPI Clock Polarity (0: clock idles low, 1: clock idles high) |
-| `cfg_cpha_i` | in | std_logic | SPI Clock Phase (0: sample on leading edge, 1: sample on trailing edge) |
-| `cfg_prescaler_ratio_i` | in | std_logic_vector(PRESCALER_WIDTH-1 downto 0) | Prescaler ratio for clock division |
-
-#### Ports - SPI Interface
-
-| Port | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `sclk_o` | out | std_logic | SPI Clock output |
-| `sclk_oe_o` | out | std_logic | SPI Clock output enable |
-| `cs_b_o` | out | std_logic | Chip Select output (active low) |
-| `cs_b_oe_o` | out | std_logic | Chip Select output enable |
-| `mosi_o` | out | std_logic | Master Output Slave Input |
-| `mosi_oe_o` | out | std_logic | MOSI output enable |
-| `miso_i` | in | std_logic | Master Input Slave Output |
-
-#### Operation
-
-The `spi_master` operates as a finite state machine with the following states:
-- **IDLE**: Waiting for a new command
-- **START**: Preparing the transfer (asserting CS)
-- **TRANSFER**: Shifting bits in/out according to SPI timing
-- **POSTAMBLE**: Deasserting CS if command indicates last transfer
-- **DONE**: Signaling transfer completion
-
-The module uses an internal prescaler counter to generate the SPI clock from the system clock. The prescaler ratio is controlled by the `cfg_prescaler_ratio_i` input. The actual SPI clock frequency is:
-
-$$f_\text{sclk} = \frac{f_\text{clk}}{2 \times (\text{prescaler ratio} + 1)}$$
-
-#### SPI Modes
-
-| Mode | CPOL | CPHA | Description |
-|------|------|------|-------------|
-| 0 | 0 | 0 | Clock idles low, sample on leading edge |
-| 1 | 0 | 1 | Clock idles low, sample on trailing edge |
-| 2 | 1 | 0 | Clock idles high, sample on leading edge |
-| 3 | 1 | 1 | Clock idles high, sample on trailing edge |
-
----
-
-### sbi_SPI
-
-**File**: `hdl/sbi_SPI.vhd`
-
-The `sbi_SPI` entity provides the system-level integration of the SPI master. It includes:
-- Register-based control interface using the SBI (System Bus Interface)
-- FIFO management for TX, RX, and command channels
-- Optional activity logging to files (simulation-only feature)
-- Loopback mode for testing
-- Integration with the auto-generated register control module
-
-#### Generics
-
-| Generic | Type | Default | Description |
-|---------|------|---------|-------------|
-| `USER_DEFINE_PRESCALER` | boolean | - | Enable software prescaler control register |
-| `PRESCALER_RATIO` | std_logic_vector(7 downto 0) | - | Default prescaler ratio value |
-| `DEPTH_CMD` | natural | 0 | Command FIFO depth (0 = no FIFO) |
-| `DEPTH_TX` | natural | 0 | TX FIFO depth (0 = no FIFO) |
-| `DEPTH_RX` | natural | 0 | RX FIFO depth (0 = no FIFO) |
-| `FILENAME_CMD` | string | "dump_spi_cmd.txt" | File for logging command transactions (sim only) |
-| `FILENAME_TX` | string | "dump_spi_tx.txt" | File for logging TX transactions (sim only) |
-| `FILENAME_RX` | string | "dump_spi_rx.txt" | File for logging RX transactions (sim only) |
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `PRESCALER_WIDTH` | integer | `8` | Width of `cfg_prescaler_ratio_i` |
+| `HANDLE_HOLD_WP` | boolean | `false` | Drive WP# / HOLD# lanes (see top-level) |
 
 #### Ports
 
-| Port | Direction | Type | Description |
+| Name | Direction | Type | Description |
 |------|-----------|------|-------------|
 | `clk_i` | in | std_logic | System clock |
-| `arst_b_i` | in | std_logic | Asynchronous active-low reset |
-| `sbi_ini_i` | in | sbi_ini_t | SBI initiator interface (bus input) |
-| `sbi_tgt_o` | out | sbi_tgt_t | SBI target interface (bus output) |
-| `sclk_o` | out | std_logic | SPI Clock output |
-| `sclk_oe_o` | out | std_logic | SPI Clock output enable |
-| `cs_b_o` | out | std_logic | Chip Select output (active low) |
-| `cs_b_oe_o` | out | std_logic | Chip Select output enable |
-| `mosi_o` | out | std_logic | Master Output Slave Input |
-| `mosi_oe_o` | out | std_logic | MOSI output enable |
-| `miso_i` | in | std_logic | Master Input Slave Output |
-
-#### Operation
-
-The `sbi_SPI` acts as a bridge between the system bus and the `spi_master` core:
-
-1. **Register Access**: Software accesses SPI through memory-mapped registers at specified addresses
-2. **FIFO Management**: Configurable FIFOs provide buffering for commands, transmitted data, and received data
-3. **Data Path Mapping**: 
-   - TX data written to address 0x0 goes to the TX FIFO, which feeds the SPI master
-   - RX data received by the SPI master is written to the RX FIFO and read from address 0x0
-   - Commands written to address 0x1 control transfer parameters
-4. **Configuration**: Configuration register at address 0x2 controls SPI mode (CPOL, CPHA) and loopback mode
-5. **Prescaler Control**: Optional prescaler register at address 0x3 allows software to modify the clock prescaler
-
----
-
-### spi_pkg
-
-**File**: `hdl/spi_pkg.vhd`
-
-This VHDL package contains component declarations for the SPI module entities, allowing other modules to instantiate them.
-
-#### Contents
-
-- **spi_master component**: Declaration of the low-level SPI protocol engine
-- **sbi_SPI component**: Declaration of the system-level SPI integration wrapper
-
-This package should be used by any module needing to instantiate these components.
-
----
+| `arst_b_i` | in | std_logic | Asynchronous reset, active low (connected to `cfg.spi_enable` in `sbi_SPI`) |
+| `tx_tvalid_i` | in | std_logic | TX byte valid |
+| `tx_tready_o` | out | std_logic | TX byte accepted |
+| `tx_tdata_i` | in | std_logic_vector(7 downto 0) | TX byte |
+| `rx_tvalid_o` | out | std_logic | RX byte valid |
+| `rx_tready_i` | in | std_logic | RX byte accepted |
+| `rx_tdata_o` | out | std_logic_vector(7 downto 0) | RX byte |
+| `cmd_tvalid_i` | in | std_logic | Command valid |
+| `cmd_tready_o` | out | std_logic | Command accepted |
+| `cmd_tlast_i` | in | std_logic | 1: release CS# at the end of the command |
+| `cmd_enable_rx_i` | in | std_logic | 1: push received bytes to RX |
+| `cmd_enable_tx_i` | in | std_logic | 1: pop TX bytes and drive the data lanes |
+| `cmd_nb_bytes_i` | in | std_logic_vector (unconstrained) | Number of bytes minus one |
+| `cmd_size_i` | in | std_logic_vector (unconstrained, 2 bits used) | 0: single, 1: dual, 2: quad, 3: octal |
+| `cfg_cpol_i` | in | std_logic | Clock polarity |
+| `cfg_cpha_i` | in | std_logic | Clock phase |
+| `cfg_prescaler_ratio_i` | in | std_logic_vector(PRESCALER_WIDTH-1 downto 0) | Prescaler ratio |
+| `cfg_loopback_i` | in | std_logic | 1: MISO internally looped back from MOSI |
+| `sclk_o` | out | std_logic | SPI clock |
+| `sclk_oe_o` | out | std_logic | SPI clock output enable |
+| `cs_b_o` | out | std_logic | Chip select, active low |
+| `cs_b_oe_o` | out | std_logic | Chip select output enable |
+| `io_o` | out | std_logic_vector(7 downto 0) | Data lanes output |
+| `io_i` | in | std_logic_vector(7 downto 0) | Data lanes input |
+| `io_oe_o` | out | std_logic_vector(7 downto 0) | Data lanes output enable |
 
 ## Register Map
 
-The SPI module provides a memory-mapped register interface through the SBI (System Bus Interface). All registers are 8-bit wide.
+The register map is generated by regtool from [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson):
 
-**Register Map Address Space**:
-- Register Address Range: 0x0 to 0x3
-- Data Width: 8 bits
+- Register documentation: **[hdl/csr/SPI_csr.md](hdl/csr/SPI_csr.md)**
+- C header: [hdl/csr/SPI_csr.h](hdl/csr/SPI_csr.h)
 
-See [Register Details](hdl/csr/SPI_csr.md) for complete register documentation.
+Notes:
 
-### Quick Register Reference
-
-| Address | Register | Type | Access | Description |
-|---------|----------|------|--------|-------------|
-| 0x0 | `data` | FIFO | R/W | Data register: TX FIFO write / RX FIFO read |
-| 0x1 | `cmd` | FIFO | W/O | Command register: Control transfer parameters |
-| 0x2 | `cfg` | R/W | R/W | Configuration register: SPI mode, loopback control |
-| 0x3 | `prescaler` | R/W | R/W | Prescaler register: Clock frequency control (optional) |
-
-### Register 0x0: data
-
-**Type**: Dual-port FIFO (RW)
-
-**Description**: 
-- **Write**: Enqueues a byte in the TX FIFO to be transmitted
-- **Read**: Dequeues a byte from the RX FIFO after reception
-
-**Fields**:
-- `[7:0] value`: Data byte to transmit or receive
-
-**Blocking Behavior**: Configured with blocking read/write semantics (waits for FIFO availability)
-
-### Register 0x1: cmd
-
-**Type**: Write-only FIFO
-
-**Description**: Command FIFO that controls SPI transfer parameters. Each command specifies:
-- The number of bytes to transfer
-- Whether to push received data to RX FIFO
-- Whether to pop transmit data from TX FIFO
-- Whether this is the last transfer (CS handling)
-
-**Fields**:
-- `[4:0] nb_bytes`: Number of bytes to transfer (1-32)
-- `[5] last`: Last transfer flag
-  - 0 = Keep CS active after transfer (CS remains low)
-  - 1 = Deassert CS after transfer (CS goes high)
-  - **Special Case**: If `last = 0`, `enable_rx = 0`, and `enable_tx = 0`, the transfer is stopped
-- `[6] enable_rx`: Enable RX path
-  - 0 = Do not push received data to RX FIFO
-  - 1 = Push received bytes to RX FIFO
-- `[7] enable_tx`: Enable TX path
-  - 0 = Do not pop TX FIFO, MOSI output disabled (high-impedance)
-  - 1 = Pop bytes from TX FIFO and drive MOSI during transfer
-
-**Typical Usage Pattern**:
-1. Write data to `data` register (fills TX FIFO)
-2. Write command to `cmd` register to initiate transfer
-3. Read received data from `data` register (drains RX FIFO)
-
-### Register 0x2: cfg
-
-**Type**: Configuration Register (RW)
-
-**Description**: SPI configuration register controlling protocol parameters and operational modes.
-
-**Fields**:
-- `[0] spi_enable`: Not currently used (legacy field for parity configuration)
-- `[1] cpol`: Clock Polarity
-  - 0 = SCK idles low
-  - 1 = SCK idles high
-- `[2] cpha`: Clock Phase
-  - 0 = Sample MISO on leading edge of SCK
-  - 1 = Sample MISO on trailing edge of SCK
-- `[3] loopback`: Loopback mode
-  - 0 = MISO connected to external SPI slave
-  - 1 = MISO internally connected to MOSI (for testing)
-
-### Register 0x3: prescaler (Optional)
-
-**Type**: Read/Write Register
-
-**Conditional**: Only present if `USER_DEFINE_PRESCALER` generic is set to `true`
-
-**Description**: Prescaler ratio register that controls SPI clock frequency. The SCK frequency is calculated as:
-
-$$f_{SCK} = \frac{f_{CLK}}{2 \times (\text{prescaler ratio} + 1)}$$
-
-**Fields**:
-- `[7:0] ratio`: Prescaler ratio value (default: `PRESCALER_RATIO` generic)
-
-**Example**: If system clock is 100 MHz and prescaler is set to 4:
-
-$$f_\text{SCK} = \frac{100 \text{ MHz}}{2 \times (4 + 1)} = 10 \text{ MHz}$$
-
-### Detailed Register Documentation
-
-For complete field descriptions, bit patterns, and access notes, see: [hdl/csr/SPI_csr.md](hdl/csr/SPI_csr.md)
-
----
+- `data` and `cmd` are FIFO registers with blocking read / write; their depths are set by `DEPTH_TX`, `DEPTH_RX` and `DEPTH_CMD`.
+- The `prescaler` register only exists when `USER_DEFINE_PRESCALER = true`; its reset value is `PRESCALER_RATIO`.
+- `cfg.spi_enable` is the reset of `spi_master` (0: held in reset, pads disabled; 1: enabled). Change `cpol` / `cpha` with `spi_enable = 0` to avoid a spurious SCLK edge.
 
 ## Verification
 
-The SPI module includes comprehensive verification infrastructure using GHDL and FuseSoC for simulation.
+### Testbenches
 
-### Simulation Structure
+| File | DUT | Description |
+|------|-----|-------------|
+| [sim/basic/tb_SPI.vhd](sim/basic/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench with the SBI VIP and a SPI slave model written in the bench (samples MOSI / drives MISO or the data lanes according to CPOL/CPHA, checks the SCLK idle level on CS edges and that no partial byte is transferred), self-checking (281 visible checks). For the 4 SPI modes, each with a different prescaler (0, 1, 2, 5): single full duplex 1 and 4 bytes (MOSI bytes checked by the slave, MISO bytes checked in the RX FIFO, SCLK period `2*(ratio+1)` and half period `ratio+1` clock cycles), dual and quad TX only and RX only, two commands without `last` (CS kept low, SCLK idle) followed by a STOP command (CS released, 4 bytes in one transaction). Then: reset values (`cfg`, `prescaler = PRESCALER_RATIO`, pads disabled while `spi_enable = 0`), `KEEP` command (1 + 9 bytes with a 6-bit `nb_bytes`), internal loopback, no transfer while `spi_enable = 0` |
+| [sim/models/tb_SPI.vhd](sim/models/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench using the SBI VIP (`bitvis_vip_sbi`) against a SPI flash model selected by the `MODEL` generic: prescaler and CSR configuration, Read (0x03), Fast Read (0x0B); on `s25fl512s` also DOR (0x3B), DIOR (0xBB), quad enable, QOR (0x6B), QIOR (0xEB) and continuous QIOR |
 
-#### Basic Testbenches (`sim/basic/`)
+Flash models ([models/](models/), core `fmf:memory:flash_nor:1.0.0` from [SPI_models.core](SPI_models.core)): `at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s25fl512s`, `s35hl256t`. Memory init files are in [sim/models/mem/](sim/models/mem/).
 
-- **tb_SPI.vhd**: Main testbench for the `spi_master` entity
-  - Tests SPI protocol timing and bit-level operations
-  - Validates CPOL/CPHA mode selection
-  - Tests prescaler clock generation
-  - Tests command and data path handshaking
-  
-- **tb_SPI_pkg.vhd**: Testbench package containing utility procedures and functions for test stimulus generation
+### Targets
 
-#### Flash Memory Models (`sim/models/`)
+| Target | Toplevel | Description |
+|--------|----------|-------------|
+| `default` | `sbi_SPI` | HDL fileset + CSR generation (not a simulation) |
+| `default_sim` | `tb` | Base of the model simulations (`MODEL=m25p40`) |
+| `sim_basic` | `tb_SPI` | `sbi_SPI` with the SPI slave model of the bench (UVVM) |
+| `sim_at25df161` | `tb` | Model testbench, `MODEL=at25df161` |
+| `sim_cy15b104qs` | `tb` | Model testbench, `MODEL=cy15b104qs` |
+| `sim_cy15v104qs` | `tb` | Model testbench, `MODEL=cy15v104qs` |
+| `sim_m25p40` | `tb` | Model testbench, `MODEL=m25p40` |
+| `sim_m45pe80` | `tb` | Model testbench, `MODEL=m45pe80` |
+| `sim_s25fl064p` | `tb` | Model testbench, `MODEL=s25fl064p` |
+| `sim_s25fl512s` | `tb` | Model testbench, `MODEL=s25fl512s` (dual and quad commands) |
+| `sim_s35hl256t` | `tb` | Model testbench, `MODEL=s35hl256t` |
 
-The module includes simulation models for various commercial SPI Flash devices for realistic testing:
+### How to Run
 
-| Device | File | Description |
-|--------|------|-------------|
-| M25P40 | m25p40.vhd | 512 KB Flash memory model |
-| M45PE80 | m45pe80.vhd | 1 MB Flash memory model with OTP |
-| S25FL064P | s25fl064p.vhd | 8 MB Serial Flash model |
-| S25FL512S | s25fl512s.vhd | 64 MB Serial Flash model |
-| S35HL256T | s35hl256t.vhd | 32 MB Serial Flash model |
-
-These models implement realistic device behavior including:
-- SPI protocol compliance checking
-- Command decoding (Read, Write, Erase, etc.)
-- State machine for device operations
-- Timing constraint enforcement
-
-**Memory Initialization Files**:
-- `memory.mem`: Data memory initialization file
-- `memoryOTP.mem`: One-Time Programmable (OTP) memory initialization file
-
-#### Simulation Utilities (`sim/utilities/`)
-
-- **conversions.vhd**: Data type conversion utilities for stimulus generation
-- **gen_utils.vhd**: General utility functions for simulation helpers
-
-### Building and Running Simulations
-
-#### Prerequisites
-
-- GHDL 2.0 or later (VHDL simulator)
-- FuseSoC (build automation for HDL projects)
-- Make
-
-#### Build System Files
-
-- **SPI.core**: Main FuseSoC core file defining:
-  - Source filesets for HDL, simulation, and models
-  - Default build target configuration
-  - Register generation from HJSON (regtool)
-  - Dependencies on Asylum utility libraries
-
-- **SPI_models.core**: FuseSoC core file for Flash memory models:
-  - Memory model VHDL sources
-  - Memory initialization files (memory.mem, memoryOTP.mem)
-
-- **Makefile**: Automation targets for:
-  - Building the design
-  - Running simulations
-  - Generating documentation
-  - Cleaning build artifacts
-
-#### Simulation Targets
-
-The SPI.core file defines the following simulation targets:
-
-| Target | Description | Filesets |
-|--------|-------------|----------|
-| `default` | Default verification target | hdl + gen_csr |
-| `sim_basic` | Basic SPI testbench | hdl + sim_basic |
-| `sim_models` | Flash models testbench | hdl + sim_basic + models |
-
-#### Running Simulations
-
-To run the default simulation:
+The default tool is GHDL (`mk/defs.mk`: `TOOL ?= ghdl`, `TARGET ?= sim_basic`).
 
 ```bash
-fusesoc run --target default asylum:communication:SPI
+make help                 # variables, rules and target list (mk/targets.txt)
+make sim_basic            # run one target (log in log/)
+make nonreg_sim           # run every sim_* target
+make TARGETS_FILTER=^sim_s nonreg_sim   # run a filtered subset
+make clean                # remove build/
 ```
 
-To run with the basic testbench:
+Equivalent FuseSoC command:
 
 ```bash
-fusesoc run --target sim_basic asylum:communication:SPI
+fusesoc --cores-root . run --build-root build --target sim_m25p40 asylum:communication:SPI:2.0.1
 ```
 
-To run with memory models (realistic device testing):
-
-```bash
-fusesoc run --target sim_models asylum:communication:SPI
-```
-
-Using the Makefile:
-
-```bash
-make sim              # Run default simulation
-make clean            # Clean build artifacts
-make help             # Display available targets
-```
+Outside CI, GHDL writes a waveform `dut.fst`.
 
 ### Simulation Features
 
-#### Activity Logging
+- `sbi_SPI` writes `dump_spi_cmd.txt`, `dump_spi_tx.txt` and `dump_spi_rx.txt` (names set by `FILENAME_*`), code inside `synthesis translate_off`.
+- `cfg.loopback = 1` loops MOSI back to MISO for tests without an external slave.
 
-The `sbi_SPI` module supports optional activity logging to files during simulation (synthesis translate_off blocks):
+## Synthesis
 
-- **dump_spi_cmd.txt**: Logs all command FIFO transactions
-- **dump_spi_tx.txt**: Logs all TX FIFO transactions
-- **dump_spi_rx.txt**: Logs all RX FIFO transactions
+No dedicated synthesis target. The HDL sources of the `default` target (`hdl/*.vhd` + generated CSR) are synthesizable; the file dumps of `sbi_SPI` are enclosed in `synthesis translate_off / translate_on`. Resource usage mainly depends on `DEPTH_CMD`, `DEPTH_TX` and `DEPTH_RX` (FIFOs in the CSR bank). `io_*`, `sclk_*` and `cs_b_*` outputs come with output enables to be connected to IO buffers at the chip / FPGA top level.
 
-These log files are useful for:
-- Verifying transaction sequences
-- Debugging protocol issues
-- Post-simulation analysis
-- Regression testing
+## Design Notes
 
-The log filenames can be customized via the `FILENAME_CMD`, `FILENAME_TX`, and `FILENAME_RX` generics.
+### SPI Modes
 
-#### Loopback Mode Testing
+| Mode | CPOL | CPHA | Description |
+|------|------|------|-------------|
+| 0 | 0 | 0 | SCLK idles low, sample on leading edge |
+| 1 | 0 | 1 | SCLK idles low, sample on trailing edge |
+| 2 | 1 | 0 | SCLK idles high, sample on leading edge |
+| 3 | 1 | 1 | SCLK idles high, sample on trailing edge |
 
-The configuration register includes a loopback mode for testing without external hardware:
-- Setting `cfg.loopback = 1` internally connects MOSI to MISO
-- Allows verification of data path integrity
-- Useful for basic functionality testing
+### spi_master FSM
 
-### Dependencies
+- **IDLE**: CS# inactive (or held from a previous non-last command), waits for a command. A command with `last = 1`, `enable_rx = 0`, `enable_tx = 0` is a STOP and goes directly to DONE.
+- **START**: asserts CS#, enables the needed IO lanes and waits for a TX byte when `enable_tx = 1`.
+- **TRANSFER**: shifts 1, 2, 4 or 8 bits per SCLK period depending on `size`, MSB first.
+- **POSTAMBLE**: pushes the received byte (if `enable_rx = 1`), then next byte, back to IDLE (CS# kept) or DONE (`last = 1`).
+- **DONE**: releases CS#.
 
-The SPI module depends on external libraries from the Asylum project:
+The prescaler is free-running: `f_sclk = f_clk / (2 x (ratio + 1))`. Example: 100 MHz with `ratio = 4` gives 10 MHz.
 
-| Dependency | Description |
-|------------|-------------|
-| `asylum:utils:generators` | Generator utility library |
-| `asylum:utils:pkg` | Utility package with common functions |
-| `asylum:sbi_pkg` | System Bus Interface definitions |
-| `fmf:memory:flash_nor` | Flash memory models (for sim_models target) |
+### Command Usage
 
-These dependencies are specified in the SPI.core file and automatically resolved by FuseSoC.
+1. Write the bytes to send into `data` (TX FIFO).
+2. Write a command into `cmd` (byte count, size, RX/TX enable, last).
+3. Read the received bytes from `data` (RX FIFO).
 
+With `cmd.cfg = CONFIG` the command carries `size`, `enable_rx`, `enable_tx` and a 2-bit byte count (`cmd.nb_bytes`, bits [1:0], N+1 = 1 to 4 bytes). With `cmd.cfg = KEEP` the `size` / `enable_*` stored by the last CONFIG command are reused and bits [5:0] of the command (`enable_tx & enable_rx & size & nb_bytes`) form a 6-bit byte count (N+1 = 1 to 64 bytes): `sbi_SPI` builds the 6-bit `cmd_nb_bytes_i` of `spi_master` as `"0000" & nb_bytes` (CONFIG) or `cmd[5:0]` (KEEP). This is consistent with the 2-bit `nb_bytes` field of [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson) and with the `KEEP` description of `cmd.cfg`.
+
+## Directory Structure
+
+```
+asylum-communication-spi/
+├── SPI.core                # FuseSoC core (asylum:communication:SPI)
+├── SPI_models.core         # FuseSoC core of the flash models (fmf:memory:flash_nor)
+├── Makefile                # Common Asylum Makefile (FuseSoC wrapper)
+├── mk/
+│   ├── defs.mk             # FILE_CORE, default TARGET and TOOL
+│   └── targets.txt         # Target list (generated from the .core)
+├── doc/
+│   └── SPI.drawio          # Block diagram
+├── hdl/
+│   ├── spi_pkg.vhd
+│   ├── spi_master.vhd
+│   ├── sbi_SPI.vhd
+│   └── csr/
+│       ├── SPI.hjson       # Register description (source)
+│       ├── SPI_csr.vhd     # Generated
+│       ├── SPI_csr_pkg.vhd # Generated
+│       ├── SPI_csr.md      # Generated
+│       └── SPI_csr.h       # Generated
+├── models/                 # FMF SPI flash models + utilities/
+└── sim/
+    ├── basic/              # tb_SPI.vhd (UVVM + SPI slave model), tb_SPI_pkg.vhd (legacy spi_master helpers, unused)
+    └── models/             # tb_SPI.vhd (UVVM) + mem/ init files
+```
+
+## Dependencies
+
+| Core | Used by (fileset) | Purpose |
+|------|-------------------|---------|
+| `asylum:utils:generators` | `hdl` | regtool generator and CSR building blocks (`csr_reg`, `csr_fifo`) |
+| `asylum:utils:pkg` | `hdl` | Common packages (`sbi_pkg`, `math_pkg`, ...) |
+| `asylum:target:techmap` | `models` | Technology mapping cells for the model testbench |
+| `bitvis:verification:uvvm` | `models`, `sim_basic` | UVVM utility library and SBI VIP |
+| `fmf:memory:flash_nor` | `models` | SPI flash models ([SPI_models.core](SPI_models.core)) |

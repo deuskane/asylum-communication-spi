@@ -23,9 +23,10 @@ CAPI=2:
 # 2026-06-06  1.2.4    mrosiere Add Name
 # 2026-08-02  1.2.5    mrosiere Testbench : use UVVM sbi, dut is sbi_spi instead spi_master
 # 2026-08-17  2.0.0    mrosiere Add multiple data
+# 2026-10-05  2.0.1    mrosiere Update sim_basic
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:2.0.0
+name        : asylum:communication:SPI:2.0.1
 description : SPI Module
 
 #=========================================
@@ -64,9 +65,10 @@ filesets:
   #---------------------------------------
     files:
       - sim/basic/tb_SPI.vhd
-      - sim/basic/tb_SPI_pkg.vhd
 #    logical_name : work
     file_type : vhdlSource-2008
+    depend       :
+      - bitvis:verification:uvvm
 
   #---------------------------------------
   models:
@@ -94,7 +96,7 @@ targets:
     description     : Default Target
     filesets        :
       - hdl
-    toplevel        : SPI
+    toplevel        : sbi_SPI
     default_tool    : ghdl
     generate        :
       - gen_csr
@@ -127,18 +129,20 @@ targets:
   sim_basic:
   #---------------------------------------
     << : *default
-    description     : Simulation of basic unit tests
+    description     : Simulation of sbi_SPI with a SPI slave model (UVVM)
     filesets_append :
       - sim_basic
-    toplevel        : tb
+    toplevel        : tb_SPI
     default_tool    : ghdl
     tools :
       ghdl :
         analyze_options :
           - "$(GHDL_ANALYZE_OPTION)"
           - "-Wall"
+          - "-frelaxed"
         run_options     :
           - "$(GHDL_RUN_OPTION)"
+          - "--ieee-asserts=disable"
 
 
   #---------------------------------------

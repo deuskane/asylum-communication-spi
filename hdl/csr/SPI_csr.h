@@ -131,7 +131,7 @@
 #define SPI_CFG 0x2
 
 // Field       : cfg.spi_enable
-// Description : 0 : Parity is even, 1 : Parity is odd
+// Description : 0 : SPI master is disabled (held in reset), 1 : SPI master is enabled
 // Range       : [0]
 #define SPI_CFG_SPI_ENABLE      0
 #define SPI_CFG_SPI_ENABLE_MASK 1

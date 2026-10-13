@@ -61,6 +61,16 @@ filesets:
       - asylum:utils:pkg
 
   #---------------------------------------
+  syn:
+  #---------------------------------------
+    files        :
+      - syn/sbi_SPI_wrapper.vhd
+    file_type    : vhdlSource
+    logical_name : asylum
+    depend       :
+      - asylum:utils:pkg
+
+  #---------------------------------------
   sim_basic:
   #---------------------------------------
     files:
@@ -96,10 +106,27 @@ targets:
     description     : Default Target
     filesets        :
       - hdl
-    toplevel        : sbi_SPI
+    toplevel        : asylum.sbi_SPI
     default_tool    : ghdl
     generate        :
       - gen_csr
+
+  #---------------------------------------
+  lint_ghdl:
+  #---------------------------------------
+    << : *default
+    description     : Lint with ghdl
+    filesets_append :
+      - syn
+    toplevel        : asylum.sbi_SPI_wrapper
+    tools :
+      ghdl :
+        analyze_options :
+          - "$(GHDL_ANALYZE_OPTION)"
+          - "-Wall"
+          - "-Werror"
+        run_options     : 
+          - "$(GHDL_RUN_OPTION)"
 
   #---------------------------------------
   default_sim: &default_sim

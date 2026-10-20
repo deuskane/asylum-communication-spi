@@ -365,6 +365,20 @@ begin
   sbi_if.ready                             <= sbi_tgt.ready;
   sbi_if.rdata(SPI_DATA_WIDTH-1 downto 0)  <= sbi_tgt.rdata;
 
+  -- HOLD# and WP# must be inactive (high) while CS# is high (reset, idle, CS# edges)
+  p_check_hold_wp : process (clk_i) is
+  begin
+    if rising_edge(clk_i) and HANDLE_HOLD_WP and to_x01(CS_B) = '1'
+    then
+      if to_x01(HOLDNeg) /= '1' then
+        alert(ERROR, "HOLD# active while CS# is high", C_SCOPE);
+      end if;
+      if to_x01(WPNeg) /= '1' then
+        alert(ERROR, "WP# active while CS# is high", C_SCOPE);
+      end if;
+    end if;
+  end process p_check_hold_wp;
+
   process
     
     variable V_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;

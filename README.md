@@ -95,7 +95,7 @@ Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), library `a
 | `DEPTH_CMD` | natural | `0` | Depth of the command FIFO (0 = no FIFO) |
 | `DEPTH_TX` | natural | `0` | Depth of the TX FIFO (software to hardware, 0 = no FIFO) |
 | `DEPTH_RX` | natural | `0` | Depth of the RX FIFO (hardware to software, 0 = no FIFO) |
-| `HANDLE_HOLD_WP` | boolean | `false` | `true`: `io(2)` (WP#) and `io(3)` (HOLD#) are driven high during single/dual transfers and low in reset |
+| `HANDLE_HOLD_WP` | boolean | `false` | `true`: `io(2)` (WP#) and `io(3)` (HOLD#) are driven high (inactive) in reset, between transactions and during single/dual transfers; they are only used as data lanes by quad/octal commands |
 | `FILENAME_CMD` | string | `"dump_spi_cmd.txt"` | Simulation only: dump file of accepted commands |
 | `FILENAME_TX` | string | `"dump_spi_tx.txt"` | Simulation only: dump file of transmitted bytes |
 | `FILENAME_RX` | string | `"dump_spi_rx.txt"` | Simulation only: dump file of received bytes |

@@ -254,6 +254,8 @@ Flash models ([models/](models/), core `fmf:memory:flash_nor:1.0.0` from [SPI_mo
 | `sim_s25fl064p` | `tb` | Model testbench, `MODEL=s25fl064p` |
 | `sim_s25fl512s` | `tb` | Model testbench, `MODEL=s25fl512s` (dual and quad commands) |
 | `sim_s35hl256t` | `tb` | Model testbench, `MODEL=s35hl256t` |
+| `lint_ghdl` | `sbi_SPI_synth_top` | Lint: GHDL `-Wall` analysis and elaboration (empty simulation) of `sbi_SPI` (and `spi_master`) in a wrapper with flat SBI ports (`syn/ghdl/sbi_SPI_synth_top.vhd`) |
+| `lint_ghdl_synth` | `sbi_SPI_synth_top` | Synthesis check: `lint_ghdl`, then `ghdl --synth -Wall` of 4 configurations (`syn/ghdl/ghdl_synth.sh`: defaults (PicoSoC: `USER_DEFINE_PRESCALER = true`, `PRESCALER_RATIO = x"00"`, depths 0, `HANDLE_HOLD_WP = true`), `sim_basic` (`x"0F"`, depths 4/8/8, no HOLD/WP), model testbenches (`x"0F"`, depths 4/4/4), `USER_DEFINE_PRESCALER = false`), fails on a synthesis error or an inferred latch |
 
 ### How to Run
 
@@ -263,6 +265,8 @@ The default tool is GHDL (`mk/defs.mk`: `TOOL ?= ghdl`, `TARGET ?= sim_basic`).
 make help                 # variables, rules and target list (mk/targets.txt)
 make sim_basic            # run one target (log in log/)
 make nonreg_sim           # run every sim_* target
+make lint_ghdl            # GHDL -Wall lint (make nonreg_lint: every lint_* target)
+make lint_ghdl_synth      # GHDL -Wall lint + ghdl --synth -Wall check
 make TARGETS_FILTER=^sim_s nonreg_sim   # run a filtered subset
 make clean                # remove build/
 ```
@@ -282,7 +286,7 @@ Outside CI, GHDL writes a waveform `dut.fst`.
 
 ## Synthesis
 
-No dedicated synthesis target. The HDL sources of the `default` target (`hdl/*.vhd` + generated CSR) are synthesizable; the file dumps of `sbi_SPI` are enclosed in `synthesis translate_off / translate_on`. Resource usage mainly depends on `DEPTH_CMD`, `DEPTH_TX` and `DEPTH_RX` (FIFOs in the CSR bank). `io_*`, `sclk_*` and `cs_b_*` outputs come with output enables to be connected to IO buffers at the chip / FPGA top level.
+No vendor synthesis target (`lint_ghdl_synth` checks the RTL with `ghdl --synth`, see [Targets](#targets)). The HDL sources of the `default` target (`hdl/*.vhd` + generated CSR) are synthesizable; the file dumps of `sbi_SPI` are enclosed in `synthesis translate_off / translate_on`. Resource usage mainly depends on `DEPTH_CMD`, `DEPTH_TX` and `DEPTH_RX` (FIFOs in the CSR bank). `io_*`, `sclk_*` and `cs_b_*` outputs come with output enables to be connected to IO buffers at the chip / FPGA top level.
 
 ## Design Notes
 
@@ -336,9 +340,12 @@ asylum-communication-spi/
 │       ├── SPI_csr.md      # Generated
 │       └── SPI_csr.h       # Generated
 ├── models/                 # FMF SPI flash models + utilities/
-└── sim/
-    ├── basic/              # tb_SPI.vhd (UVVM + SPI slave model), tb_SPI_pkg.vhd (legacy spi_master helpers, unused)
-    └── models/             # tb_SPI.vhd (UVVM) + mem/ init files
+├── sim/
+│   ├── basic/              # tb_SPI.vhd (UVVM + SPI slave model), tb_SPI_pkg.vhd (legacy spi_master helpers, unused)
+│   └── models/             # tb_SPI.vhd (UVVM) + mem/ init files
+└── syn/ghdl/
+    ├── sbi_SPI_synth_top.vhd  # Lint / synthesis check top (sbi_SPI, flat SBI ports)
+    └── ghdl_synth.sh       # ghdl --synth check (post_run hook of lint_ghdl_synth)
 ```
 
 ## Dependencies

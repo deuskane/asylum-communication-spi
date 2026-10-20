@@ -31,7 +31,8 @@ use     asylum.spi_csr_pkg.all;
 entity spi_master is
   generic (
     PRESCALER_WIDTH      : integer := 8;
-    HANDLE_HOLD_WP       : boolean := false
+    HANDLE_HOLD_WP       : boolean := false;
+    CS_HIGH_MIN_CYCLES   : natural := 0      -- Min clk_i cycles with CS# high between 2 transactions (tSHSL)
     );
   port (
     -- Clock & Reset
@@ -123,6 +124,8 @@ architecture rtl of spi_master is
     signal cycle_phase_r      : std_logic;
     signal cycle_posedge_r    : std_logic;
     signal cycle_negedge_r    : std_logic;
+
+    signal cs_high_cnt_r      : natural range 0 to CS_HIGH_MIN_CYCLES;
 begin
 
   -----------------------------------------------------------------------------
@@ -201,6 +204,7 @@ begin
       data_tx_r   <= (others => '0');
       data_rx_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
+      cs_high_cnt_r <= CS_HIGH_MIN_CYCLES;
       
       if HANDLE_HOLD_WP = true 
       then
@@ -216,6 +220,12 @@ begin
       sclk_oe_r   <= '1'; -- Active pad
       cmd_tready_r<= '0'; -- tready is always reset because tready is set to 1 when tvalid is 1
       tx_tready_r <= '0'; -- tready is always reset because tready is set to 1 when tvalid is 1
+
+      -- CS# high guard (tSHSL) : count the clk_i cycles with CS# high
+      if (cs_b_r = '1' and cs_high_cnt_r /= 0)
+      then
+        cs_high_cnt_r <= cs_high_cnt_r - 1;
+      end if;
 
       -- RX FIFO Managment
       if (rx_tvalid_r = '1' and rx_tready_i = '1')
@@ -261,7 +271,8 @@ begin
         -- Depending the Command, Active the MOSI and the Wait the TX FIFO
         -----------------------------------------------------------------------
         when START =>
-          if (bit_sample = '1')
+          -- A new transaction (CS# high) waits the end of the CS# high guard
+          if (bit_sample = '1' and (cs_b_r = '0' or cs_high_cnt_r = 0))
           then
             -- CS_B is active
             cs_b_r    <= '0';
@@ -431,6 +442,7 @@ begin
           then
             -- End of transaction
             cs_b_r      <= '1';
+            cs_high_cnt_r <= CS_HIGH_MIN_CYCLES;
             io_oe_r     <= (others => '0');
             io_o_r      <= (others => '0');
             state_r     <= IDLE;

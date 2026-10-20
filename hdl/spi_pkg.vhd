@@ -21,6 +21,7 @@ component sbi_SPI is
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
     HANDLE_HOLD_WP        : boolean := false;
+    CS_HIGH_MIN_CYCLES    : natural := 0;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -55,7 +56,8 @@ end component sbi_SPI;
 component spi_master is
   generic (
     PRESCALER_WIDTH      : integer := 8;
-    HANDLE_HOLD_WP       : boolean := false
+    HANDLE_HOLD_WP       : boolean := false;
+    CS_HIGH_MIN_CYCLES   : natural := 0      -- Min clk_i cycles with CS# high between 2 transactions (tSHSL)
     );
   port (
     -- Clock & Reset

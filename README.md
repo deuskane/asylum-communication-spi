@@ -99,6 +99,7 @@ Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), library `a
 | `FILENAME_CMD` | string | `"dump_spi_cmd.txt"` | Simulation only: dump file of accepted commands |
 | `FILENAME_TX` | string | `"dump_spi_tx.txt"` | Simulation only: dump file of transmitted bytes |
 | `FILENAME_RX` | string | `"dump_spi_rx.txt"` | Simulation only: dump file of received bytes |
+| `CS_HIGH_MIN_CYCLES` | natural | `0` | Minimum number of `clk_i` cycles during which CS# stays high between two transactions (flash tSHSL / tCSH), e.g. 5 for 100 ns at 50 MHz. CS# always stays high at least one SCLK period |
 
 ### Ports
 
@@ -183,6 +184,7 @@ The CSR bank uses 2 address bits (`SPI_ADDR_WIDTH = 2`) and 8-bit data (`SPI_DAT
 |------|------|---------|-------------|
 | `PRESCALER_WIDTH` | integer | `8` | Width of `cfg_prescaler_ratio_i` |
 | `HANDLE_HOLD_WP` | boolean | `false` | Drive WP# / HOLD# lanes (see top-level) |
+| `CS_HIGH_MIN_CYCLES` | natural | `0` | Minimum CS# high time between two transactions, in `clk_i` cycles (see top-level) |
 
 #### Ports
 
@@ -301,7 +303,7 @@ No dedicated synthesis target. The HDL sources of the `default` target (`hdl/*.v
 - **START**: asserts CS#, enables the needed IO lanes and waits for a TX byte when `enable_tx = 1`.
 - **TRANSFER**: shifts 1, 2, 4 or 8 bits per SCLK period depending on `size`, MSB first.
 - **POSTAMBLE**: pushes the received byte (if `enable_rx = 1`), then next byte, back to IDLE (CS# kept) or DONE (`last = 1`).
-- **DONE**: releases CS#.
+- **DONE**: releases CS#. The next transaction starts once CS# has been high for at least `CS_HIGH_MIN_CYCLES` clock cycles (and at least one SCLK period).
 
 The prescaler is free-running: `f_sclk = f_clk / (2 x (ratio + 1))`. Example: 100 MHz with `ratio = 4` gives 10 MHz.
 

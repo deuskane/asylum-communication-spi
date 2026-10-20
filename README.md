@@ -199,6 +199,7 @@ The CSR bank uses 2 address bits (`SPI_ADDR_WIDTH = 2`) and 8-bit data (`SPI_DAT
 | `cmd_tvalid_i` | in | std_logic | Command valid |
 | `cmd_tready_o` | out | std_logic | Command accepted |
 | `cmd_tlast_i` | in | std_logic | 1: release CS# at the end of the command |
+| `cmd_keep_i` | in | std_logic (default `'0'`) | 1: `KEEP` command, `enable_rx` / `enable_tx` are the kept values and the STOP special case is not decoded |
 | `cmd_enable_rx_i` | in | std_logic | 1: push received bytes to RX |
 | `cmd_enable_tx_i` | in | std_logic | 1: pop TX bytes and drive the data lanes |
 | `cmd_nb_bytes_i` | in | std_logic_vector (unconstrained) | Number of bytes minus one |
@@ -297,7 +298,7 @@ No dedicated synthesis target. The HDL sources of the `default` target (`hdl/*.v
 
 ### spi_master FSM
 
-- **IDLE**: CS# inactive (or held from a previous non-last command), waits for a command. A command with `last = 1`, `enable_rx = 0`, `enable_tx = 0` is a STOP and goes directly to DONE.
+- **IDLE**: CS# inactive (or held from a previous non-last command), waits for a command. A `CONFIG` command (`cfg = 0`) with `last = 1`, `enable_rx = 0`, `enable_tx = 0` is a STOP and goes directly to DONE. A `KEEP` command is never a STOP, even if the kept configuration has `enable_rx = enable_tx = 0` (dummy bytes).
 - **START**: asserts CS#, enables the needed IO lanes and waits for a TX byte when `enable_tx = 1`.
 - **TRANSFER**: shifts 1, 2, 4 or 8 bits per SCLK period depending on `size`, MSB first.
 - **POSTAMBLE**: pushes the received byte (if `enable_rx = 1`), then next byte, back to IDLE (CS# kept) or DONE (`last = 1`).

@@ -477,6 +477,15 @@ begin
     check_value(slave_nb_bytes, 10, ERROR, "KEEP mode : 1 + 9 bytes in the transaction");
     check_mosi(10, v_seed, 0, "KEEP mode");
 
+    -- CONFIG dummy (enable_tx = enable_rx = 0) 1 byte, then KEEP 3 bytes with last :
+    -- the KEEP command must not be decoded as a STOP
+    v_seed := v_seed + 1;
+    slave_setup(1, false, v_seed);
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, false, false, 1), "CONFIG command dummy 1 byte");
+    write_reg(SPI_CMD, SPI_CMD_CFG_KEEP_RAW or SPI_CMD_LAST_ENABLE_RAW or "00000010", "KEEP command dummy 3 bytes (nb_bytes=2), last");
+    wait_end_of_transaction("KEEP dummy with last");
+    check_value(slave_nb_bytes, 4, ERROR, "KEEP dummy with last : 1 + 3 dummy bytes (not a STOP)");
+
     ------------------------------------------------
     log(ID_LOG_HDR, "4. Loopback (MISO = MOSI inside spi_master)", C_SCOPE);
     ------------------------------------------------

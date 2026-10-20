@@ -15,6 +15,8 @@
 --              * CS kept low between commands without last, STOP command
 --              * SCLK idle level on CS edges, SCLK period
 --                f_sclk = f_clk / (2*(ratio+1))
+--              The slave drives its outputs SLAVE_TV_NS after the shift
+--              edge (RX_LATE_SAMPLE : MISO round trip of one SCLK period).
 --              Plus : reset values, KEEP command mode (6-bit nb_bytes),
 --              loopback, spi_enable = 0 keeps the master in reset.
 -------------------------------------------------------------------------------
@@ -41,6 +43,10 @@ use     asylum.spi_pkg.all;
 use     asylum.SPI_csr_pkg.all;
 
 entity tb_SPI is
+  generic (
+    RX_LATE_SAMPLE : boolean := false;  -- RX_LATE_SAMPLE of the DUT
+    SLAVE_TV_NS    : natural := 0       -- Slave output valid time after the shift edge (ns)
+  );
 end tb_SPI;
 
 architecture sim of tb_SPI is
@@ -51,6 +57,7 @@ architecture sim of tb_SPI is
 
   type     byte_array_t is array (natural range <>) of std_logic_vector(7 downto 0);
   constant C_NB_MAX        : natural := 64;
+  constant C_SLAVE_TV      : time    := SLAVE_TV_NS * 1 ns;
 
   -- DUT
   signal   clk_i           : std_logic := '0';
@@ -113,6 +120,7 @@ begin
      ,DEPTH_CMD             => 4
      ,DEPTH_TX              => 8
      ,DEPTH_RX              => 8
+     ,RX_LATE_SAMPLE        => RX_LATE_SAMPLE
      ,HANDLE_HOLD_WP        => false
     )
     port map (
@@ -181,10 +189,10 @@ begin
         v_byte := slave_miso((v_out_bits/8) mod C_NB_MAX);
         v_pos  := 7 - (v_out_bits mod 8);
         if v_lanes = 1 then
-          slave_io(SPI_IO_MISO) <= v_byte(v_pos);
+          slave_io(SPI_IO_MISO) <= transport v_byte(v_pos) after C_SLAVE_TV;
         else
           for l in 0 to v_lanes-1 loop
-            slave_io(l) <= v_byte(v_pos - (v_lanes-1) + l);
+            slave_io(l) <= transport v_byte(v_pos - (v_lanes-1) + l) after C_SLAVE_TV;
           end loop;
         end if;
       end if;

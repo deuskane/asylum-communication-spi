@@ -20,6 +20,7 @@ component sbi_SPI is
     DEPTH_CMD             : natural := 0;
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
+    RX_LATE_SAMPLE        : boolean := false;
     HANDLE_HOLD_WP        : boolean := false;
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
@@ -54,6 +55,7 @@ end component sbi_SPI;
 
 component spi_master is
   generic (
+    RX_LATE_SAMPLE       : boolean := false; -- true : io_i registered and sampled half a SCLK period later (MISO round trip of one SCLK period)
     PRESCALER_WIDTH      : integer := 8;
     HANDLE_HOLD_WP       : boolean := false
     );

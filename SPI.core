@@ -126,7 +126,7 @@ targets:
           - "--ieee-asserts=disable"
 
   #---------------------------------------
-  sim_basic:
+  sim_basic: &sim_basic
   #---------------------------------------
     << : *default
     description     : Simulation of sbi_SPI with a SPI slave model (UVVM)
@@ -144,6 +144,14 @@ targets:
           - "$(GHDL_RUN_OPTION)"
           - "--ieee-asserts=disable"
 
+  #---------------------------------------
+  sim_basic_late:
+  #---------------------------------------
+    << : *sim_basic
+    description     : Simulation of sbi_SPI with RX_LATE_SAMPLE and a slave output valid time longer than half a SCLK period (UVVM)
+    parameters      :
+      - RX_LATE_SAMPLE=true
+      - SLAVE_TV_NS=25
 
   #---------------------------------------
   sim_at25df161:
@@ -216,4 +224,16 @@ parameters :
     description : SPI Memory Model
     datatype    : str
     default     : m25p40
+    paramtype   : generic
+
+  RX_LATE_SAMPLE :
+    description : sbi_SPI RX_LATE_SAMPLE generic (tb_SPI basic)
+    datatype    : bool
+    default     : false
+    paramtype   : generic
+
+  SLAVE_TV_NS :
+    description : Output valid time of the SPI slave model in ns (tb_SPI basic)
+    datatype    : int
+    default     : 0
     paramtype   : generic

@@ -30,6 +30,7 @@ use     asylum.spi_csr_pkg.all;
  
 entity spi_master is
   generic (
+    RX_LATE_SAMPLE       : boolean := false; -- true : io_i registered and sampled half a SCLK period later (MISO round trip of one SCLK period)
     PRESCALER_WIDTH      : integer := 8;
     HANDLE_HOLD_WP       : boolean := false
     );
@@ -92,6 +93,24 @@ architecture rtl of spi_master is
     signal state_is_DONE      : std_logic;
 
     signal miso               : std_logic;
+
+    signal rx_io_r            : std_logic_vector(8-1 downto 0);
+    signal rx_miso_r          : std_logic;
+    signal rx_late_r          : std_logic;
+    signal rx_capture_r       : std_logic;
+
+    -- Shift the received bits in the RX register (MSB first)
+    function rx_shift (data : std_logic_vector(8-1 downto 0);
+                       size : std_logic_vector;
+                       miso : std_logic;
+                       io   : std_logic_vector(8-1 downto 0)) return std_logic_vector is
+    begin
+      if    size = SPI_CMD_SIZE_SINGLE then return data(6 downto 0) & miso;
+      elsif size = SPI_CMD_SIZE_DUAL   then return data(5 downto 0) & io(1 downto 0);
+      elsif size = SPI_CMD_SIZE_QUAD   then return data(3 downto 0) & io(3 downto 0);
+      else                                  return io(7 downto 0);
+      end if;
+    end function rx_shift;
     
     signal sclk_r             : std_logic;
     signal sclk_oe_r          : std_logic;
@@ -199,6 +218,8 @@ begin
       cnt_bit_r   <= (others => '0');
       cnt_byte_r  <= (others => '0');
       data_tx_r   <= (others => '0');
+      rx_late_r   <= '0';
+      rx_capture_r<= '0';
       data_rx_r   <= (others => '0');
       rx_tdata_r  <= (others => '0');
       
@@ -372,10 +393,13 @@ begin
             sclk_r    <= not sclk_r;
 
             -- Data RX depends of the size
-            data_rx_r <= data_rx_r(6 downto 0) & miso             when cmd_size_r = SPI_CMD_SIZE_SINGLE else
-                         data_rx_r(5 downto 0) & io_i(1 downto 0) when cmd_size_r = SPI_CMD_SIZE_DUAL   else
-                         data_rx_r(3 downto 0) & io_i(3 downto 0) when cmd_size_r = SPI_CMD_SIZE_QUAD   else
-                                                 io_i(7 downto 0);
+            if RX_LATE_SAMPLE = false
+            then
+              data_rx_r <= rx_shift(data_rx_r, cmd_size_r, miso, io_i);
+            else
+              -- Sampled on the next shift edge
+              rx_late_r <= '1';
+            end if;
             cnt_bit_r <= cnt_bit_r_next;
 
             if ((cfg_cpha_i = '1') and (cnt_bit_r_next = 8))
@@ -391,8 +415,9 @@ begin
         -- Check if last word or stop transfert  
         -----------------------------------------------------------------------
         when POSTAMBLE =>
-          -- Push in fifo rx
-          if not ((cmd_enable_rx_r = '1') and rx_tvalid_r = '1')
+          -- Push in fifo rx (once the last bit is sampled)
+          if not ((cmd_enable_rx_r = '1') and rx_tvalid_r = '1') and
+             rx_late_r = '0' and rx_capture_r = '0'
           then
             -- WARNING : OVERWRITE FIFO
             if (cmd_enable_rx_r = '1')
@@ -446,8 +471,48 @@ begin
           end if;
       end case;
 
+      -- Late RX sampling : the bit sampled on bit_sample is taken by the io_i
+      -- input registers on the clk_i edge of the next shift edge (the slave
+      -- has one SCLK period to answer), then shifted in data_rx_r
+      if RX_LATE_SAMPLE = true
+      then
+        rx_capture_r <= '0';
+
+        if (rx_late_r = '1' and bit_shift = '1')
+        then
+          rx_late_r    <= '0';
+          rx_capture_r <= '1';
+        end if;
+
+        if (rx_capture_r = '1')
+        then
+          data_rx_r <= rx_shift(data_rx_r, cmd_size_r, rx_miso_r, rx_io_r);
+        end if;
+      end if;
+
     end if;
   end process;
+
+  -----------------------------------------------------------------------------
+  -- RX input registers (IOB) for the late sampling
+  -----------------------------------------------------------------------------
+  gen_rx_late_sample: if RX_LATE_SAMPLE = true
+  generate
+    process(clk_i)
+    begin
+      if rising_edge(clk_i)
+      then
+        rx_io_r   <= io_i;
+        rx_miso_r <= miso;
+      end if;
+    end process;
+  end generate gen_rx_late_sample;
+
+  gen_rx_late_sample_b: if RX_LATE_SAMPLE = false
+  generate
+    rx_io_r   <= (others => '0');
+    rx_miso_r <= '0';
+  end generate gen_rx_late_sample_b;
 
   -----------------------------------------------------------------------------
   -- Bit Counter

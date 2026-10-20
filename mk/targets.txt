@@ -2,6 +2,7 @@ default        : Default Target
 default_sim    : Default Target for simulation
 sim_at25df161  : Simulation of at25df161
 sim_basic      : Simulation of sbi_SPI with a SPI slave model (UVVM)
+sim_basic_late : Simulation of sbi_SPI with RX_LATE_SAMPLE and a slave output valid time longer than half a SCLK period (UVVM)
 sim_cy15b104qs : Simulation of cy15b104qs
 sim_cy15v104qs : Simulation of cy15v104qs
 sim_m25p40     : Simulation of m25p40

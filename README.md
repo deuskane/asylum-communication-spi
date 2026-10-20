@@ -99,6 +99,7 @@ Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), library `a
 | `FILENAME_CMD` | string | `"dump_spi_cmd.txt"` | Simulation only: dump file of accepted commands |
 | `FILENAME_TX` | string | `"dump_spi_tx.txt"` | Simulation only: dump file of transmitted bytes |
 | `FILENAME_RX` | string | `"dump_spi_rx.txt"` | Simulation only: dump file of received bytes |
+| `RX_LATE_SAMPLE` | boolean | `false` | `false`: the received bits are sampled on the clock edge which generates the SCLK sample edge (MISO round trip of half a SCLK period). `true`: `io_i` goes through input registers (IOB) and is sampled on the clock edge of the next SCLK shift edge (round trip of one SCLK period), see [Timing](#timing) |
 
 ### Ports
 
@@ -183,6 +184,7 @@ The CSR bank uses 2 address bits (`SPI_ADDR_WIDTH = 2`) and 8-bit data (`SPI_DAT
 |------|------|---------|-------------|
 | `PRESCALER_WIDTH` | integer | `8` | Width of `cfg_prescaler_ratio_i` |
 | `HANDLE_HOLD_WP` | boolean | `false` | Drive WP# / HOLD# lanes (see top-level) |
+| `RX_LATE_SAMPLE` | boolean | `false` | Late sampling of the received bits with input registers (see top-level) |
 
 #### Ports
 
@@ -246,6 +248,7 @@ Flash models ([models/](models/), core `fmf:memory:flash_nor:1.0.0` from [SPI_mo
 | `default` | `sbi_SPI` | HDL fileset + CSR generation (not a simulation) |
 | `default_sim` | `tb` | Base of the model simulations (`MODEL=m25p40`) |
 | `sim_basic` | `tb_SPI` | `sbi_SPI` with the SPI slave model of the bench (UVVM) |
+| `sim_basic_late` | `tb_SPI` | Same bench with `RX_LATE_SAMPLE = true` and a slave output valid time of 25 ns (more than half a SCLK period at prescaler 0) |
 | `sim_at25df161` | `tb` | Model testbench, `MODEL=at25df161` |
 | `sim_cy15b104qs` | `tb` | Model testbench, `MODEL=cy15b104qs` |
 | `sim_cy15v104qs` | `tb` | Model testbench, `MODEL=cy15v104qs` |
@@ -304,6 +307,14 @@ No dedicated synthesis target. The HDL sources of the `default` target (`hdl/*.v
 - **DONE**: releases CS#.
 
 The prescaler is free-running: `f_sclk = f_clk / (2 x (ratio + 1))`. Example: 100 MHz with `ratio = 4` gives 10 MHz.
+
+### Timing
+
+The SPI signals are not retimed by a PLL: the MISO (and IO lanes) round trip must fit in the sampling window.
+
+- `RX_LATE_SAMPLE = false`: `(ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_route + t_setup`. With `ratio = 0` at 50 MHz this leaves 20 ns for the whole round trip.
+- `RX_LATE_SAMPLE = true`: `2 x (ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_setup(IOB)`, `io_i` being captured by a free running input register (to be placed in the IOB). The hold requirement `t_co(SCLK) + t_pad_out + tHO(flash) + t_pad_in >= t_hold` is met with positive delays. For CPHA = 1 with a small `ratio`, a gap of up to one SCLK period may be added between bytes.
+- Constrain `io_i` with an input delay relative to SCLK (or a max delay from the SCLK output register to the `io_i` capture register) matching the window above, and choose the minimal `ratio` accordingly. `sclk_o` is `sclk_r xor cfg.cpol`: CPOL is static during a transfer, so it does not glitch, but it is not an output register.
 
 ### Command Usage
 

@@ -105,8 +105,16 @@ architecture rtl of sbi_SPI is
   signal   cmd_enable_rx_r        : std_logic;
   signal   cmd_enable_tx_r        : std_logic;
   signal   cmd_size_r             : std_logic_vector(2-1 downto 0);
+
+  signal   spi_tx_tready          : std_logic;
+  signal   spi_cmd_tready         : std_logic;
   
 begin  -- architecture rtl
+
+  -- spi_enable = 0 : the pending commands and TX bytes are dropped
+  -- (FIFO flush, and no blocking write while the SPI master is disabled)
+  hw2sw.data.ready <= spi_tx_tready  or not spi_master_arst_b;
+  hw2sw.cmd.ready  <= spi_cmd_tready or not spi_master_arst_b;
 
   process(clk_i,spi_master_arst_b)
   begin
@@ -164,13 +172,13 @@ begin  -- architecture rtl
     ( clk_i                 => clk_i
      ,arst_b_i              => sw2hw.cfg.spi_enable(0)
      ,tx_tvalid_i           => sw2hw.data.valid
-     ,tx_tready_o           => hw2sw.data.ready
+     ,tx_tready_o           => spi_tx_tready
      ,tx_tdata_i            => sw2hw.data.value
      ,rx_tvalid_o           => hw2sw.data.valid
      ,rx_tready_i           => sw2hw.data.ready
      ,rx_tdata_o            => hw2sw.data.value
      ,cmd_tvalid_i          => sw2hw.cmd.valid
-     ,cmd_tready_o          => hw2sw.cmd.ready
+     ,cmd_tready_o          => spi_cmd_tready
      ,cmd_tlast_i           => sw2hw.cmd.last(0)
      ,cmd_enable_rx_i       =>       cmd_enable_rx
      ,cmd_enable_tx_i       =>       cmd_enable_tx

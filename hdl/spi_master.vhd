@@ -188,9 +188,9 @@ begin
     then
       state_r     <= IDLE;
       cs_b_r      <= '1'; -- CS Inactive
-      cs_b_oe_r   <= '0'; -- Inactive pad
+      cs_b_oe_r   <= '1'; -- Active pad : CS# is driven inactive (high)
       sclk_r      <= '0';
-      sclk_oe_r   <= '0'; -- Inactive pad
+      sclk_oe_r   <= '1'; -- Active pad : SCLK is driven to CPOL
       io_o_r      <= (others => '0');
       io_oe_r     <= (others => '0');
       tx_tready_r <= '0'; -- Never Ready during reset

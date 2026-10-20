@@ -16,7 +16,8 @@
 --              * SCLK idle level on CS edges, SCLK period
 --                f_sclk = f_clk / (2*(ratio+1))
 --              Plus : reset values, KEEP command mode (6-bit nb_bytes),
---              loopback, spi_enable = 0 keeps the master in reset.
+--              loopback, spi_enable = 0 aborts the transaction (CS# driven
+--              high, SCLK at CPOL) and drops the pending commands.
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author   Description
@@ -430,8 +431,10 @@ begin
     ------------------------------------------------
     check_reg(SPI_CFG      , x"00"          , "Reset value cfg");
     check_reg(SPI_PRESCALER, C_PRESCALER_RST, "Reset value prescaler (PRESCALER_RATIO)");
-    check_value(cs_b_oe_o, '0', ERROR, "spi_enable=0 : CS pad disabled (master in reset)");
-    check_value(sclk_oe_o, '0', ERROR, "spi_enable=0 : SCLK pad disabled (master in reset)");
+    check_value(cs_b_oe_o, '1', ERROR, "spi_enable=0 : CS pad enabled (master in reset)");
+    check_value(cs_b_o   , '1', ERROR, "spi_enable=0 : CS driven inactive (high)");
+    check_value(sclk_oe_o, '1', ERROR, "spi_enable=0 : SCLK pad enabled (master in reset)");
+    check_value(sclk_o   , '0', ERROR, "spi_enable=0 : SCLK driven to CPOL (0)");
     check_value(io_oe_o  , x"00", ERROR, "spi_enable=0 : IO pads disabled");
 
     ------------------------------------------------
@@ -493,15 +496,37 @@ begin
     wait_end_of_transaction("Loopback");
 
     ------------------------------------------------
-    log(ID_LOG_HDR, "5. spi_enable = 0 : no transfer", C_SCOPE);
+    log(ID_LOG_HDR, "5. spi_enable = 0 : abort, CS# and SCLK driven, commands dropped", C_SCOPE);
     ------------------------------------------------
-    write_reg(SPI_CFG, x"00", "Disable SPI");
-    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, false, true, 1), "STOP-like command while disabled");
+    configure('1', '1', 1);
+    v_seed := v_seed + 1;
+    slave_setup(1, false, v_seed);
+    -- Open a transaction (command without last) then disable the SPI
+    write_reg(SPI_CMD , cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, false, 1), "Command TX 1 byte, not last");
+    write_reg(SPI_DATA, pattern(v_seed, 0), "TX byte 0");
+    for i in 1 to 100 loop
+      wait until rising_edge(clk_i);
+    end loop;
+    check_value(cs_b, '0', ERROR, "Transaction open (CS# active)");
+    write_reg(SPI_CFG, "00000" & "11" & '0', "Disable SPI (CPOL=1, CPHA=1)");
+    wait_end_of_transaction("Abort by spi_enable = 0");
+    check_value(slave_nb_bytes, 1, ERROR, "Abort by spi_enable = 0 : 1 byte transfered");
+    check_value(cs_b_oe_o, '1', ERROR, "spi_enable = 0 : CS pad enabled");
+    check_value(cs_b_o   , '1', ERROR, "spi_enable = 0 : CS driven inactive (high)");
+    check_value(sclk_oe_o, '1', ERROR, "spi_enable = 0 : SCLK pad enabled");
+    check_value(sclk_o   , '1', ERROR, "spi_enable = 0 : SCLK driven to CPOL (1)");
+    -- Commands and TX bytes written while disabled are dropped (no blocking write)
+    write_reg(SPI_CMD , cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, true, 1), "Command TX 1 byte while disabled");
+    write_reg(SPI_DATA, pattern(v_seed, 1), "TX byte while disabled");
+    for i in 1 to 10 loop
+      write_reg(SPI_DATA, pattern(v_seed, 2), "TX byte while disabled (more than DEPTH_TX)");
+    end loop;
+    write_reg(SPI_CFG, "00000" & "11" & '1', "Enable SPI (CPOL=1, CPHA=1)");
     for i in 1 to 200 loop
       wait until rising_edge(clk_i);
     end loop;
-    check_value(slave_nb_trans, v_nb_trans, ERROR, "No transaction while spi_enable = 0");
-    check_value(cs_b_oe_o, '0', ERROR, "CS pad disabled while spi_enable = 0");
+    check_value(slave_nb_trans, v_nb_trans, ERROR, "No transaction after re-enable : commands written while disabled are dropped");
+    check_value(cs_b, '1', ERROR, "CS inactive after re-enable");
 
     log(ID_LOG_HDR, "Simulation Finished", C_SCOPE);
     report_alert_counters(FINAL);

@@ -191,7 +191,7 @@ constant SPI_CMD_CFG_KEEP_RAW : std_logic_vector(8-1 downto 0) := "10000000";
     we : std_logic;
   --==================================
   -- Field       : spi_enable
-  -- Description : 0 : SPI master is disabled (held in reset), 1 : SPI master is enabled
+  -- Description : 0 : SPI master is disabled (held in reset) : a transfer in progress is aborted, CS# is driven high and SCLK to CPOL, the pending commands and TX bytes are dropped (the RX bytes stay in the RX FIFO). 1 : SPI master is enabled
   -- Width       : 1
   --==================================
     spi_enable : std_logic_vector(1-1 downto 0);

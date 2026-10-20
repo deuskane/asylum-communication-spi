@@ -39,7 +39,7 @@ Configuration - 0 : configure enable_tx/enable_rx and size, 1 : replace enable_t
 SPI Configuration Register
 
 ### [0:0] spi_enable
-0 : SPI master is disabled (held in reset), 1 : SPI master is enabled
+0 : SPI master is disabled (held in reset) : a transfer in progress is aborted, CS# is driven high and SCLK to CPOL, the pending commands and TX bytes are dropped (the RX bytes stay in the RX FIFO). 1 : SPI master is enabled
 
 ### [1:1] cpol
 Clock Polarity

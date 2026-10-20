@@ -143,7 +143,7 @@
                 {
                     name: "spi_enable",
                     bits: "0",
-                    desc: "0 : SPI master is disabled (held in reset), 1 : SPI master is enabled"
+                    desc: "0 : SPI master is disabled (held in reset) : a transfer in progress is aborted, CS# is driven high and SCLK to CPOL, the pending commands and TX bytes are dropped (the RX bytes stay in the RX FIFO). 1 : SPI master is enabled"
                 },
                 {
                     name: "cpol",

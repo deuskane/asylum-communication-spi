@@ -151,6 +151,34 @@ architecture rtl of SPI_registers is
   signal   prescaler_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   prescaler_rbusy     : std_logic;
 
+  function INIT_status
+    return std_logic_vector is
+    variable tmp : std_logic_vector(7-1 downto 0);
+  begin  -- function INIT_status
+    tmp(0 downto 0) := "0"; -- tx_empty
+    tmp(1 downto 1) := "0"; -- tx_full
+    tmp(2 downto 2) := "0"; -- rx_empty
+    tmp(3 downto 3) := "0"; -- rx_full
+    tmp(4 downto 4) := "0"; -- cmd_empty
+    tmp(5 downto 5) := "0"; -- cmd_full
+    tmp(6 downto 6) := "0"; -- busy
+    return tmp;
+  end function INIT_status;
+
+  signal   status_wcs       : std_logic;
+  signal   status_we        : std_logic;
+  signal   status_wdata     : std_logic_vector(8-1 downto 0);
+  signal   status_wdata_sw  : std_logic_vector(7-1 downto 0);
+  signal   status_wdata_hw  : std_logic_vector(7-1 downto 0);
+  signal   status_wbusy     : std_logic;
+
+  signal   status_rcs       : std_logic;
+  signal   status_re        : std_logic;
+  signal   status_rdata     : std_logic_vector(8-1 downto 0);
+  signal   status_rdata_sw  : std_logic_vector(7-1 downto 0);
+  signal   status_rdata_hw  : std_logic_vector(7-1 downto 0);
+  signal   status_rbusy     : std_logic;
+
 begin  -- architecture rtl
 
   -- Interface 
@@ -533,23 +561,157 @@ begin  -- architecture rtl
     sw2hw_o.prescaler.we <= '0';
   end generate gen_prescaler_b;
 
+  gen_status: if (True)
+  generate
+  --==================================
+  -- Register    : status
+  -- Description : SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
+  -- Address     : 0x4
+  -- Width       : 7
+  -- Sw Access   : rw
+  -- Hw Access   : rw
+  -- Hw Type     : ext
+  --==================================
+  --==================================
+  -- Field       : tx_empty
+  -- Description : 1 : TX FIFO (data write) is empty
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : tx_full
+  -- Description : 1 : TX FIFO (data write) is full, a write to data waits until the SPI master pops a byte (always 1 with DEPTH_TX=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : rx_empty
+  -- Description : 1 : RX FIFO (data read) is empty, a read of data waits until the SPI master pushes a byte
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : rx_full
+  -- Description : 1 : RX FIFO (data read) is full, the SPI master waits for a read of data before receiving the next byte
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : cmd_empty
+  -- Description : 1 : Command FIFO is empty
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : cmd_full
+  -- Description : 1 : Command FIFO is full, a write to cmd waits until the SPI master pops a command (always 1 with DEPTH_CMD=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+
+  --==================================
+  -- Field       : busy
+  -- Description : 1 : SPI transaction in progress (CS# active or SPI master not idle) or command pending, 0 : all commands are done and CS# is released
+  -- Width       : 1
+  --==================================
+
+
+    status_rcs     <= '1' when (sig_raddr = SPI_STATUS) else '0';
+    status_re      <= sig_rcs and sig_re and status_rcs;
+    status_rdata   <= (
+      0 => status_rdata_sw(0), -- tx_empty(0)
+      1 => status_rdata_sw(1), -- tx_full(0)
+      2 => status_rdata_sw(2), -- rx_empty(0)
+      3 => status_rdata_sw(3), -- rx_full(0)
+      4 => status_rdata_sw(4), -- cmd_empty(0)
+      5 => status_rdata_sw(5), -- cmd_full(0)
+      6 => status_rdata_sw(6), -- busy(0)
+      others => '0');
+
+    status_wcs     <= '1' when       (sig_waddr = SPI_STATUS)   else '0';
+    status_we      <= sig_wcs and sig_we and status_wcs;
+    status_wdata   <= sig_wdata;
+    status_wdata_sw(0 downto 0) <= status_wdata(0 downto 0); -- tx_empty
+    status_wdata_sw(1 downto 1) <= status_wdata(1 downto 1); -- tx_full
+    status_wdata_sw(2 downto 2) <= status_wdata(2 downto 2); -- rx_empty
+    status_wdata_sw(3 downto 3) <= status_wdata(3 downto 3); -- rx_full
+    status_wdata_sw(4 downto 4) <= status_wdata(4 downto 4); -- cmd_empty
+    status_wdata_sw(5 downto 5) <= status_wdata(5 downto 5); -- cmd_full
+    status_wdata_sw(6 downto 6) <= status_wdata(6 downto 6); -- busy
+    status_wdata_hw(0 downto 0) <= hw2sw_i.status.tx_empty; -- tx_empty
+    status_wdata_hw(1 downto 1) <= hw2sw_i.status.tx_full; -- tx_full
+    status_wdata_hw(2 downto 2) <= hw2sw_i.status.rx_empty; -- rx_empty
+    status_wdata_hw(3 downto 3) <= hw2sw_i.status.rx_full; -- rx_full
+    status_wdata_hw(4 downto 4) <= hw2sw_i.status.cmd_empty; -- cmd_empty
+    status_wdata_hw(5 downto 5) <= hw2sw_i.status.cmd_full; -- cmd_full
+    status_wdata_hw(6 downto 6) <= hw2sw_i.status.busy; -- busy
+    sw2hw_o.status.tx_empty <= status_rdata_hw(0 downto 0); -- tx_empty
+    sw2hw_o.status.tx_full <= status_rdata_hw(1 downto 1); -- tx_full
+    sw2hw_o.status.rx_empty <= status_rdata_hw(2 downto 2); -- rx_empty
+    sw2hw_o.status.rx_full <= status_rdata_hw(3 downto 3); -- rx_full
+    sw2hw_o.status.cmd_empty <= status_rdata_hw(4 downto 4); -- cmd_empty
+    sw2hw_o.status.cmd_full <= status_rdata_hw(5 downto 5); -- cmd_full
+    sw2hw_o.status.busy <= status_rdata_hw(6 downto 6); -- busy
+
+    ins_status : csr_ext
+      generic map
+        (WIDTH         => 7
+        )
+      port map
+        (clk_i         => clk_i
+        ,arst_b_i      => arst_b_i
+        ,sw_wd_i       => status_wdata_sw
+        ,sw_rd_o       => status_rdata_sw
+        ,sw_we_i       => status_we
+        ,sw_re_i       => status_re
+        ,sw_rbusy_o    => status_rbusy
+        ,sw_wbusy_o    => status_wbusy
+        ,hw_wd_i       => status_wdata_hw
+        ,hw_rd_o       => status_rdata_hw
+        ,hw_we_i       => hw2sw_i.status.we
+        ,hw_sw_re_o    => sw2hw_o.status.re
+        ,hw_sw_we_o    => sw2hw_o.status.we
+        );
+
+  end generate gen_status;
+
+  gen_status_b: if not (True)
+  generate
+    status_rcs     <= '0';
+    status_rbusy   <= '0';
+    status_rdata   <= (others => '0');
+    status_wcs      <= '0';
+    status_wbusy    <= '0';
+    sw2hw_o.status.tx_empty <= "0";
+    sw2hw_o.status.tx_full <= "0";
+    sw2hw_o.status.rx_empty <= "0";
+    sw2hw_o.status.rx_full <= "0";
+    sw2hw_o.status.cmd_empty <= "0";
+    sw2hw_o.status.cmd_full <= "0";
+    sw2hw_o.status.busy <= "0";
+    sw2hw_o.status.re <= '0';
+    sw2hw_o.status.we <= '0';
+  end generate gen_status_b;
+
   sig_wbusy <= 
     data_wbusy when data_wcs = '1' else
     cmd_wbusy when cmd_wcs = '1' else
     cfg_wbusy when cfg_wcs = '1' else
     prescaler_wbusy when prescaler_wcs = '1' else
+    status_wbusy when status_wcs = '1' else
     '0'; -- Bad Address, no busy
   sig_rbusy <= 
     data_rbusy when data_rcs = '1' else
     cmd_rbusy when cmd_rcs = '1' else
     cfg_rbusy when cfg_rcs = '1' else
     prescaler_rbusy when prescaler_rcs = '1' else
+    status_rbusy when status_rcs = '1' else
     '0'; -- Bad Address, no busy
   sig_rdata <= 
     data_rdata when data_rcs = '1' else
     cmd_rdata when cmd_rcs = '1' else
     cfg_rdata when cfg_rcs = '1' else
     prescaler_rdata when prescaler_rcs = '1' else
+    status_rdata when status_rcs = '1' else
     (others => '0'); -- Bad Address, return 0
 
   gen_tgt_info_name : if MODULE_NAME = ""

@@ -100,7 +100,10 @@ component spi_master is
     --                     3 - Hold (active low)
     io_o                 : out std_logic_vector(8-1 downto 0);
     io_i                 : in  std_logic_vector(8-1 downto 0);
-    io_oe_o              : out std_logic_vector(8-1 downto 0)
+    io_oe_o              : out std_logic_vector(8-1 downto 0);
+
+    -- Status
+    busy_o               : out std_logic  -- 1 : transaction in progress (FSM not idle or CS# active)
     );
 end component spi_master;
 

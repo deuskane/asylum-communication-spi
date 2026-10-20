@@ -18,7 +18,7 @@ package SPI_csr_pkg is
   -- Global Constants
   ------------------------------------
 
-  constant SPI_ADDR_WIDTH : natural := 2;
+  constant SPI_ADDR_WIDTH : natural := 3;
   constant SPI_DATA_WIDTH : natural := 8;
 
   --==================================
@@ -237,6 +237,110 @@ constant SPI_CMD_CFG_KEEP_RAW : std_logic_vector(8-1 downto 0) := "10000000";
     ratio : std_logic_vector(8-1 downto 0);
   end record SPI_prescaler_sw2hw_t;
 
+  --==================================
+  -- Register    : status
+  -- Description : SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
+  -- Address     : 0x4
+  -- Width       : 7
+  -- Sw Access   : rw
+  -- Hw Access   : rw
+  -- Hw Type     : ext
+  --==================================
+  constant SPI_STATUS : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(4, SPI_ADDR_WIDTH);
+
+  type SPI_status_sw2hw_t is record
+    re : std_logic;
+    we : std_logic;
+  --==================================
+  -- Field       : tx_empty
+  -- Description : 1 : TX FIFO (data write) is empty
+  -- Width       : 1
+  --==================================
+    tx_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : tx_full
+  -- Description : 1 : TX FIFO (data write) is full, a write to data waits until the SPI master pops a byte (always 1 with DEPTH_TX=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+    tx_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : rx_empty
+  -- Description : 1 : RX FIFO (data read) is empty, a read of data waits until the SPI master pushes a byte
+  -- Width       : 1
+  --==================================
+    rx_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : rx_full
+  -- Description : 1 : RX FIFO (data read) is full, the SPI master waits for a read of data before receiving the next byte
+  -- Width       : 1
+  --==================================
+    rx_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : cmd_empty
+  -- Description : 1 : Command FIFO is empty
+  -- Width       : 1
+  --==================================
+    cmd_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : cmd_full
+  -- Description : 1 : Command FIFO is full, a write to cmd waits until the SPI master pops a command (always 1 with DEPTH_CMD=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+    cmd_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : busy
+  -- Description : 1 : SPI transaction in progress (CS# active or SPI master not idle) or command pending, 0 : all commands are done and CS# is released
+  -- Width       : 1
+  --==================================
+    busy : std_logic_vector(1-1 downto 0);
+  end record SPI_status_sw2hw_t;
+
+  type SPI_status_hw2sw_t is record
+    we : std_logic;
+  --==================================
+  -- Field       : tx_empty
+  -- Description : 1 : TX FIFO (data write) is empty
+  -- Width       : 1
+  --==================================
+    tx_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : tx_full
+  -- Description : 1 : TX FIFO (data write) is full, a write to data waits until the SPI master pops a byte (always 1 with DEPTH_TX=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+    tx_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : rx_empty
+  -- Description : 1 : RX FIFO (data read) is empty, a read of data waits until the SPI master pushes a byte
+  -- Width       : 1
+  --==================================
+    rx_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : rx_full
+  -- Description : 1 : RX FIFO (data read) is full, the SPI master waits for a read of data before receiving the next byte
+  -- Width       : 1
+  --==================================
+    rx_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : cmd_empty
+  -- Description : 1 : Command FIFO is empty
+  -- Width       : 1
+  --==================================
+    cmd_empty : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : cmd_full
+  -- Description : 1 : Command FIFO is full, a write to cmd waits until the SPI master pops a command (always 1 with DEPTH_CMD=0 outside the master handshake)
+  -- Width       : 1
+  --==================================
+    cmd_full : std_logic_vector(1-1 downto 0);
+  --==================================
+  -- Field       : busy
+  -- Description : 1 : SPI transaction in progress (CS# active or SPI master not idle) or command pending, 0 : all commands are done and CS# is released
+  -- Width       : 1
+  --==================================
+    busy : std_logic_vector(1-1 downto 0);
+  end record SPI_status_hw2sw_t;
+
   ------------------------------------
   -- Structure SPI_t
   ------------------------------------
@@ -245,11 +349,13 @@ constant SPI_CMD_CFG_KEEP_RAW : std_logic_vector(8-1 downto 0) := "10000000";
     cmd : SPI_cmd_sw2hw_t;
     cfg : SPI_cfg_sw2hw_t;
     prescaler : SPI_prescaler_sw2hw_t;
+    status : SPI_status_sw2hw_t;
   end record SPI_sw2hw_t;
 
   type SPI_hw2sw_t is record
     data : SPI_data_hw2sw_t;
     cmd : SPI_cmd_hw2sw_t;
+    status : SPI_status_hw2sw_t;
   end record SPI_hw2sw_t;
 
   ------------------------------------

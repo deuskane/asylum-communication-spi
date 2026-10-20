@@ -32,6 +32,7 @@ entity sbi_SPI_wrapper is
     DEPTH_TX              : natural := 8;
     DEPTH_RX              : natural := 8;
     HANDLE_HOLD_WP        : boolean := false;
+    RX_LATE_SAMPLE        : boolean := false;
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
     FILENAME_RX           : string  := "dump_spi_rx.txt"
@@ -67,6 +68,7 @@ begin
       DEPTH_TX              => DEPTH_TX,
       DEPTH_RX              => DEPTH_RX,
       HANDLE_HOLD_WP        => HANDLE_HOLD_WP,
+      RX_LATE_SAMPLE        => RX_LATE_SAMPLE,
       FILENAME_CMD          => FILENAME_CMD,
       FILENAME_TX           => FILENAME_TX,
       FILENAME_RX           => FILENAME_RX

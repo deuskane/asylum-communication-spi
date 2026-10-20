@@ -48,6 +48,7 @@ architecture sim of tb is
   constant SPI_ADDR_WIDTH  : natural := 2;
   constant SPI_DATA_WIDTH  : natural := 8;
   constant HANDLE_HOLD_WP  : boolean := true;
+  constant C_POLL_MAX      : positive := 10000; -- Max number of status register polls
 
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
@@ -552,15 +553,15 @@ begin
       sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Byte",            clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Instruction 0x05",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
 
-      -- Poll SR1 until WIP (bit) is 0: loop while rdata /= x"00"
+      -- Poll SR1 until WIP (bit 0) is 0, with a bounded number of polls
       rdata := x"FF";
-      while rdata /= x"00" loop
-        -- small delay between polls
-        --wait for 1 us;
+      for i in 1 to C_POLL_MAX loop
         sbi_write(addr_value => SPI_CMD      , data_value => x"10", msg => "SPI RX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
         sbi_read (addr_value => SPI_DATA     , data_value => rdata, msg => "SR1 -> WIP",               clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
+        exit when rdata(0) = '0';
       end loop;
-  
+      check_value(rdata(0), '0', ERROR, "SR1.WIP cleared after at most " & to_string(C_POLL_MAX) & " polls", C_SCOPE);
+
       sbi_write(addr_value => SPI_CMD      , data_value => x"40", msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
       
       log(ID_LOG_HDR, "Perform QOR (0x6B) - At address 0x000020 (24b)", C_SCOPE);

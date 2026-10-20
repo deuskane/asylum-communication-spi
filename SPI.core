@@ -173,6 +173,14 @@ targets:
       - PRESCALER_RATIO=00001111
 
   #---------------------------------------
+  lint_ghdl_synth_rx_late_sample :
+  #---------------------------------------
+    << : *lint_ghdl_synth
+    description     : Synthesis check of sbi_SPI_wrapper, late RX sampling (input registers)
+    parameters      :
+      - RX_LATE_SAMPLE=true
+
+  #---------------------------------------
   default_sim: &default_sim
   #---------------------------------------
     << : *default
@@ -197,7 +205,7 @@ targets:
           - "--ieee-asserts=disable"
 
   #---------------------------------------
-  sim_basic:
+  sim_basic: &sim_basic
   #---------------------------------------
     << : *default
     description     : Simulation of sbi_SPI with a SPI slave model (UVVM)
@@ -215,6 +223,14 @@ targets:
           - "$(GHDL_RUN_OPTION)"
           - "--ieee-asserts=disable"
 
+  #---------------------------------------
+  sim_basic_late:
+  #---------------------------------------
+    << : *sim_basic
+    description     : Simulation of sbi_SPI with RX_LATE_SAMPLE and a slave output valid time longer than half a SCLK period (UVVM)
+    parameters      :
+      - RX_LATE_SAMPLE=true
+      - SLAVE_TV_NS=25
 
   #---------------------------------------
   sim_at25df161:
@@ -337,4 +353,16 @@ parameters :
     description : true, io(2) (WP#) and io(3) (HOLD#) driven by the SPI master
     datatype    : bool
     default     : true
+    paramtype   : generic
+
+  RX_LATE_SAMPLE :
+    description : true, io_i registered and sampled one SCLK period after its sample edge (sbi_SPI_wrapper and tb_SPI basic)
+    datatype    : bool
+    default     : false
+    paramtype   : generic
+
+  SLAVE_TV_NS :
+    description : Output valid time of the SPI slave model in ns (tb_SPI basic)
+    datatype    : int
+    default     : 0
     paramtype   : generic

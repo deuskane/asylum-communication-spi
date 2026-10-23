@@ -25,13 +25,16 @@
 MAKEFILE=Makefile
 MK=ghdl_synth.mk
 
-for file in "$MAKEFILE" "$MK"; do
-    if [ ! -f "$file" ]; then
+for file in "$MAKEFILE" "$MK";
+do
+    if [ ! -f "$file" ]; 
+    then
         echo "ghdl_synth.sh : $file not found in $PWD" >&2
         exit 1
     fi
 done
 
-if ! grep -qx "include $MK" "$MAKEFILE"; then
+if ! grep -qx "include $MK" "$MAKEFILE";
+then
     printf '\n# Added by ghdl_synth.sh (pre_run hook)\ninclude %s\n' "$MK" >> "$MAKEFILE"
 fi

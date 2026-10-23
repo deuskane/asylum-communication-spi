@@ -55,14 +55,6 @@ architecture rtl of SPI_registers is
 
   signal   sig_busy  : std_logic;
 
-  function INIT_data
-    return std_logic_vector is
-    variable tmp : std_logic_vector(8-1 downto 0);
-  begin  -- function INIT_data
-    tmp(7 downto 0) := "00000000"; -- value
-    return tmp;
-  end function INIT_data;
-
   signal   data_wcs       : std_logic;
   signal   data_we        : std_logic;
   signal   data_wdata     : std_logic_vector(8-1 downto 0);
@@ -77,24 +69,10 @@ architecture rtl of SPI_registers is
   signal   data_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   data_rbusy     : std_logic;
 
-  function INIT_cmd
-    return std_logic_vector is
-    variable tmp : std_logic_vector(8-1 downto 0);
-  begin  -- function INIT_cmd
-    tmp(1 downto 0) := "00"; -- nb_bytes
-    tmp(3 downto 2) := "00"; -- size
-    tmp(4 downto 4) := "0"; -- enable_rx
-    tmp(5 downto 5) := "0"; -- enable_tx
-    tmp(6 downto 6) := "0"; -- last
-    tmp(7 downto 7) := "0"; -- cfg
-    return tmp;
-  end function INIT_cmd;
-
   signal   cmd_wcs       : std_logic;
   signal   cmd_we        : std_logic;
   signal   cmd_wdata     : std_logic_vector(8-1 downto 0);
   signal   cmd_wdata_sw  : std_logic_vector(8-1 downto 0);
-  signal   cmd_wdata_hw  : std_logic_vector(8-1 downto 0);
   signal   cmd_wbusy     : std_logic;
 
   signal   cmd_rcs       : std_logic;
@@ -119,7 +97,6 @@ architecture rtl of SPI_registers is
   signal   cfg_we        : std_logic;
   signal   cfg_wdata     : std_logic_vector(8-1 downto 0);
   signal   cfg_wdata_sw  : std_logic_vector(4-1 downto 0);
-  signal   cfg_wdata_hw  : std_logic_vector(4-1 downto 0);
   signal   cfg_wbusy     : std_logic;
 
   signal   cfg_rcs       : std_logic;
@@ -141,7 +118,6 @@ architecture rtl of SPI_registers is
   signal   prescaler_we        : std_logic;
   signal   prescaler_wdata     : std_logic_vector(8-1 downto 0);
   signal   prescaler_wdata_sw  : std_logic_vector(8-1 downto 0);
-  signal   prescaler_wdata_hw  : std_logic_vector(8-1 downto 0);
   signal   prescaler_wbusy     : std_logic;
 
   signal   prescaler_rcs       : std_logic;
@@ -190,15 +166,15 @@ begin  -- architecture rtl
     data_rcs     <= '1' when (sig_raddr = SPI_DATA) else '0';
     data_re      <= sig_rcs and sig_re and data_rcs;
     data_rdata   <= (
-      0 => data_rdata_sw(0), -- value(0)
-      1 => data_rdata_sw(1), -- value(1)
-      2 => data_rdata_sw(2), -- value(2)
-      3 => data_rdata_sw(3), -- value(3)
-      4 => data_rdata_sw(4), -- value(4)
-      5 => data_rdata_sw(5), -- value(5)
-      6 => data_rdata_sw(6), -- value(6)
-      7 => data_rdata_sw(7), -- value(7)
-      others => '0');
+       0 => data_rdata_sw(0) -- value(0)
+      ,1 => data_rdata_sw(1) -- value(1)
+      ,2 => data_rdata_sw(2) -- value(2)
+      ,3 => data_rdata_sw(3) -- value(3)
+      ,4 => data_rdata_sw(4) -- value(4)
+      ,5 => data_rdata_sw(5) -- value(5)
+      ,6 => data_rdata_sw(6) -- value(6)
+      ,7 => data_rdata_sw(7) -- value(7)
+      );
 
     data_wcs     <= '1' when       (sig_waddr = SPI_DATA)   else '0';
     data_we      <= sig_wcs and sig_we and data_wcs;
@@ -403,11 +379,12 @@ begin  -- architecture rtl
     cfg_rcs     <= '1' when (sig_raddr = SPI_CFG) else '0';
     cfg_re      <= sig_rcs and sig_re and cfg_rcs;
     cfg_rdata   <= (
-      0 => cfg_rdata_sw(0), -- spi_enable(0)
-      1 => cfg_rdata_sw(1), -- cpol(0)
-      2 => cfg_rdata_sw(2), -- cpha(0)
-      3 => cfg_rdata_sw(3), -- loopback(0)
-      others => '0');
+       0 => cfg_rdata_sw(0) -- spi_enable(0)
+      ,1 => cfg_rdata_sw(1) -- cpol(0)
+      ,2 => cfg_rdata_sw(2) -- cpha(0)
+      ,3 => cfg_rdata_sw(3) -- loopback(0)
+      ,others => '0'
+      );
 
     cfg_wcs     <= '1' when       (sig_waddr = SPI_CFG)   else '0';
     cfg_we      <= sig_wcs and sig_we and cfg_wcs;
@@ -481,15 +458,15 @@ begin  -- architecture rtl
     prescaler_rcs     <= '1' when (sig_raddr = SPI_PRESCALER) else '0';
     prescaler_re      <= sig_rcs and sig_re and prescaler_rcs;
     prescaler_rdata   <= (
-      0 => prescaler_rdata_sw(0), -- ratio(0)
-      1 => prescaler_rdata_sw(1), -- ratio(1)
-      2 => prescaler_rdata_sw(2), -- ratio(2)
-      3 => prescaler_rdata_sw(3), -- ratio(3)
-      4 => prescaler_rdata_sw(4), -- ratio(4)
-      5 => prescaler_rdata_sw(5), -- ratio(5)
-      6 => prescaler_rdata_sw(6), -- ratio(6)
-      7 => prescaler_rdata_sw(7), -- ratio(7)
-      others => '0');
+       0 => prescaler_rdata_sw(0) -- ratio(0)
+      ,1 => prescaler_rdata_sw(1) -- ratio(1)
+      ,2 => prescaler_rdata_sw(2) -- ratio(2)
+      ,3 => prescaler_rdata_sw(3) -- ratio(3)
+      ,4 => prescaler_rdata_sw(4) -- ratio(4)
+      ,5 => prescaler_rdata_sw(5) -- ratio(5)
+      ,6 => prescaler_rdata_sw(6) -- ratio(6)
+      ,7 => prescaler_rdata_sw(7) -- ratio(7)
+      );
 
     prescaler_wcs     <= '1' when       (sig_waddr = SPI_PRESCALER)   else '0';
     prescaler_we      <= sig_wcs and sig_we and prescaler_wcs;

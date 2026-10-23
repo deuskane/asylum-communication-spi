@@ -1,0 +1,17 @@
+default                         : Default Target
+default_sim                     : Default Target for simulation
+lint_ghdl                       : Lint with GHDL (-Wall analysis and elaboration of sbi_SPI_synth_top)
+lint_ghdl_synth_default         : Synthesis check of sbi_SPI_synth_top, default generics (PicoSoC)
+lint_ghdl_synth_fixed_prescaler : Synthesis check of sbi_SPI_synth_top, fixed prescaler
+lint_ghdl_synth_sim_basic       : Synthesis check of sbi_SPI_synth_top, generics of sim_basic
+lint_ghdl_synth_sim_models      : Synthesis check of sbi_SPI_synth_top, generics of the model testbenches
+sim_at25df161                   : Simulation of at25df161
+sim_basic                       : Simulation of sbi_SPI with a SPI slave model (UVVM)
+sim_cy15b104qs                  : Simulation of cy15b104qs
+sim_cy15v104qs                  : Simulation of cy15v104qs
+sim_m25p40                      : Simulation of m25p40
+sim_m45pe80                     : Simulation of m45pe80
+sim_s25fl064p                   : Simulation of s25fl064p
+sim_s25fl512s                   : Simulation of s25fl512s
+sim_s35hl256t                   : Simulation of s35hl256t
+

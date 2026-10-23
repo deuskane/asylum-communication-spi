@@ -30,10 +30,10 @@ entity sbi_SPI_synth_top is
   generic (
     USER_DEFINE_PRESCALER : boolean                        := true;
     PRESCALER_RATIO       : std_logic_vector(8-1 downto 0) := x"00";
-    DEPTH_CMD             : natural := 0;
-    DEPTH_TX              : natural := 0;
-    DEPTH_RX              : natural := 0;
-    HANDLE_HOLD_WP        : boolean := true
+    DEPTH_CMD             : natural                        := 0;
+    DEPTH_TX              : natural                        := 0;
+    DEPTH_RX              : natural                        := 0;
+    HANDLE_HOLD_WP        : boolean                        := true
   );
   port (
     clk_i         : in  std_logic;

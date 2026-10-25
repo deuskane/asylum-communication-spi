@@ -127,20 +127,6 @@ architecture rtl of SPI_registers is
   signal   prescaler_rdata_hw  : std_logic_vector(8-1 downto 0);
   signal   prescaler_rbusy     : std_logic;
 
-  function INIT_status
-    return std_logic_vector is
-    variable tmp : std_logic_vector(7-1 downto 0);
-  begin  -- function INIT_status
-    tmp(0 downto 0) := "0"; -- tx_empty
-    tmp(1 downto 1) := "0"; -- tx_full
-    tmp(2 downto 2) := "0"; -- rx_empty
-    tmp(3 downto 3) := "0"; -- rx_full
-    tmp(4 downto 4) := "0"; -- cmd_empty
-    tmp(5 downto 5) := "0"; -- cmd_full
-    tmp(6 downto 6) := "0"; -- busy
-    return tmp;
-  end function INIT_status;
-
   signal   status_wcs       : std_logic;
   signal   status_we        : std_logic;
   signal   status_wdata     : std_logic_vector(8-1 downto 0);
@@ -250,6 +236,10 @@ begin  -- architecture rtl
     data_wcs      <= '0';
     data_wbusy    <= '0';
     sw2hw_o.data.value <= "00000000";
+    sw2hw_o.data.sw2hw_empty <= '1';
+    sw2hw_o.data.sw2hw_full  <= '0';
+    sw2hw_o.data.hw2sw_empty <= '1';
+    sw2hw_o.data.hw2sw_full  <= '0';
     sw2hw_o.data.ready <= '0';
     sw2hw_o.data.valid <= '0';
   end generate gen_data_b;
@@ -365,6 +355,8 @@ begin  -- architecture rtl
     sw2hw_o.cmd.enable_tx <= "0";
     sw2hw_o.cmd.last <= "0";
     sw2hw_o.cmd.cfg <= "0";
+    sw2hw_o.cmd.sw2hw_empty <= '1';
+    sw2hw_o.cmd.sw2hw_full  <= '0';
     sw2hw_o.cmd.valid <= '0';
   end generate gen_cmd_b;
 
@@ -543,9 +535,9 @@ begin  -- architecture rtl
   --==================================
   -- Register    : status
   -- Description : SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
-  -- Address     : 0x4
+  -- Address     : 0x1
   -- Width       : 7
-  -- Sw Access   : rw
+  -- Sw Access   : ro
   -- Hw Access   : rw
   -- Hw Type     : ext
   --==================================
@@ -595,25 +587,20 @@ begin  -- architecture rtl
     status_rcs     <= '1' when (sig_raddr = SPI_STATUS) else '0';
     status_re      <= sig_rcs and sig_re and status_rcs;
     status_rdata   <= (
-      0 => status_rdata_sw(0), -- tx_empty(0)
-      1 => status_rdata_sw(1), -- tx_full(0)
-      2 => status_rdata_sw(2), -- rx_empty(0)
-      3 => status_rdata_sw(3), -- rx_full(0)
-      4 => status_rdata_sw(4), -- cmd_empty(0)
-      5 => status_rdata_sw(5), -- cmd_full(0)
-      6 => status_rdata_sw(6), -- busy(0)
-      others => '0');
+       0 => status_rdata_sw(0) -- tx_empty(0)
+      ,1 => status_rdata_sw(1) -- tx_full(0)
+      ,2 => status_rdata_sw(2) -- rx_empty(0)
+      ,3 => status_rdata_sw(3) -- rx_full(0)
+      ,4 => status_rdata_sw(4) -- cmd_empty(0)
+      ,5 => status_rdata_sw(5) -- cmd_full(0)
+      ,6 => status_rdata_sw(6) -- busy(0)
+      ,others => '0'
+      );
 
-    status_wcs     <= '1' when       (sig_waddr = SPI_STATUS)   else '0';
-    status_we      <= sig_wcs and sig_we and status_wcs;
-    status_wdata   <= sig_wdata;
-    status_wdata_sw(0 downto 0) <= status_wdata(0 downto 0); -- tx_empty
-    status_wdata_sw(1 downto 1) <= status_wdata(1 downto 1); -- tx_full
-    status_wdata_sw(2 downto 2) <= status_wdata(2 downto 2); -- rx_empty
-    status_wdata_sw(3 downto 3) <= status_wdata(3 downto 3); -- rx_full
-    status_wdata_sw(4 downto 4) <= status_wdata(4 downto 4); -- cmd_empty
-    status_wdata_sw(5 downto 5) <= status_wdata(5 downto 5); -- cmd_full
-    status_wdata_sw(6 downto 6) <= status_wdata(6 downto 6); -- busy
+    status_wcs      <= '0';
+    status_we       <= '0';
+    status_wdata    <= (others=>'0');
+    status_wdata_sw <= (others=>'0');
     status_wdata_hw(0 downto 0) <= hw2sw_i.status.tx_empty; -- tx_empty
     status_wdata_hw(1 downto 1) <= hw2sw_i.status.tx_full; -- tx_full
     status_wdata_hw(2 downto 2) <= hw2sw_i.status.rx_empty; -- rx_empty
@@ -646,7 +633,7 @@ begin  -- architecture rtl
         ,hw_rd_o       => status_rdata_hw
         ,hw_we_i       => hw2sw_i.status.we
         ,hw_sw_re_o    => sw2hw_o.status.re
-        ,hw_sw_we_o    => sw2hw_o.status.we
+        ,hw_sw_we_o      => open
         );
 
   end generate gen_status;
@@ -666,7 +653,6 @@ begin  -- architecture rtl
     sw2hw_o.status.cmd_full <= "0";
     sw2hw_o.status.busy <= "0";
     sw2hw_o.status.re <= '0';
-    sw2hw_o.status.we <= '0';
   end generate gen_status_b;
 
   sig_wbusy <= 

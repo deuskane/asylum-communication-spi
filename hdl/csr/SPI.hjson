@@ -190,9 +190,9 @@
 
 	{
             name         : "status",
-            address      : "x4",
+            address      : "x1",
             desc         : "SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus"
-            swaccess     : "rw",
+            swaccess     : "ro",
             hwaccess     : "rw",
             hwtype       : "ext",
 

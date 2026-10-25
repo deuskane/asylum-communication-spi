@@ -4,10 +4,9 @@ CSR for SPI
 | Address | Registers |
 |---------|-----------|
 |0x0|data|
-|0x1|cmd|
+|0x1|cmd, status|
 |0x2|cfg|
 |0x3|prescaler|
-|0x4|status|
 
 ## 0x0 data
 Write : data to tansmit, Read : data to receive
@@ -57,7 +56,7 @@ SPI Clock Prescaler. SCLK Frequency is CLK / 2*(prescaler+1)
 ### [7:0] ratio
 Baud Tick Counter Max
 
-## 0x4 status
+## 0x1 status
 SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
 
 ### [0:0] tx_empty

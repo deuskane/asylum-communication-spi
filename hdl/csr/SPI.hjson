@@ -187,5 +187,52 @@
                 },
             ]
         },
+
+	{
+            name         : "status",
+            address      : "x4",
+            desc         : "SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus"
+            swaccess     : "rw",
+            hwaccess     : "rw",
+            hwtype       : "ext",
+
+            fields: [
+                {
+                    name: "tx_empty",
+                    bits: "0",
+                    desc: "1 : TX FIFO (data write) is empty"
+                },
+                {
+                    name: "tx_full",
+                    bits: "1",
+                    desc: "1 : TX FIFO (data write) is full, a write to data waits until the SPI master pops a byte (always 1 with DEPTH_TX=0 outside the master handshake)"
+                },
+                {
+                    name: "rx_empty",
+                    bits: "2",
+                    desc: "1 : RX FIFO (data read) is empty, a read of data waits until the SPI master pushes a byte"
+                },
+                {
+                    name: "rx_full",
+                    bits: "3",
+                    desc: "1 : RX FIFO (data read) is full, the SPI master waits for a read of data before receiving the next byte"
+                },
+                {
+                    name: "cmd_empty",
+                    bits: "4",
+                    desc: "1 : Command FIFO is empty"
+                },
+                {
+                    name: "cmd_full",
+                    bits: "5",
+                    desc: "1 : Command FIFO is full, a write to cmd waits until the SPI master pops a command (always 1 with DEPTH_CMD=0 outside the master handshake)"
+                },
+                {
+                    name: "busy",
+                    bits: "6",
+                    desc: "1 : SPI transaction in progress (CS# active or SPI master not idle) or command pending, 0 : all commands are done and CS# is released"
+                },
+            ]
+        },
 ]
 }

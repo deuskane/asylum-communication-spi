@@ -76,7 +76,10 @@ entity spi_master is
     --                     3 - Hold (active low)
     io_o                 : out std_logic_vector(8-1 downto 0);
     io_i                 : in  std_logic_vector(8-1 downto 0);
-    io_oe_o              : out std_logic_vector(8-1 downto 0)
+    io_oe_o              : out std_logic_vector(8-1 downto 0);
+
+    -- Status
+    busy_o               : out std_logic  -- 1 : transaction in progress (FSM not idle or CS# active)
     );
 end entity spi_master;
  
@@ -486,5 +489,8 @@ begin
   rx_tdata_o   <= rx_tdata_r ;
   rx_tvalid_o  <= rx_tvalid_r;
   cmd_tready_o <= cmd_tready_r;
+
+  busy_o       <= '0' when (state_r = IDLE and cs_b_r = '1') else
+                  '1';
 end architecture rtl;
  

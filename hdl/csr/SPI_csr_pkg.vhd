@@ -18,7 +18,7 @@ package SPI_csr_pkg is
   -- Global Constants
   ------------------------------------
 
-  constant SPI_ADDR_WIDTH : natural := 3;
+  constant SPI_ADDR_WIDTH : natural := 2;
   constant SPI_DATA_WIDTH : natural := 8;
 
   --==================================
@@ -240,17 +240,16 @@ constant SPI_CMD_CFG_KEEP_RAW : std_logic_vector(8-1 downto 0) := "10000000";
   --==================================
   -- Register    : status
   -- Description : SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
-  -- Address     : 0x4
+  -- Address     : 0x1
   -- Width       : 7
-  -- Sw Access   : rw
+  -- Sw Access   : ro
   -- Hw Access   : rw
   -- Hw Type     : ext
   --==================================
-  constant SPI_STATUS : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(4, SPI_ADDR_WIDTH);
+  constant SPI_STATUS : unsigned(SPI_ADDR_WIDTH-1 downto 0) := to_unsigned(1, SPI_ADDR_WIDTH);
 
   type SPI_status_sw2hw_t is record
     re : std_logic;
-    we : std_logic;
   --==================================
   -- Field       : tx_empty
   -- Description : 1 : TX FIFO (data write) is empty

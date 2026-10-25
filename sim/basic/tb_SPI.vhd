@@ -520,8 +520,6 @@ begin
     ------------------------------------------------
     configure('0', '0', 1);
     check_reg(SPI_STATUS, x"15", "Status idle (tx_empty, rx_empty, cmd_empty)");
-    write_reg(SPI_STATUS, x"FF", "Write status (ignored)");
-    check_reg(SPI_STATUS, x"15", "Status unchanged by a write");
 
     -- TX FIFO full without command : not busy
     v_seed := v_seed + 1;

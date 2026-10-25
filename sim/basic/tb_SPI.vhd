@@ -279,6 +279,17 @@ begin
       sbi_check(addr, data, msg, clk_i, sbi_if, ERROR, C_SCOPE, shared_msg_id_panel, v_sbi_config);
     end procedure;
 
+    -- Poll the status register until (status and mask) = value
+    procedure poll_status(mask : std_logic_vector(7 downto 0); value : std_logic_vector(7 downto 0); msg : string) is
+      variable v_status : std_logic_vector(7 downto 0);
+    begin
+      for i in 1 to 1000 loop
+        sbi_read(addr_value => SPI_STATUS, data_value => v_status, msg => msg, clk => clk_i, sbi_if => sbi_if, scope => C_SCOPE, config => v_sbi_config);
+        exit when (v_status and mask) = value;
+      end loop;
+      check_value(v_status and mask, value, ERROR, msg & " : status polling");
+    end procedure;
+
     -- Command register value
     function cmd(size  : std_logic_vector(7 downto 0);
                  tx    : boolean;
@@ -429,6 +440,7 @@ begin
     log(ID_LOG_HDR, "1. Reset values", C_SCOPE);
     ------------------------------------------------
     check_reg(SPI_CFG      , x"00"          , "Reset value cfg");
+    check_reg(SPI_STATUS   , x"15"          , "Reset value status (tx_empty, rx_empty, cmd_empty)");
     check_reg(SPI_PRESCALER, C_PRESCALER_RST, "Reset value prescaler (PRESCALER_RATIO)");
     check_value(cs_b_oe_o, '0', ERROR, "spi_enable=0 : CS pad disabled (master in reset)");
     check_value(sclk_oe_o, '0', ERROR, "spi_enable=0 : SCLK pad disabled (master in reset)");
@@ -502,6 +514,54 @@ begin
     end loop;
     check_value(slave_nb_trans, v_nb_trans, ERROR, "No transaction while spi_enable = 0");
     check_value(cs_b_oe_o, '0', ERROR, "CS pad disabled while spi_enable = 0");
+
+    ------------------------------------------------
+    log(ID_LOG_HDR, "6. Status register : FIFO flags and busy", C_SCOPE);
+    ------------------------------------------------
+    configure('0', '0', 1);
+    check_reg(SPI_STATUS, x"15", "Status idle (tx_empty, rx_empty, cmd_empty)");
+    write_reg(SPI_STATUS, x"FF", "Write status (ignored)");
+    check_reg(SPI_STATUS, x"15", "Status unchanged by a write");
+
+    -- TX FIFO full without command : not busy
+    v_seed := v_seed + 1;
+    slave_setup(1, false, v_seed);
+    for i in 0 to 7 loop
+      write_reg(SPI_DATA, pattern(v_seed, i), "Status : TX byte " & to_string(i));
+    end loop;
+    check_reg(SPI_STATUS, x"16", "Status TX FIFO full (tx_full, rx_empty, cmd_empty), not busy");
+    -- 2 commands of 4 bytes : busy until CS# is released
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, false, 4), "Status : command TX 4 bytes, not last");
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, true , 4), "Status : command TX 4 bytes, last");
+    poll_status(x"40", x"40", "Status busy during the transaction");
+    poll_status(x"40", x"00", "Status not busy at the end of the transaction");
+    check_value(cs_b, '1', ERROR, "Status not busy : CS# released");
+    wait_end_of_transaction("Status TX");
+    check_value(slave_nb_bytes, 8, ERROR, "Status TX : 8 bytes in the transaction");
+    check_mosi(8, v_seed, 0, "Status TX");
+    check_reg(SPI_STATUS, x"15", "Status idle after the TX transaction");
+
+    -- RX FIFO full (8 bytes) + 1 byte in spi_master : the master waits (busy)
+    -- with the 10th byte until the RX FIFO is read
+    v_seed := v_seed + 1;
+    slave_setup(1, true, v_seed);
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, true, false, 4), "Status : command RX 4 bytes, not last");
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, true, false, 4), "Status : command RX 4 bytes, not last");
+    write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, true, true , 2), "Status : command RX 2 bytes, last");
+    poll_status(x"0C", x"08", "Status RX FIFO full");
+    for i in 1 to 20*(v_ratio+1) loop
+      wait until rising_edge(clk_i);
+    end loop;
+    check_reg(SPI_STATUS, x"59", "Status RX FIFO full, master waiting (tx_empty, rx_full, cmd_empty, busy)");
+    check_value(cs_b, '0', ERROR, "Status RX FIFO full : CS# still active");
+    for i in 0 to 9 loop
+      poll_status(x"04", x"00", "Status RX byte " & to_string(i) & " available");
+      check_reg(SPI_DATA, pattern(v_seed+100, i), "Status : RX byte " & to_string(i));
+    end loop;
+    poll_status(x"40", x"00", "Status not busy at the end of the RX transaction");
+    wait_end_of_transaction("Status RX");
+    check_value(slave_nb_bytes, 10, ERROR, "Status RX : 10 bytes in the transaction");
+    check_reg(SPI_STATUS, x"15", "Status idle after the RX transaction");
 
     log(ID_LOG_HDR, "Simulation Finished", C_SCOPE);
     report_alert_counters(FINAL);

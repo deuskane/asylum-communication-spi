@@ -167,6 +167,55 @@
 #define SPI_PRESCALER_RATIO      0
 #define SPI_PRESCALER_RATIO_MASK 255
 
+//==================================
+// Register    : status
+// Description : SPI Status Register (read only, writes are ignored). data and cmd are blocking FIFO registers : check tx_full / cmd_full before a write and rx_empty before a read to never stall the bus
+// Address     : 0x4
+//==================================
+#define SPI_STATUS 0x4
+
+// Field       : status.tx_empty
+// Description : 1 : TX FIFO (data write) is empty
+// Range       : [0]
+#define SPI_STATUS_TX_EMPTY      0
+#define SPI_STATUS_TX_EMPTY_MASK 1
+
+// Field       : status.tx_full
+// Description : 1 : TX FIFO (data write) is full, a write to data waits until the SPI master pops a byte (always 1 with DEPTH_TX=0 outside the master handshake)
+// Range       : [1]
+#define SPI_STATUS_TX_FULL      1
+#define SPI_STATUS_TX_FULL_MASK 1
+
+// Field       : status.rx_empty
+// Description : 1 : RX FIFO (data read) is empty, a read of data waits until the SPI master pushes a byte
+// Range       : [2]
+#define SPI_STATUS_RX_EMPTY      2
+#define SPI_STATUS_RX_EMPTY_MASK 1
+
+// Field       : status.rx_full
+// Description : 1 : RX FIFO (data read) is full, the SPI master waits for a read of data before receiving the next byte
+// Range       : [3]
+#define SPI_STATUS_RX_FULL      3
+#define SPI_STATUS_RX_FULL_MASK 1
+
+// Field       : status.cmd_empty
+// Description : 1 : Command FIFO is empty
+// Range       : [4]
+#define SPI_STATUS_CMD_EMPTY      4
+#define SPI_STATUS_CMD_EMPTY_MASK 1
+
+// Field       : status.cmd_full
+// Description : 1 : Command FIFO is full, a write to cmd waits until the SPI master pops a command (always 1 with DEPTH_CMD=0 outside the master handshake)
+// Range       : [5]
+#define SPI_STATUS_CMD_FULL      5
+#define SPI_STATUS_CMD_FULL_MASK 1
+
+// Field       : status.busy
+// Description : 1 : SPI transaction in progress (CS# active or SPI master not idle) or command pending, 0 : all commands are done and CS# is released
+// Range       : [6]
+#define SPI_STATUS_BUSY      6
+#define SPI_STATUS_BUSY_MASK 1
+
 //----------------------------------
 // Structure SPI_t
 //----------------------------------
@@ -175,6 +224,7 @@ typedef struct {
   uint8_t cmd; // 0x1
   uint8_t cfg; // 0x2
   uint8_t prescaler; // 0x3
+  uint8_t status; // 0x4
 } SPI_t;
 
 #endif // SPI_REGISTERS_H

@@ -48,6 +48,7 @@ architecture sim of tb_SPI is
   constant C_SCOPE         : string  := "TB_SPI";
   constant C_CLK_PERIOD    : time    := 20 ns;
   constant C_PRESCALER_RST : std_logic_vector(7 downto 0) := x"0F";
+  constant C_CS_HIGH_MIN   : natural := 10;  -- CS_HIGH_MIN_CYCLES of the DUT
 
   type     byte_array_t is array (natural range <>) of std_logic_vector(7 downto 0);
   constant C_NB_MAX        : natural := 64;
@@ -91,6 +92,7 @@ architecture sim of tb_SPI is
   signal   slave_nb_trans  : natural := 0;
   signal   slave_period    : time    := 0 ns;    -- SCLK period (2 first leading edges)
   signal   slave_half      : time    := 0 ns;    -- first leading to first trailing edge
+  signal   cs_high_last    : time    := 0 ns;    -- last CS# high time between 2 transactions
 
   -- Data patterns
   function pattern(seed : natural; i : natural) return std_logic_vector is
@@ -114,6 +116,7 @@ begin
      ,DEPTH_TX              => 8
      ,DEPTH_RX              => 8
      ,HANDLE_HOLD_WP        => false
+     ,CS_HIGH_MIN_CYCLES    => C_CS_HIGH_MIN
     )
     port map (
       clk_i      => clk_i
@@ -150,6 +153,21 @@ begin
   end generate gen_io;
 
   io_i   <= to_x01(io_bus);
+
+  -----------------------------------------------------------------------------
+  -- CS# high time between 2 transactions (tSHSL) >= CS_HIGH_MIN_CYCLES
+  -----------------------------------------------------------------------------
+  p_cs_high : process
+    variable v_t_rise : time;
+  begin
+    wait until cs_b = '1';
+    v_t_rise := now;
+    wait until cs_b = '0';
+    cs_high_last <= now - v_t_rise;
+    if now - v_t_rise < C_CS_HIGH_MIN*C_CLK_PERIOD then
+      alert(ERROR, "CS# high during " & to_string((now - v_t_rise) / C_CLK_PERIOD) & " clk cycles between 2 transactions, less than CS_HIGH_MIN_CYCLES", C_SCOPE);
+    end if;
+  end process p_cs_high;
 
   -----------------------------------------------------------------------------
   -- SPI slave model
@@ -399,6 +417,21 @@ begin
       check_value(slave_nb_bytes, nb, ERROR, msg & " : number of bytes seen by the slave");
     end procedure;
 
+    -- 2 transactions queued back to back in the command FIFO : CS# high guard
+    procedure test_cs_high(msg : string) is
+    begin
+      v_seed := v_seed + 1;
+      slave_setup(1, false, v_seed);
+      write_reg(SPI_DATA, pattern(v_seed, 0), msg & " : TX byte 0");
+      write_reg(SPI_DATA, pattern(v_seed, 1), msg & " : TX byte 1");
+      write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, true, 1), msg & " : command 1 TX 1 byte, last");
+      write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, true, false, true, 1), msg & " : command 2 TX 1 byte, last");
+      wait_end_of_transaction(msg & " (1st)");
+      wait_end_of_transaction(msg & " (2nd)");
+      check_value(cs_high_last >= C_CS_HIGH_MIN*C_CLK_PERIOD, ERROR, msg & " : CS# high " & to_string(cs_high_last / C_CLK_PERIOD) & " clk cycles >= CS_HIGH_MIN_CYCLES");
+      check_value(slave_mosi(0), pattern(v_seed, 1), ERROR, msg & " : MOSI byte of the 2nd transaction");
+    end procedure;
+
     -- Several commands in one transaction (last = 0) then STOP
     procedure test_stop(msg : string) is
     begin
@@ -470,6 +503,7 @@ begin
       test_multi_tx(SPI_CMD_SIZE_QUAD_RAW, 4, 4, "Mode " & to_string(mode) & " quad TX 4 bytes");
       test_multi_rx(SPI_CMD_SIZE_QUAD_RAW, 4, 4, "Mode " & to_string(mode) & " quad RX 4 bytes");
       test_stop    (                          "Mode " & to_string(mode) & " multi commands + STOP");
+      test_cs_high (                          "Mode " & to_string(mode) & " back to back transactions");
     end loop;
 
     ------------------------------------------------

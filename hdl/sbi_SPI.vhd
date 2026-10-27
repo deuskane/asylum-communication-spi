@@ -40,6 +40,7 @@ entity sbi_SPI is
     DEPTH_TX              : natural := 0;
     DEPTH_RX              : natural := 0;
     HANDLE_HOLD_WP        : boolean := false;
+    CS_HIGH_MIN_CYCLES    : natural := 0;   -- Min clk_i cycles with CS# high between 2 transactions (tSHSL)
 
     FILENAME_CMD          : string  := "dump_spi_cmd.txt";
     FILENAME_TX           : string  := "dump_spi_tx.txt";
@@ -160,6 +161,7 @@ begin  -- architecture rtl
     generic map(
       PRESCALER_WIDTH      => 8
      ,HANDLE_HOLD_WP       => HANDLE_HOLD_WP
+     ,CS_HIGH_MIN_CYCLES   => CS_HIGH_MIN_CYCLES
      )
     port map
     ( clk_i                 => clk_i

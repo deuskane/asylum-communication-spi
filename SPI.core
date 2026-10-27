@@ -24,9 +24,10 @@ CAPI=2:
 # 2026-08-02  1.2.5    mrosiere Testbench : use UVVM sbi, dut is sbi_spi instead spi_master
 # 2026-08-17  2.0.0    mrosiere Add multiple data
 # 2026-10-05  2.0.1    mrosiere Update sim_basic
+# 2026-10-27  2.1.0    mrosiere Update after review
 #-----------------------------------------------------------------------------
 
-name        : asylum:communication:SPI:2.0.1
+name        : asylum:communication:SPI:2.1.0
 description : SPI Module
 
 #=========================================

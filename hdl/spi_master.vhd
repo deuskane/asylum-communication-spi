@@ -209,8 +209,8 @@ begin
       then
         io_oe_r(SPI_IO_HOLD_B) <= '1';
         io_oe_r(SPI_IO_WP_B  ) <= '1';
-        io_o_r (SPI_IO_HOLD_B) <= '0';
-        io_o_r (SPI_IO_WP_B  ) <= '0';
+        io_o_r (SPI_IO_HOLD_B) <= '1'; -- HOLD# inactive
+        io_o_r (SPI_IO_WP_B  ) <= '1'; -- WP#   inactive
       end if;
 
     elsif rising_edge(clk_i)
@@ -442,8 +442,8 @@ begin
             then
               io_oe_r(SPI_IO_HOLD_B) <= '1';
               io_oe_r(SPI_IO_WP_B  ) <= '1';
-              io_o_r (SPI_IO_HOLD_B) <= '0';
-              io_o_r (SPI_IO_WP_B  ) <= '0';
+              io_o_r (SPI_IO_HOLD_B) <= '1'; -- HOLD# inactive
+              io_o_r (SPI_IO_WP_B  ) <= '1'; -- WP#   inactive
             end if;
 
           end if;

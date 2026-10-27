@@ -76,6 +76,7 @@ component spi_master is
     cmd_tvalid_i         : in  std_logic;
     cmd_tready_o         : out std_logic;
     cmd_tlast_i          : in  std_logic;
+    cmd_keep_i           : in  std_logic := '0'; -- 1 : enable_rx/tx are kept from the previous command (no STOP decode)
     cmd_enable_rx_i      : in  std_logic;
     cmd_enable_tx_i      : in  std_logic;
     cmd_nb_bytes_i       : in  std_logic_vector;

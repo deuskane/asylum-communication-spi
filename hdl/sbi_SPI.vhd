@@ -173,6 +173,7 @@ begin  -- architecture rtl
      ,cmd_tvalid_i          => sw2hw.cmd.valid
      ,cmd_tready_o          => hw2sw.cmd.ready
      ,cmd_tlast_i           => sw2hw.cmd.last(0)
+     ,cmd_keep_i            => cmd_cfg
      ,cmd_enable_rx_i       =>       cmd_enable_rx
      ,cmd_enable_tx_i       =>       cmd_enable_tx
      ,cmd_nb_bytes_i        =>       cmd_nb_bytes

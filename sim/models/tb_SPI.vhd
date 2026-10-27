@@ -45,8 +45,6 @@ end tb;
 architecture sim of tb is
 
   constant C_SCOPE         : string := "TB_SPI";
-  constant SPI_ADDR_WIDTH  : natural := 2;
-  constant SPI_DATA_WIDTH  : natural := 8;
   constant HANDLE_HOLD_WP  : boolean := true;
 
   signal clk_i             : std_logic := '0';

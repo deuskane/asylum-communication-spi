@@ -99,6 +99,7 @@ architecture rtl of sbi_SPI is
   signal   cmd_size               : std_logic_vector(2-1 downto 0);
   signal   cmd_nb_bytes           : std_logic_vector(6-1 downto 0);
   signal   dump_init              : std_logic := '0';
+  signal   spi_busy               : std_logic;
 
   -- Save command
   alias    spi_master_arst_b      : std_logic        is sw2hw.cfg.spi_enable(0);
@@ -187,7 +188,18 @@ begin  -- architecture rtl
      ,io_i                  => io_i
      ,io_o                  => io_o
      ,io_oe_o               => io_oe_o
+     ,busy_o                => spi_busy
     );
+
+  -- Status register (read only)
+  hw2sw.status.we           <= '0';
+  hw2sw.status.tx_empty (0) <= sw2hw.data.sw2hw_empty;
+  hw2sw.status.tx_full  (0) <= sw2hw.data.sw2hw_full;
+  hw2sw.status.rx_empty (0) <= sw2hw.data.hw2sw_empty;
+  hw2sw.status.rx_full  (0) <= sw2hw.data.hw2sw_full;
+  hw2sw.status.cmd_empty(0) <= sw2hw.cmd.sw2hw_empty;
+  hw2sw.status.cmd_full (0) <= sw2hw.cmd.sw2hw_full;
+  hw2sw.status.busy     (0) <= spi_busy or sw2hw.cmd.valid; -- transaction in progress or command pending
 
 -- synthesis translate_off
   process (clk_i) is

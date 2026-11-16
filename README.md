@@ -40,7 +40,7 @@
 
 **SPI master (single / dual / quad / octal) with CSR access over the SBI bus and TX / RX / command FIFOs.**
 
-VLNV: `asylum:communication:SPI:2.0.1`
+VLNV: `asylum:communication:SPI:2.2.0`
 
 ## Table of Contents
 
@@ -297,7 +297,7 @@ make clean                # remove build/
 Equivalent FuseSoC command:
 
 ```bash
-fusesoc --cores-root . run --build-root build --target sim_m25p40 asylum:communication:SPI:2.0.1
+fusesoc --cores-root . run --build-root build --target sim_m25p40 asylum:communication:SPI:2.2.0
 ```
 
 Outside CI, GHDL writes a waveform `dut.fst`.

@@ -131,7 +131,7 @@
 #define SPI_CFG 0x2
 
 // Field       : cfg.spi_enable
-// Description : 0 : SPI master is disabled (held in reset), 1 : SPI master is enabled
+// Description : 0 : SPI master is disabled (held in reset) : a transfer in progress is aborted, CS# is driven high and SCLK to CPOL, the pending commands and TX bytes are dropped (the RX bytes stay in the RX FIFO). 1 : SPI master is enabled
 // Range       : [0]
 #define SPI_CFG_SPI_ENABLE      0
 #define SPI_CFG_SPI_ENABLE_MASK 1

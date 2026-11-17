@@ -70,8 +70,10 @@ filesets:
       - syn/sbi_SPI_wrapper.vhd
     file_type    : vhdlSource
     logical_name : asylum
+    # ghdl_synth.sh / ghdl_synth.mk (pre_run hook of lint_ghdl_synth_*)
     depend       :
       - asylum:utils:pkg
+      - asylum:utils:ghdl_synth
 
   #---------------------------------------
   sim_basic:
@@ -130,7 +132,8 @@ targets:
   #---------------------------------------
   # Synthesis check : -Wall analysis, ghdl --synth -Wall and elaboration
   # (no simulation) of sbi_SPI_wrapper with the generics of the target.
-  # The pre_run hook adds syn/ghdl/ghdl_synth.mk to the edalize Makefile.
+  # The pre_run hook (ghdl_synth.sh of asylum:utils:ghdl_synth) adds
+  # ghdl_synth.mk to the edalize Makefile.
   # FuseSoC merges tools in depth : analyze_options comes from lint_ghdl.
   #---------------------------------------
   lint_ghdl_synth_default : &lint_ghdl_synth

@@ -20,6 +20,8 @@
       software-visible registers."), never removed.
 -->
 [![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![sim](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsim.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Flint.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/deuskane/asylum-communication-spi?filter=asylum-communication-SPI-*&label=version)](https://github.com/deuskane/asylum-communication-spi/tags)
 [![License](https://img.shields.io/github/license/deuskane/asylum-communication-spi)](LICENSE)
 
@@ -379,7 +381,7 @@ Flash models in [models/](models/) (Free Model Foundry, core [SPI_models.core](S
 | `lint_ghdl` | GHDL `-Wall` analysis and elaboration of [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) |
 | `lint_ghdl_synth_<config>` | `ghdl --synth` check (no latch, synthesizable) for 5 generic configurations: `default`, `sim_basic`, `sim_models`, `fixed_prescaler`, `rx_late_sample` |
 
-Every `sim_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM).
+Every `sim_*` and `lint_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM). The `sim` and `lint` badges count the passed and failed targets of the last run on `main`.
 
 ### How to Run
 

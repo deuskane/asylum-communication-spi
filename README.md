@@ -8,7 +8,7 @@
     badges / title + one-line pitch / Overview / Features / Block Diagram /
     Getting Started / Hardware Interfaces / Configuration /
     Theory of Operation / Registers / Programmer's Guide /
-    Design Verification / Dependencies and Related IPs
+    Design Verification / Dependencies and Related IPs / License
   Rules:
     - English, short and factual: every statement backed by the sources.
     - No VLNV line: the version badge shows it.
@@ -21,6 +21,7 @@
 -->
 [![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/deuskane/asylum-communication-spi?filter=asylum-communication-SPI-*&label=version)](https://github.com/deuskane/asylum-communication-spi/tags)
+[![License](https://img.shields.io/github/license/deuskane/asylum-communication-spi)](LICENSE)
 
 # SPI master
 
@@ -41,6 +42,7 @@ Part of the [Asylum project](https://github.com/deuskane/asylum-project), a coll
 9. [Programmer's Guide](#programmers-guide)
 10. [Design Verification](#design-verification)
 11. [Dependencies and Related IPs](#dependencies-and-related-ips)
+12. [License](#license)
 
 ## Overview
 
@@ -405,3 +407,9 @@ Outside the CI, GHDL writes a waveform `dut.fst`, and `sbi_SPI` writes the dumps
 | `fmf:memory:flash_nor` | this repository | SPI flash models |
 
 Used by [asylum-soc-picosoc](https://github.com/deuskane/asylum-soc-picosoc). Other communication IPs of Asylum: [I2C](https://github.com/deuskane/asylum-communication-i2c), [UART](https://github.com/deuskane/asylum-communication-uart). All the IPs: [asylum-project](https://github.com/deuskane/asylum-project).
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE).
+
+Exception: the SPI flash models in [models/](models/) come from the [Free Model Foundry](https://www.freemodelfoundry.com) and keep their own license, GPL-2.0 (see the header of each file). They are only used by the `sim_<model>` simulation targets and are not part of the IP.

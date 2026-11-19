@@ -12,6 +12,7 @@
   Rules:
     - English, short and factual: every statement backed by the sources.
     - No VLNV line: the version badge shows it.
+    - Badges: first line version, license; second line CI, lint, sim.
     - Block diagram and FSM in Mermaid (rendered by GitHub).
     - Registers: link to the generated hdl/csr/<X>_csr.md, never copy the tables.
     - Tables: Configuration = Name|Type|Default|Description,
@@ -19,11 +20,12 @@
     - A section with nothing to say is one line ("This IP has no
       software-visible registers."), never removed.
 -->
-[![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
-[![sim](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsim.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
-[![lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Flint.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/deuskane/asylum-communication-spi?filter=asylum-communication-SPI-*&label=version)](https://github.com/deuskane/asylum-communication-spi/tags)
 [![License](https://img.shields.io/github/license/deuskane/asylum-communication-spi)](LICENSE)
+
+[![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Flint.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![sim](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsim.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 
 # SPI master
 

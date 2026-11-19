@@ -1,161 +1,138 @@
 <!--
-  README GENERATION INSTRUCTIONS (for the next regeneration run)
+  README MODEL (common to every Asylum IP, keep the same headings)
   ----------------------------------------------------------------
-  This README follows the common Asylum IP model. Regenerate it from the
-  sources, never from the previous README text alone.
-
-  Sources of truth (in priority order):
-    1. hdl/*.vhd            : entities, generics, ports, packages
-    2. hdl/csr/*.hjson      : register map (regtool); *_csr.md/.h are generated
-    3. <IP>.core            : VLNV (name), filesets, targets, depends, revisions
-    4. mk/targets.txt       : target list shown by `make help`; mk/defs.mk
-    5. sim/, syn/, esw/, boards/ : testbenches, constraints, software
-  Section order (keep it, same headings in every IP):
-    CI badge / Title + one-line description + VLNV / Table of Contents /
-    Introduction (Key Features) / Block Diagram / Top-Level (Parameters,
-    Ports, Instantiation Example) / HDL Modules / Register Map /
-    Verification / Synthesis / Design Notes (optional) /
-    Directory Structure / Dependencies
+  Regenerate from the sources, never from the previous README text alone:
+    hdl/*.vhd (entities, generics, ports), hdl/csr/*.hjson (register map),
+    <IP>.core (VLNV, targets, depends), mk/targets.txt, sim/, syn/, esw/.
+  Sections, in this order:
+    badges / title + one-line pitch / Overview / Features / Block Diagram /
+    Getting Started / Hardware Interfaces / Configuration /
+    Theory of Operation / Registers / Programmer's Guide /
+    Design Verification / Dependencies and Related IPs / License
   Rules:
-    - Language: English. Tables: Parameters = Name|Type|Default|Description,
-      Ports = Name|Direction|Type|Description (grouped by interface).
-    - Register Map: link to the generated hdl/csr/<X>_csr.md (plus the
-      .hjson source and _csr.h header); never copy register tables here.
-    - Top-Level = sbi_* wrapper if present, else the entity used by the
-      `default` target, else the main entity (libraries: list packages).
-    - Write "This IP has no software-visible registers." / "No dedicated
-      synthesis target ..." instead of removing a section.
-    - Keep still-accurate hand-written content (ISA tables, results,
-      images) in "Design Notes"; drop anything not backed by the sources.
-    - Block diagram: doc/<NAME>.drawio (NAME = 4th field of the VLNV),
-      top entity box with generics on top, inputs left, outputs right,
-      bus interfaces as bold arrows, internal blocks colour-coded
-      (CSR yellow, FIFO/memory green, core logic blue, external grey).
-      Update it whenever ports/generics/sub-blocks change.
-    - Do not edit generated files (hdl/csr/*_csr.*) or the CI badge URL.
+    - English, short and factual: every statement backed by the sources.
+    - No VLNV line: the version badge shows it.
+    - Block diagram and FSM in Mermaid (rendered by GitHub).
+    - Registers: link to the generated hdl/csr/<X>_csr.md, never copy the tables.
+    - Tables: Configuration = Name|Type|Default|Description,
+      Hardware Interfaces = Name|Direction|Type|Description, grouped by interface.
+    - A section with nothing to say is one line ("This IP has no
+      software-visible registers."), never removed.
 -->
 [![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![sim](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsim.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Flint.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/deuskane/asylum-communication-spi?filter=asylum-communication-SPI-*&label=version)](https://github.com/deuskane/asylum-communication-spi/tags)
+[![License](https://img.shields.io/github/license/deuskane/asylum-communication-spi)](LICENSE)
 
-# asylum-communication-spi
+# SPI master
 
-**SPI master (single / dual / quad / octal) with CSR access over the SBI bus and TX / RX / command FIFOs.**
+**A small, readable SPI master in VHDL: single, dual, quad and octal SPI, command FIFO, verified with UVVM against eight SPI flash models.**
 
-VLNV: `asylum:communication:SPI:2.2.0`
+Part of the [Asylum project](https://github.com/deuskane/asylum-project), a collection of small FPGA IP cores written to be read and learned from.
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Block Diagram](#block-diagram)
-3. [Top-Level](#top-level)
-4. [HDL Modules](#hdl-modules)
-5. [Register Map](#register-map)
-6. [Verification](#verification)
-7. [Synthesis](#synthesis)
-8. [Design Notes](#design-notes)
-9. [Directory Structure](#directory-structure)
-10. [Dependencies](#dependencies)
+1. [Overview](#overview)
+2. [Features](#features)
+3. [Block Diagram](#block-diagram)
+4. [Getting Started](#getting-started)
+5. [Hardware Interfaces](#hardware-interfaces)
+6. [Configuration](#configuration)
+7. [Theory of Operation](#theory-of-operation)
+8. [Registers](#registers)
+9. [Programmer's Guide](#programmers-guide)
+10. [Design Verification](#design-verification)
+11. [Dependencies and Related IPs](#dependencies-and-related-ips)
+12. [License](#license)
 
-## Introduction
+## Overview
 
-This IP is the SPI controller of the Asylum project. Software drives it through a small CSR bank on the SBI bus: bytes to transmit are pushed in a TX FIFO, transfers are described by commands pushed in a command FIFO, and received bytes are read back from an RX FIFO. The protocol engine (`spi_master`) supports the four SPI modes (CPOL/CPHA), a programmable clock prescaler and multi-lane transfers (1, 2, 4 or 8 data lines) so it can talk to standard, dual, quad and octal SPI flash memories.
+This IP lets a CPU talk to SPI devices, typically a SPI NOR flash. Software drives it through four 8-bit registers on the SBI bus (the simple bus of Asylum):
 
-### Key Features
+- the bytes to send are written to a TX FIFO,
+- each transfer is described by a command (byte count, lane width, TX/RX enable, keep or release CS#) written to a command FIFO,
+- the received bytes are read back from an RX FIFO.
+
+The protocol engine, `spi_master`, has AXI-Stream-like valid/ready interfaces and can also be used on its own, without the registers.
+
+## Features
 
 - SPI master, modes 0 to 3 (CPOL / CPHA), MSB first
-- Single, dual, quad and octal data lanes, selected per command (`cmd.size`)
-- Programmable SCLK prescaler: `f_sclk = f_clk / (2 x (ratio + 1))`; software-writable when `USER_DEFINE_PRESCALER = true`
-- Command FIFO: byte count, RX/TX enable, chip-select hold (`last`), STOP special case, and a `KEEP` mode giving up to 64 bytes per command
-- Configurable FIFO depths (`DEPTH_CMD`, `DEPTH_TX`, `DEPTH_RX`, 0 = no FIFO)
-- Status register: FIFO empty / full flags and busy (end of transaction)
-- Optional driving of the flash WP# / HOLD# lines (`HANDLE_HOLD_WP`)
+- Single, dual, quad and octal data lanes, selected per command
+- SCLK prescaler: `f_sclk = f_clk / (2 x (ratio + 1))`, fixed or software-writable
+- Command FIFO: up to 4 bytes per command, or 64 bytes with a `KEEP` command; CS# kept low between commands to build a flash transaction (opcode, address, dummy, data)
+- Configurable FIFO depths (0 = no storage, the CPU writes straight into the SPI master)
+- Status register: FIFO empty / full flags and busy
+- Optional WP# / HOLD# handling for quad flashes, minimum CS# high time (flash tSHSL)
+- Optional late RX sampling with input registers for slow pads or fast SCLK
 - Internal loopback (MOSI to MISO) for self-test
-- Output enables on every pad for tri-state / IO-buffer connection
-- Simulation-only dump of CMD / TX / RX FIFO traffic into text files
+- Output enables on every pad for tri-state IO buffers
+- Simulation only: dump of the CMD / TX / RX traffic to text files
 
 ## Block Diagram
 
-![doc/SPI-Overview.png](doc/SPI-Overview.png)
+```mermaid
+flowchart LR
+  cpu(["CPU / SBI initiator"])
+  subgraph sbi_SPI
+    direction LR
+    subgraph csr["SPI_registers (generated by regtool)"]
+      direction TB
+      cfg["cfg, prescaler"]
+      status["status"]
+      cmdf[["cmd FIFO (DEPTH_CMD)"]]
+      txf[["TX FIFO (DEPTH_TX)"]]
+      rxf[["RX FIFO (DEPTH_RX)"]]
+    end
+    dec["command decoder (CONFIG / KEEP)"]
+    master["spi_master (prescaler, FSM, shift registers)"]
+    cmdf --> dec -->|cmd| master
+    txf -->|tx| master
+    master -->|rx| rxf
+    cfg -->|"cpol, cpha, loopback, ratio, spi_enable"| master
+    master -->|busy| status
+  end
+  cpu <==>|"sbi_ini_i / sbi_tgt_o"| csr
+  master --> sclk(["sclk_o"])
+  master --> cs(["cs_b_o"])
+  master <--> io(["io[7:0]"])
+```
 
-- The SBI bus accesses `SPI_registers` (generated by regtool from [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson)).
-- The `data` register is a bidirectional `csr_fifo`: writes fill the TX FIFO, reads drain the RX FIFO. The `cmd` register is a write-only FIFO.
-- A small command decoder in `sbi_SPI` expands the `cmd` word (handling of `cmd.cfg = KEEP`) before it reaches `spi_master`.
-- `spi_master` consumes TX bytes and commands as AXI-Stream-like valid/ready channels, drives SCLK / CS# / IO lanes and pushes received bytes into the RX FIFO.
-- `cfg.spi_enable` is used as the reset of `spi_master`; `cfg.cpol`, `cfg.cpha`, `cfg.loopback` and `prescaler.ratio` configure it.
+A drawio version of this diagram is kept in [doc/SPI.drawio](doc/SPI.drawio).
 
-## Top-Level
+## Getting Started
 
-Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), library `asylum`, component declared in `asylum.spi_pkg`.
+The cores of the Asylum IPs are published in the FuseSoC library [asylum-cores](https://github.com/deuskane/asylum-cores) (with the UVVM and flash model cores used by the testbenches):
 
-### Parameters
+```bash
+pip install fusesoc
+fusesoc library add https://github.com/deuskane/asylum-cores
+fusesoc run --target sim_basic asylum:communication:SPI      # needs GHDL
+```
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `NAME` | string | `""` | Instance name, forwarded to the CSR block (`MODULE_NAME`, visible in `sbi_tgt_o.info`) |
-| `USER_DEFINE_PRESCALER` | boolean | *(none)* | `true`: the `prescaler` register exists and is software-writable; `false`: the ratio is fixed to `PRESCALER_RATIO` |
-| `PRESCALER_RATIO` | std_logic_vector(7 downto 0) | *(none)* | Reset / fixed value of the prescaler ratio |
-| `DEPTH_CMD` | natural | `0` | Depth of the command FIFO (0 = no FIFO) |
-| `DEPTH_TX` | natural | `0` | Depth of the TX FIFO (software to hardware, 0 = no FIFO) |
-| `DEPTH_RX` | natural | `0` | Depth of the RX FIFO (hardware to software, 0 = no FIFO) |
-| `HANDLE_HOLD_WP` | boolean | `false` | `true`: `io(2)` (WP#) and `io(3)` (HOLD#) are driven high (inactive) in reset, between transactions and during single/dual transfers; they are only used as data lanes by quad/octal commands |
-| `FILENAME_CMD` | string | `"dump_spi_cmd.txt"` | Simulation only: dump file of accepted commands |
-| `FILENAME_TX` | string | `"dump_spi_tx.txt"` | Simulation only: dump file of transmitted bytes |
-| `FILENAME_RX` | string | `"dump_spi_rx.txt"` | Simulation only: dump file of received bytes |
-| `CS_HIGH_MIN_CYCLES` | natural | `0` | Minimum number of `clk_i` cycles during which CS# stays high between two transactions (flash tSHSL / tCSH), e.g. 5 for 100 ns at 50 MHz. CS# always stays high at least one SCLK period |
-| `RX_LATE_SAMPLE` | boolean | `false` | `false`: the received bits are sampled on the clock edge which generates the SCLK sample edge (MISO round trip of half a SCLK period). `true`: `io_i` goes through input registers (IOB) and is sampled on the clock edge of the next SCLK shift edge (round trip of one SCLK period), see [Timing](#timing) |
-
-### Ports
-
-#### Clock & Reset
-
-| Name | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `clk_i` | in | std_logic | System clock |
-| `arst_b_i` | in | std_logic | Asynchronous reset, active low |
-
-#### Bus (SBI)
-
-| Name | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `sbi_ini_i` | in | sbi_ini_t | SBI request from the initiator (`cs`, `re`, `we`, `addr`, `wdata`) |
-| `sbi_tgt_o` | out | sbi_tgt_t | SBI response to the initiator (`ready`, `rdata`, `info`) |
-
-#### SPI
-
-| Name | Direction | Type | Description |
-|------|-----------|------|-------------|
-| `sclk_o` | out | std_logic | SPI clock |
-| `sclk_oe_o` | out | std_logic | SPI clock output enable |
-| `cs_b_o` | out | std_logic | Chip select, active low |
-| `cs_b_oe_o` | out | std_logic | Chip select output enable |
-| `io_o` | out | std_logic_vector(7 downto 0) | Data lanes output: 0 = MOSI, 1 = MISO, 2 = WP#, 3 = HOLD# in single mode; lanes 0..1 / 0..3 / 0..7 in dual / quad / octal mode |
-| `io_i` | in | std_logic_vector(7 downto 0) | Data lanes input (same mapping, MISO = `io_i(1)` in single mode) |
-| `io_oe_o` | out | std_logic_vector(7 downto 0) | Per-lane output enable |
-
-### Instantiation Example
+To use the IP in your design, add `asylum:communication:SPI` to the `depend` list of your core and instantiate `sbi_SPI` (library `asylum`):
 
 ```vhdl
 library asylum;
 use     asylum.sbi_pkg.all;
 use     asylum.spi_pkg.all;
 
-  ins_spi : entity asylum.sbi_SPI
+  ins_spi : sbi_SPI
     generic map
     ( NAME                  => "SPI0"
      ,USER_DEFINE_PRESCALER => true
-     ,PRESCALER_RATIO       => x"0F"
+     ,PRESCALER_RATIO       => x"04"    -- 10 MHz SCLK from 100 MHz
      ,DEPTH_CMD             => 4
      ,DEPTH_TX              => 4
      ,DEPTH_RX              => 4
      ,HANDLE_HOLD_WP        => true
-     ,FILENAME_CMD          => "dump_spi0_cmd.txt"
-     ,FILENAME_TX           => "dump_spi0_tx.txt"
-     ,FILENAME_RX           => "dump_spi0_rx.txt"
     )
     port map
     ( clk_i     => clk
      ,arst_b_i  => arst_b
-     ,sbi_ini_i => sbi_inis(SPI0_ID)  -- sbi_ini_t(addr(1 downto 0), wdata(7 downto 0))
-     ,sbi_tgt_o => sbi_tgts(SPI0_ID)  -- sbi_tgt_t(rdata(7 downto 0))
+     ,sbi_ini_i => sbi_ini       -- 2 address bits, 8-bit data
+     ,sbi_tgt_o => sbi_tgt
      ,sclk_o    => spi_sclk
      ,sclk_oe_o => spi_sclk_oe
      ,cs_b_o    => spi_cs_b
@@ -166,225 +143,275 @@ use     asylum.spi_pkg.all;
     );
 ```
 
-The CSR bank uses 2 address bits (`SPI_ADDR_WIDTH = 2`) and 8-bit data (`SPI_DATA_WIDTH = 8`), see `asylum.SPI_csr_pkg`.
+[PicoSoC](https://github.com/deuskane/asylum-soc-picosoc) is a complete example: it connects this IP to a CPU and a SPI flash, with the software driver [esw/include/spi.h](https://github.com/deuskane/asylum-soc-picosoc/blob/main/esw/include/spi.h).
 
-## HDL Modules
+## Hardware Interfaces
 
-| File | Unit | Kind | Role |
-|------|------|------|------|
-| [hdl/spi_pkg.vhd](hdl/spi_pkg.vhd) | `spi_pkg` | package | Component declarations of `sbi_SPI` and `spi_master`, IO lane index constants (`SPI_IO_MOSI`, `SPI_IO_MISO`, `SPI_IO_WP_B`, `SPI_IO_HOLD_B`) |
-| [hdl/spi_master.vhd](hdl/spi_master.vhd) | `spi_master` | entity | SPI protocol engine (prescaler, FSM, shift registers) |
-| [hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd) | `sbi_SPI` | entity | Top-level: CSR + command decoder + `spi_master`, simulation dumps |
-| hdl/csr/SPI_csr.vhd | `SPI_registers` | entity | Generated CSR bank (regtool), FIFOs included |
-| hdl/csr/SPI_csr_pkg.vhd | `SPI_csr_pkg` | package | Generated types (`SPI_sw2hw_t`, `SPI_hw2sw_t`), addresses and field constants (`SPI_CMD_SIZE_*`) |
+Top-level entity: **`sbi_SPI`** ([hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd)), component in `asylum.spi_pkg`.
 
-### spi_master
-
-#### Parameters
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `PRESCALER_WIDTH` | integer | `8` | Width of `cfg_prescaler_ratio_i` |
-| `HANDLE_HOLD_WP` | boolean | `false` | Drive WP# / HOLD# lanes (see top-level) |
-| `CS_HIGH_MIN_CYCLES` | natural | `0` | Minimum CS# high time between two transactions, in `clk_i` cycles (see top-level) |
-| `RX_LATE_SAMPLE` | boolean | `false` | Late sampling of the received bits with input registers (see top-level) |
-
-#### Ports
+### Clock and Reset
 
 | Name | Direction | Type | Description |
 |------|-----------|------|-------------|
-| `clk_i` | in | std_logic | System clock |
-| `arst_b_i` | in | std_logic | Asynchronous reset, active low (connected to `cfg.spi_enable` in `sbi_SPI`) |
-| `tx_tvalid_i` | in | std_logic | TX byte valid |
-| `tx_tready_o` | out | std_logic | TX byte accepted |
-| `tx_tdata_i` | in | std_logic_vector(7 downto 0) | TX byte |
-| `rx_tvalid_o` | out | std_logic | RX byte valid |
-| `rx_tready_i` | in | std_logic | RX byte accepted |
-| `rx_tdata_o` | out | std_logic_vector(7 downto 0) | RX byte |
-| `cmd_tvalid_i` | in | std_logic | Command valid |
-| `cmd_tready_o` | out | std_logic | Command accepted |
-| `cmd_tlast_i` | in | std_logic | 1: release CS# at the end of the command |
-| `cmd_keep_i` | in | std_logic (default `'0'`) | 1: `KEEP` command, `enable_rx` / `enable_tx` are the kept values and the STOP special case is not decoded |
-| `cmd_enable_rx_i` | in | std_logic | 1: push received bytes to RX |
-| `cmd_enable_tx_i` | in | std_logic | 1: pop TX bytes and drive the data lanes |
-| `cmd_nb_bytes_i` | in | std_logic_vector (unconstrained) | Number of bytes minus one |
-| `cmd_size_i` | in | std_logic_vector (unconstrained, 2 bits used) | 0: single, 1: dual, 2: quad, 3: octal |
-| `cfg_cpol_i` | in | std_logic | Clock polarity |
-| `cfg_cpha_i` | in | std_logic | Clock phase |
-| `cfg_prescaler_ratio_i` | in | std_logic_vector(PRESCALER_WIDTH-1 downto 0) | Prescaler ratio |
-| `cfg_loopback_i` | in | std_logic | 1: MISO internally looped back from MOSI |
+| `clk_i` | in | std_logic | System clock, the only clock of the IP |
+| `arst_b_i` | in | std_logic | Asynchronous reset, active low |
+
+### Bus (SBI)
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `sbi_ini_i` | in | sbi_ini_t | Request from the initiator (`cs`, `re`, `we`, `addr`, `wdata`); 2 address bits, 8-bit data |
+| `sbi_tgt_o` | out | sbi_tgt_t | Response to the initiator (`ready`, `rdata`, `info`) |
+
+### SPI
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
 | `sclk_o` | out | std_logic | SPI clock |
 | `sclk_oe_o` | out | std_logic | SPI clock output enable |
 | `cs_b_o` | out | std_logic | Chip select, active low |
 | `cs_b_oe_o` | out | std_logic | Chip select output enable |
-| `io_o` | out | std_logic_vector(7 downto 0) | Data lanes output |
-| `io_i` | in | std_logic_vector(7 downto 0) | Data lanes input |
-| `io_oe_o` | out | std_logic_vector(7 downto 0) | Data lanes output enable |
+| `io_o` | out | std_logic_vector(7 downto 0) | Data lanes: 0 = MOSI, 1 = MISO, 2 = WP#, 3 = HOLD# in single mode; lanes 0..1 / 0..3 / 0..7 in dual / quad / octal mode |
+| `io_i` | in | std_logic_vector(7 downto 0) | Data lanes input, same mapping (MISO = `io_i(1)` in single mode) |
+| `io_oe_o` | out | std_logic_vector(7 downto 0) | Per-lane output enable |
+
+The pads are not instantiated in the IP: connect `*_o`, `*_oe_o` and `io_i` to IO buffers at the FPGA top level.
+
+<details>
+<summary><b>spi_master</b>: protocol engine, for a standalone use without the registers</summary>
+
+[hdl/spi_master.vhd](hdl/spi_master.vhd), component in `asylum.spi_pkg`. Generics: `PRESCALER_WIDTH` (8), `HANDLE_HOLD_WP`, `CS_HIGH_MIN_CYCLES`, `RX_LATE_SAMPLE` (see [Configuration](#configuration)).
+
+| Name | Direction | Type | Description |
+|------|-----------|------|-------------|
+| `clk_i` | in | std_logic | System clock |
+| `arst_b_i` | in | std_logic | Asynchronous reset, active low (`cfg.spi_enable` in `sbi_SPI`) |
+| `tx_tvalid_i` / `tx_tready_o` / `tx_tdata_i` | in / out / in | std_logic / std_logic / std_logic_vector(7 downto 0) | Bytes to send |
+| `rx_tvalid_o` / `rx_tready_i` / `rx_tdata_o` | out / in / out | std_logic / std_logic / std_logic_vector(7 downto 0) | Received bytes |
+| `cmd_tvalid_i` / `cmd_tready_o` | in / out | std_logic | Command handshake |
+| `cmd_tlast_i` | in | std_logic | 1: release CS# at the end of the command |
+| `cmd_keep_i` | in | std_logic (default `'0'`) | 1: `KEEP` command, no STOP decoding |
+| `cmd_enable_rx_i` | in | std_logic | 1: push the received bytes to RX |
+| `cmd_enable_tx_i` | in | std_logic | 1: pop the TX bytes and drive the data lanes |
+| `cmd_nb_bytes_i` | in | std_logic_vector (unconstrained) | Number of bytes minus one |
+| `cmd_size_i` | in | std_logic_vector (unconstrained, 2 bits used) | 0: single, 1: dual, 2: quad, 3: octal |
+| `cfg_cpol_i` / `cfg_cpha_i` | in | std_logic | SPI mode |
+| `cfg_prescaler_ratio_i` | in | std_logic_vector(PRESCALER_WIDTH-1 downto 0) | Prescaler ratio |
+| `cfg_loopback_i` | in | std_logic | 1: MISO internally looped back from MOSI |
+| `sclk_o`, `sclk_oe_o`, `cs_b_o`, `cs_b_oe_o`, `io_o`, `io_i`, `io_oe_o` | | | Same as `sbi_SPI` |
 | `busy_o` | out | std_logic | 1: transaction in progress (FSM not idle or CS# active) |
 
-## Register Map
+</details>
 
-The register map is generated by regtool from [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson):
+## Configuration
+
+Generics of `sbi_SPI`:
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `NAME` | string | `""` | Instance name, visible in `sbi_tgt_o.info` |
+| `USER_DEFINE_PRESCALER` | boolean | *(none)* | `true`: the `prescaler` register is software-writable; `false`: the ratio is fixed to `PRESCALER_RATIO` |
+| `PRESCALER_RATIO` | std_logic_vector(7 downto 0) | *(none)* | Reset (or fixed) value of the prescaler ratio |
+| `DEPTH_CMD` | natural | `0` | Depth of the command FIFO (0 = no FIFO) |
+| `DEPTH_TX` | natural | `0` | Depth of the TX FIFO (0 = no FIFO) |
+| `DEPTH_RX` | natural | `0` | Depth of the RX FIFO (0 = no FIFO) |
+| `HANDLE_HOLD_WP` | boolean | `false` | `true`: `io(2)` (WP#) and `io(3)` (HOLD#) are driven high (inactive) except when a quad or octal command uses them as data lanes |
+| `CS_HIGH_MIN_CYCLES` | natural | `0` | Minimum number of `clk_i` cycles with CS# high between two transactions (flash tSHSL), e.g. 5 for 100 ns at 50 MHz. CS# always stays high at least one SCLK period |
+| `RX_LATE_SAMPLE` | boolean | `false` | `true`: `io_i` goes through input registers and is sampled one SCLK period after the sample edge, see [Timing](#timing) |
+| `FILENAME_CMD` / `FILENAME_TX` / `FILENAME_RX` | string | `"dump_spi_cmd.txt"` / `"dump_spi_tx.txt"` / `"dump_spi_rx.txt"` | Simulation only: dump files of the accepted commands, sent and received bytes |
+
+The FIFO depths set most of the area of the IP.
+
+## Theory of Operation
+
+### Hierarchy
+
+| File | Unit | Role |
+|------|------|------|
+| [hdl/sbi_SPI.vhd](hdl/sbi_SPI.vhd) | `sbi_SPI` | Top level: registers, command decoder, `spi_master`, simulation dumps |
+| [hdl/spi_master.vhd](hdl/spi_master.vhd) | `spi_master` | SPI protocol engine: prescaler, FSM, shift registers |
+| [hdl/spi_pkg.vhd](hdl/spi_pkg.vhd) | `spi_pkg` | Components, IO lane indexes (`SPI_IO_MOSI`, `SPI_IO_MISO`, `SPI_IO_WP_B`, `SPI_IO_HOLD_B`) |
+| `hdl/csr/SPI_csr.vhd` | `SPI_registers` | Register bank and FIFOs, generated by regtool from [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson) |
+
+### Data path
+
+The `data` register is a bidirectional FIFO register: a write pushes a byte in the TX FIFO, a read pops a byte from the RX FIFO. `cmd` is a write-only FIFO register. Both are *blocking*: an access waits (holds the bus) until the FIFO can accept or provide the data. The FIFOs talk to `spi_master` with valid/ready handshakes, so the master simply stops when it has no TX byte to send or no room for a received byte.
+
+### Commands
+
+A command describes up to 4 bytes (`CONFIG`) or up to 64 bytes (`KEEP`):
+
+- `cmd.cfg = CONFIG`: the command carries `size`, `enable_rx`, `enable_tx`, `last` and a 2-bit byte count `nb_bytes` (N+1 bytes). The decoder of `sbi_SPI` saves `size` / `enable_*`.
+- `cmd.cfg = KEEP`: the saved `size` / `enable_*` are reused, and the 6 low bits of the command (`enable_tx & enable_rx & size & nb_bytes`) become a 6-bit byte count.
+- `last = 1` releases CS# at the end of the command; `last = 0` keeps CS# low, so the next command continues the same transaction.
+- STOP: a `CONFIG` command with `last = 1`, `enable_rx = 0` and `enable_tx = 0` transfers nothing and only releases CS#.
+
+A flash read is therefore: `CONFIG` command "1 byte TX, keep CS#" (opcode), `CONFIG` "3 bytes TX, keep CS#" (address), `CONFIG` or `KEEP` "N bytes RX, last".
+
+### spi_master FSM
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> IDLE
+  IDLE --> START : command
+  IDLE --> DONE : STOP command
+  START --> TRANSFER : CS# low, TX byte available (if enable_tx)
+  TRANSFER --> POSTAMBLE : 8 bits shifted
+  POSTAMBLE --> START : next byte
+  POSTAMBLE --> IDLE : last byte, last = 0 (CS# kept low)
+  POSTAMBLE --> DONE : last byte, last = 1
+  DONE --> IDLE : CS# released
+```
+
+- **IDLE**: waits for a command. CS# is high, or still low after a command with `last = 0`.
+- **START**: asserts CS# (after the CS# high guard `CS_HIGH_MIN_CYCLES` for a new transaction), enables the needed lanes and waits for a TX byte when `enable_tx = 1`.
+- **TRANSFER**: shifts 1, 2, 4 or 8 bits per SCLK period according to `size`, MSB first.
+- **POSTAMBLE**: pushes the received byte to RX (when `enable_rx = 1`, waiting if RX is full), then next byte or end of command.
+- **DONE**: releases CS#.
+
+### SCLK and SPI modes
+
+The prescaler is free-running: `f_sclk = f_clk / (2 x (ratio + 1))`; 100 MHz with `ratio = 4` gives 10 MHz. SCLK is generated from `clk_i`, there is no second clock domain.
+
+| Mode | CPOL | CPHA | SCLK idle | Sample on |
+|------|------|------|-----------|-----------|
+| 0 | 0 | 0 | low | leading edge |
+| 1 | 0 | 1 | low | trailing edge |
+| 2 | 1 | 0 | high | leading edge |
+| 3 | 1 | 1 | high | trailing edge |
+
+### Enable and abort
+
+`cfg.spi_enable` is the reset of `spi_master`. Writing 0 aborts a transfer in progress: CS# is driven high and SCLK to CPOL, the commands and TX bytes in the FIFOs (or written while disabled) are dropped; the received bytes stay in the RX FIFO.
+
+### Timing
+
+The SPI signals are not retimed by a PLL: the round trip SCLK out, flash, data in must fit in the sampling window.
+
+- `RX_LATE_SAMPLE = false`: `(ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_route + t_setup`. With `ratio = 0` at 50 MHz the whole round trip has 20 ns.
+- `RX_LATE_SAMPLE = true`: `io_i` is captured by a free-running input register (to place in the IOB) and sampled on the next shift edge: `2 x (ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_setup(IOB)`. With CPHA = 1 and a small `ratio`, a gap of up to one SCLK period may appear between bytes.
+- Constrain `io_i` with an input delay relative to SCLK matching this window and choose the minimal `ratio` accordingly. `sclk_o` is `sclk_r xor cfg.cpol`: it does not glitch (CPOL is static during a transfer), but it is not an output register.
+
+## Registers
+
+Four 8-bit registers (2 address bits): `data` (0x0), `cmd` (0x1, write) / `status` (0x1, read), `cfg` (0x2), `prescaler` (0x3).
 
 - Register documentation: **[hdl/csr/SPI_csr.md](hdl/csr/SPI_csr.md)**
 - C header: [hdl/csr/SPI_csr.h](hdl/csr/SPI_csr.h)
+- Source: [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson) (regtool)
 
-Notes:
+## Programmer's Guide
 
-- `data` and `cmd` are FIFO registers with blocking read / write; their depths are set by `DEPTH_TX`, `DEPTH_RX` and `DEPTH_CMD`. A blocking access holds the SBI bus (and the interconnect) until the FIFO can accept or provide the data: read `status` (address 0x1, never blocking) first, write `data` only when `status.tx_full = 0`, write `cmd` only when `status.cmd_full = 0` and read `data` only when `status.rx_empty = 0`.
-- Write / read interleaving: the SPI master stops on a received byte when the RX FIFO is full, and on a TX byte when the TX FIFO is empty. Writing all the TX bytes of a full duplex command before reading the RX bytes therefore blocks the bus as soon as the command is longer than `DEPTH_TX + DEPTH_RX + 2` bytes (3 bytes with the default depths of 0): interleave the writes and reads, or poll `status`.
-- With a depth of 0 there is no storage: `status.tx_full` / `status.cmd_full` stay 1 outside the handshake with the SPI master, a write completes only when the master takes the byte / command.
-- `status.busy = 0` when every command is done and CS# is released: poll it before changing `cfg` or `prescaler`.
-- `status` is read only, writes are ignored.
-- The `prescaler` register only exists when `USER_DEFINE_PRESCALER = true`; its reset value is `PRESCALER_RATIO`.
-- `cfg.spi_enable` is the reset of `spi_master` (0: held in reset; 1: enabled). Writing 0 aborts a transfer in progress: CS# is driven high and SCLK to CPOL (the CS# and SCLK pads stay enabled, also during the global reset), the commands and TX bytes still in the FIFOs, or written while the IP is disabled, are dropped; the bytes already received stay in the RX FIFO. Change `cpol` / `cpha` with `spi_enable = 0` to avoid a spurious SCLK edge during a transaction.
+### Initialization
 
-## Verification
+1. Write `cfg` with `spi_enable = 0` and the wanted `cpol`, `cpha`, `loopback`: changing the mode while enabled could create a spurious SCLK edge.
+2. Write `prescaler.ratio` (only when `USER_DEFINE_PRESCALER = true`).
+3. Write `cfg` again with `spi_enable = 1`.
+
+### Transfers
+
+1. Write the commands to `cmd` and the bytes to send to `data`, in any order.
+2. Read the received bytes from `data`.
+3. Before changing `cfg` or `prescaler`, wait for `status.busy = 0` (all commands done, CS# released).
+
+### Never stall the bus
+
+`data` and `cmd` are blocking: a read of an empty RX FIFO or a write to a full FIFO holds the bus (and the CPU) until the SPI master moves. `status` is never blocking:
+
+- read `data` only when `status.rx_empty = 0`;
+- with FIFOs (`DEPTH_* > 0`), write `data` when `status.tx_full = 0` and `cmd` when `status.cmd_full = 0`;
+- with a depth of 0, `tx_full` / `cmd_full` read 1 outside the handshake: the write simply completes when the master takes the byte or the command;
+- the master stops on a full RX FIFO: for a long full-duplex command, interleave the writes of `data` and the reads of `data` instead of writing all the TX bytes first (the bus blocks once the command is longer than `DEPTH_TX + DEPTH_RX + 2` bytes).
+
+### Example: read the JEDEC ID of a SPI flash
+
+`reg_wr` / `reg_rd` are the 8-bit register accesses of your CPU (`PORT_WR` / `PORT_RD` in PicoSoC).
+
+```c
+#include "SPI_csr.h"
+
+void spi_init(void)
+{
+  reg_wr(SPI_CFG, 0);                          // disabled, mode 0
+  reg_wr(SPI_PRESCALER, 4);                    // f_sclk = f_clk / 10
+  reg_wr(SPI_CFG, 1 << SPI_CFG_SPI_ENABLE);    // enabled
+}
+
+void flash_read_id(uint8_t id[3])
+{
+  // opcode 0x9F: 1 byte TX, CS# kept low
+  reg_wr(SPI_CMD, SPI_CMD_CFG_CONFIG_RAW | SPI_CMD_SIZE_SINGLE_RAW |
+                  SPI_CMD_ENABLE_TX_ENABLE_RAW | SPI_CMD_LAST_DISABLE_RAW |
+                  ((1-1) << SPI_CMD_NB_BYTES));
+  reg_wr(SPI_DATA, 0x9F);
+
+  // 3 bytes RX, then CS# released
+  reg_wr(SPI_CMD, SPI_CMD_CFG_CONFIG_RAW | SPI_CMD_SIZE_SINGLE_RAW |
+                  SPI_CMD_ENABLE_RX_ENABLE_RAW | SPI_CMD_LAST_ENABLE_RAW |
+                  ((3-1) << SPI_CMD_NB_BYTES));
+  for (int i = 0; i < 3; i++) {
+    while (reg_rd(SPI_STATUS) & (1 << SPI_STATUS_RX_EMPTY))
+      ;                                        // wait without blocking the bus
+    id[i] = reg_rd(SPI_DATA);
+  }
+}
+```
+
+For transfers longer than 4 bytes, send one `CONFIG` command then `KEEP` commands of up to 64 bytes (see `spi_cmd2` in the PicoSoC driver).
+
+## Design Verification
 
 ### Testbenches
 
 | File | DUT | Description |
 |------|-----|-------------|
-| [sim/basic/tb_SPI.vhd](sim/basic/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench with the SBI VIP and a SPI slave model written in the bench (samples MOSI / drives MISO or the data lanes according to CPOL/CPHA, checks the SCLK idle level on CS edges and that no partial byte is transferred), self-checking (281 visible checks). For the 4 SPI modes, each with a different prescaler (0, 1, 2, 5): single full duplex 1 and 4 bytes (MOSI bytes checked by the slave, MISO bytes checked in the RX FIFO, SCLK period `2*(ratio+1)` and half period `ratio+1` clock cycles), dual and quad TX only and RX only, two commands without `last` (CS kept low, SCLK idle) followed by a STOP command (CS released, 4 bytes in one transaction). Then: reset values (`cfg`, `prescaler = PRESCALER_RATIO`, CS# driven high and SCLK driven to CPOL while `spi_enable = 0`), `KEEP` command (1 + 9 bytes with a 6-bit `nb_bytes`), internal loopback, `spi_enable = 0` aborts an open transaction (CS# released and driven high, SCLK at CPOL) and drops the commands and TX bytes written while disabled (no transfer after re-enable), `status` register (reset value, writes ignored, TX FIFO full, busy until CS# is released, SPI master stalled by a full RX FIFO) |
-| [sim/models/tb_SPI.vhd](sim/models/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench using the SBI VIP (`bitvis_vip_sbi`) against a SPI flash model selected by the `MODEL` generic: prescaler and CSR configuration, Read (0x03), Fast Read (0x0B); on `s25fl512s` also DOR (0x3B), DIOR (0xBB), quad enable, QOR (0x6B), QIOR (0xEB) and continuous QIOR |
+| [sim/basic/tb_SPI.vhd](sim/basic/tb_SPI.vhd) | `sbi_SPI` | Self-checking UVVM testbench with the SBI VIP and a SPI slave model in the bench. The slave checks MOSI, drives MISO or the data lanes according to CPOL/CPHA, and checks the SCLK idle level on the CS# edges. Scenarios: reset values; the 4 SPI modes with 4 prescalers (SCLK period checked), single 1 and 4 bytes, dual and quad TX and RX, commands chained without `last` then STOP; `KEEP` command (1 + 9 bytes); loopback; abort by `spi_enable = 0`; status flags and busy, master stalled by a full RX FIFO |
+| [sim/models/tb_SPI.vhd](sim/models/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench against a real SPI flash model (generic `MODEL`): Read (0x03), Fast Read (0x0B); on `s25fl512s` also dual and quad reads (0x3B, 0xBB, 0x6B, 0xEB, continuous 0xEB) |
 
-Flash models ([models/](models/), core `fmf:memory:flash_nor:1.0.0` from [SPI_models.core](SPI_models.core)): `at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s25fl512s`, `s35hl256t`. Memory init files are in [sim/models/mem/](sim/models/mem/).
+Flash models in [models/](models/) (Free Model Foundry, core [SPI_models.core](SPI_models.core)): `at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s25fl512s`, `s35hl256t`.
 
 ### Targets
 
-| Target | Toplevel | Description |
-|--------|----------|-------------|
-| `default` | `sbi_SPI` | HDL fileset + CSR generation (not a simulation) |
-| `default_sim` | `tb` | Base of the model simulations (`MODEL=m25p40`) |
-| `sim_basic` | `tb_SPI` | `sbi_SPI` with the SPI slave model of the bench (UVVM) |
-| `sim_basic_late` | `tb_SPI` | Same bench with `RX_LATE_SAMPLE = true` and a slave output valid time of 25 ns (more than half a SCLK period at prescaler 0) |
-| `sim_at25df161` | `tb` | Model testbench, `MODEL=at25df161` |
-| `sim_cy15b104qs` | `tb` | Model testbench, `MODEL=cy15b104qs` |
-| `sim_cy15v104qs` | `tb` | Model testbench, `MODEL=cy15v104qs` |
-| `sim_m25p40` | `tb` | Model testbench, `MODEL=m25p40` |
-| `sim_m45pe80` | `tb` | Model testbench, `MODEL=m45pe80` |
-| `sim_s25fl064p` | `tb` | Model testbench, `MODEL=s25fl064p` |
-| `sim_s25fl512s` | `tb` | Model testbench, `MODEL=s25fl512s` (dual and quad commands) |
-| `sim_s35hl256t` | `tb` | Model testbench, `MODEL=s35hl256t` |
-| `lint_ghdl` | `asylum.sbi_SPI_wrapper` | Lint: GHDL `-Wall` analysis and elaboration (empty simulation) of `sbi_SPI` (and `spi_master`) in a wrapper with flat SBI ports (`syn/sbi_SPI_wrapper.vhd`) |
-| `lint_ghdl_synth_default` | `asylum.sbi_SPI_wrapper` | Synthesis check (see below), default generics of the wrapper as in PicoSoC: `USER_DEFINE_PRESCALER = true`, `PRESCALER_RATIO = x"00"`, depths 0, `HANDLE_HOLD_WP = true` |
-| `lint_ghdl_synth_sim_basic` | `asylum.sbi_SPI_wrapper` | Synthesis check, generics of `sim_basic`: `PRESCALER_RATIO = x"0F"`, depths 4/8/8, `HANDLE_HOLD_WP = false` |
-| `lint_ghdl_synth_sim_models` | `asylum.sbi_SPI_wrapper` | Synthesis check, generics of the model testbenches: `PRESCALER_RATIO = x"0F"`, depths 4/4/4 |
-| `lint_ghdl_synth_fixed_prescaler` | `asylum.sbi_SPI_wrapper` | Synthesis check, `USER_DEFINE_PRESCALER = false`, `PRESCALER_RATIO = x"0F"` |
-| `lint_ghdl_synth_rx_late_sample` | `asylum.sbi_SPI_wrapper` | Synthesis check, late RX sampling: `RX_LATE_SAMPLE=true` |
+| Target | Description |
+|--------|-------------|
+| `sim_basic` | `tb_SPI` with the slave model of the bench |
+| `sim_basic_late` | Same with `RX_LATE_SAMPLE = true` and a slave output valid time (25 ns) longer than half a SCLK period |
+| `sim_<model>` | Flash model testbench, one target per model (8 targets) |
+| `lint_ghdl` | GHDL `-Wall` analysis and elaboration of [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) |
+| `lint_ghdl_synth_<config>` | `ghdl --synth` check (no latch, synthesizable) for 5 generic configurations: `default`, `sim_basic`, `sim_models`, `fixed_prescaler`, `rx_late_sample` |
 
-A `lint_ghdl_synth_*` target is `lint_ghdl` with the generics of its configuration (FuseSoC `parameters`) and a `pre_run` hook, `ghdl_synth.sh` of `asylum:utils:ghdl_synth`, which adds `include ghdl_synth.mk` to the Makefile generated by edalize. The run step (`make run EXTRA_OPTIONS=<generics>`) then runs, in the build directory:
-
-1. `ghdl --synth` of the toplevel (rule `ghdl_synth` of `ghdl_synth.mk`), with the options of the target: `STD`, `ANALYZE_OPTIONS` (`-Wall`), `TOPLEVEL_LIBS`, `TOPLEVEL` and the generics. It writes `sbi_SPI_wrapper_synth.vhd` (netlist) and `sbi_SPI_wrapper_synth.log`, prints the warnings, and fails on a synthesis error (an inferred latch is one);
-2. `ghdl -r --no-run`: elaboration with the same generics, without simulation.
-
-To add a configuration, add a target with its `parameters` (the generics are declared in the `parameters` section of `SPI.core`).
+Every `sim_*` and `lint_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM). The `sim` and `lint` badges count the passed and failed targets of the last run on `main`.
 
 ### How to Run
 
-The default tool is GHDL (`mk/defs.mk`: `TOOL ?= ghdl`, `TARGET ?= sim_basic`).
+From a clone of [asylum-project](https://github.com/deuskane/asylum-project) (GHDL and FuseSoC installed, or in the asylum-env image):
 
 ```bash
-make help                 # variables, rules and target list (mk/targets.txt)
-make sim_basic            # run one target (log in log/)
-make nonreg_sim           # run every sim_* target
-make lint_ghdl            # GHDL -Wall lint (make nonreg_lint: every lint_* target)
-make lint_ghdl_synth_default   # GHDL -Wall lint + ghdl --synth -Wall check of one configuration
-make TARGETS_FILTER=^sim_s nonreg_sim   # run a filtered subset
-make clean                # remove build/
+make help                        # variables, rules and targets
+make sim_basic                   # one target, log in log/
+make nonreg_sim                  # every sim_* target
+make nonreg_lint                 # every lint_* target
+make TARGETS_FILTER=^sim_s nonreg_sim
 ```
 
-Equivalent FuseSoC command:
+Outside the CI, GHDL writes a waveform `dut.fst`, and `sbi_SPI` writes the dumps `dump_spi_cmd.txt`, `dump_spi_tx.txt`, `dump_spi_rx.txt`.
 
-```bash
-fusesoc --cores-root . run --build-root build --target sim_m25p40 asylum:communication:SPI:2.2.0
-```
+## Dependencies and Related IPs
 
-Outside CI, GHDL writes a waveform `dut.fst`.
+| Core | Repository | Purpose |
+|------|------------|---------|
+| `asylum:utils:generators` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | regtool (register generator) and the CSR building blocks (`csr_reg`, `csr_fifo`) |
+| `asylum:utils:pkg` | [asylum-utils-pkg](https://github.com/deuskane/asylum-utils-pkg) | Common packages (`sbi_pkg`, ...) |
+| `asylum:utils:ghdl_synth` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | `ghdl --synth` check of the `lint_ghdl_synth_*` targets |
+| `asylum:target:techmap` | [asylum-target-techmap](https://github.com/deuskane/asylum-target-techmap) | Technology cells, model testbench |
+| `bitvis:verification:uvvm` | [UVVM](https://github.com/UVVM/UVVM) | Verification library and SBI VIP |
+| `fmf:memory:flash_nor` | this repository | SPI flash models |
 
-### Simulation Features
+Used by [asylum-soc-picosoc](https://github.com/deuskane/asylum-soc-picosoc). Other communication IPs of Asylum: [I2C](https://github.com/deuskane/asylum-communication-i2c), [UART](https://github.com/deuskane/asylum-communication-uart). All the IPs: [asylum-project](https://github.com/deuskane/asylum-project).
 
-- `sbi_SPI` writes `dump_spi_cmd.txt`, `dump_spi_tx.txt` and `dump_spi_rx.txt` (names set by `FILENAME_*`), code inside `synthesis translate_off`.
-- `cfg.loopback = 1` loops MOSI back to MISO for tests without an external slave.
+## License
 
-## Synthesis
+Apache License 2.0, see [LICENSE](LICENSE).
 
-No vendor synthesis target (the `lint_ghdl_synth_*` targets check the RTL with `ghdl --synth`, see [Targets](#targets)). The HDL sources of the `default` target (`hdl/*.vhd` + generated CSR) are synthesizable; the file dumps of `sbi_SPI` are enclosed in `synthesis translate_off / translate_on`. Resource usage mainly depends on `DEPTH_CMD`, `DEPTH_TX` and `DEPTH_RX` (FIFOs in the CSR bank). `io_*`, `sclk_*` and `cs_b_*` outputs come with output enables to be connected to IO buffers at the chip / FPGA top level.
-
-## Design Notes
-
-### SPI Modes
-
-| Mode | CPOL | CPHA | Description |
-|------|------|------|-------------|
-| 0 | 0 | 0 | SCLK idles low, sample on leading edge |
-| 1 | 0 | 1 | SCLK idles low, sample on trailing edge |
-| 2 | 1 | 0 | SCLK idles high, sample on leading edge |
-| 3 | 1 | 1 | SCLK idles high, sample on trailing edge |
-
-### spi_master FSM
-
-- **IDLE**: CS# inactive (or held from a previous non-last command), waits for a command. A `CONFIG` command (`cfg = 0`) with `last = 1`, `enable_rx = 0`, `enable_tx = 0` is a STOP and goes directly to DONE. A `KEEP` command is never a STOP, even if the kept configuration has `enable_rx = enable_tx = 0` (dummy bytes).
-- **START**: asserts CS#, enables the needed IO lanes and waits for a TX byte when `enable_tx = 1`.
-- **TRANSFER**: shifts 1, 2, 4 or 8 bits per SCLK period depending on `size`, MSB first.
-- **POSTAMBLE**: pushes the received byte (if `enable_rx = 1`), then next byte, back to IDLE (CS# kept) or DONE (`last = 1`).
-- **DONE**: releases CS#. The next transaction starts once CS# has been high for at least `CS_HIGH_MIN_CYCLES` clock cycles (and at least one SCLK period).
-
-The prescaler is free-running: `f_sclk = f_clk / (2 x (ratio + 1))`. Example: 100 MHz with `ratio = 4` gives 10 MHz.
-
-### Timing
-
-The SPI signals are not retimed by a PLL: the MISO (and IO lanes) round trip must fit in the sampling window.
-
-- `RX_LATE_SAMPLE = false`: `(ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_route + t_setup`. With `ratio = 0` at 50 MHz this leaves 20 ns for the whole round trip.
-- `RX_LATE_SAMPLE = true`: `2 x (ratio + 1) x T_clk >= t_co(SCLK) + t_pad_out + tV(flash) + t_pad_in + t_setup(IOB)`, `io_i` being captured by a free running input register (to be placed in the IOB). The hold requirement `t_co(SCLK) + t_pad_out + tHO(flash) + t_pad_in >= t_hold` is met with positive delays. For CPHA = 1 with a small `ratio`, a gap of up to one SCLK period may be added between bytes.
-- Constrain `io_i` with an input delay relative to SCLK (or a max delay from the SCLK output register to the `io_i` capture register) matching the window above, and choose the minimal `ratio` accordingly. `sclk_o` is `sclk_r xor cfg.cpol`: CPOL is static during a transfer, so it does not glitch, but it is not an output register.
-
-### Command Usage
-
-1. Write the bytes to send into `data` (TX FIFO).
-2. Write a command into `cmd` (byte count, size, RX/TX enable, last).
-3. Read the received bytes from `data` (RX FIFO).
-
-With `cmd.cfg = CONFIG` the command carries `size`, `enable_rx`, `enable_tx` and a 2-bit byte count (`cmd.nb_bytes`, bits [1:0], N+1 = 1 to 4 bytes). With `cmd.cfg = KEEP` the `size` / `enable_*` stored by the last CONFIG command are reused and bits [5:0] of the command (`enable_tx & enable_rx & size & nb_bytes`) form a 6-bit byte count (N+1 = 1 to 64 bytes): `sbi_SPI` builds the 6-bit `cmd_nb_bytes_i` of `spi_master` as `"0000" & nb_bytes` (CONFIG) or `cmd[5:0]` (KEEP). This is consistent with the 2-bit `nb_bytes` field of [hdl/csr/SPI.hjson](hdl/csr/SPI.hjson) and with the `KEEP` description of `cmd.cfg`.
-
-## Directory Structure
-
-```
-asylum-communication-spi/
-├── SPI.core                # FuseSoC core (asylum:communication:SPI)
-├── SPI_models.core         # FuseSoC core of the flash models (fmf:memory:flash_nor)
-├── Makefile                # Common Asylum Makefile (FuseSoC wrapper)
-├── mk/
-│   ├── defs.mk             # FILE_CORE, default TARGET and TOOL
-│   └── targets.txt         # Target list (generated from the .core)
-├── doc/
-│   └── SPI.drawio          # Block diagram
-├── hdl/
-│   ├── spi_pkg.vhd
-│   ├── spi_master.vhd
-│   ├── sbi_SPI.vhd
-│   └── csr/
-│       ├── SPI.hjson       # Register description (source)
-│       ├── SPI_csr.vhd     # Generated
-│       ├── SPI_csr_pkg.vhd # Generated
-│       ├── SPI_csr.md      # Generated
-│       └── SPI_csr.h       # Generated
-├── models/                 # FMF SPI flash models + utilities/
-├── sim/
-│   ├── basic/              # tb_SPI.vhd (UVVM + SPI slave model), tb_SPI_pkg.vhd (legacy spi_master helpers, unused)
-│   └── models/             # tb_SPI.vhd (UVVM) + mem/ init files
-└── syn/
-    └── sbi_SPI_wrapper.vhd    # Lint / synthesis check top (sbi_SPI, flat SBI ports)
-```
-
-## Dependencies
-
-| Core | Used by (fileset) | Purpose |
-|------|-------------------|---------|
-| `asylum:utils:generators` | `hdl` | regtool generator and CSR building blocks (`csr_reg`, `csr_fifo`) |
-| `asylum:utils:pkg` | `hdl` | Common packages (`sbi_pkg`, `math_pkg`, ...) |
-| `asylum:utils:ghdl_synth` | `syn` | `ghdl_synth.sh` / `ghdl_synth.mk` (`pre_run` hook of `lint_ghdl_synth_*`) |
-| `asylum:target:techmap` | `models` | Technology mapping cells for the model testbench |
-| `bitvis:verification:uvvm` | `models`, `sim_basic` | UVVM utility library and SBI VIP |
-| `fmf:memory:flash_nor` | `models` | SPI flash models ([SPI_models.core](SPI_models.core)) |
+Exception: the SPI flash models in [models/](models/) come from the [Free Model Foundry](https://www.freemodelfoundry.com) and keep their own license, GPL-2.0 (see the header of each file). They are only used by the `sim_<model>` simulation targets and are not part of the IP.

@@ -1,0 +1,50 @@
+{
+ "signal": [
+  {
+   "name": "cmd",
+   "wave": "z3...4...........5...........z",
+   "data": [
+    "TX 1 byte, last = 0",
+    "TX 3 bytes, last = 0",
+    "RX 3 bytes, last = 1"
+   ]
+  },
+  {},
+  {
+   "name": "CS#",
+   "wave": "10...........................1"
+  },
+  {
+   "name": "SCLK",
+   "wave": "lp..|p..|p..|p..|p..|p..|p..|l"
+  },
+  {
+   "name": "MOSI",
+   "wave": "z3..|4..|4..|4..|z..|...|...|.",
+   "data": [
+    "0x03 (READ)",
+    "A[23:16]",
+    "A[15:8]",
+    "A[7:0]"
+   ]
+  },
+  {
+   "name": "MISO",
+   "wave": "z...|...|...|...|5..|5..|5..|z",
+   "data": [
+    "D0",
+    "D1",
+    "D2"
+   ]
+  }
+ ],
+ "head": {
+  "text": "Flash read: opcode, 3-byte address and 3 data bytes in one transaction (CS# kept low)"
+ },
+ "foot": {
+  "text": "Each byte is 8 SCLK cycles (drawn compressed). TX bytes written to data, RX bytes read from data."
+ },
+ "config": {
+  "hscale": 1
+ }
+}

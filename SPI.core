@@ -76,6 +76,13 @@ filesets:
       - asylum:utils:ghdl_synth
 
   #---------------------------------------
+  syn_yosys:
+  #---------------------------------------
+    # yosys_synth.sh / yosys_synth.mk / yosys_synth.py (pre_run hook of syn_*)
+    depend       :
+      - asylum:utils:yosys_synth
+
+  #---------------------------------------
   sim_basic:
   #---------------------------------------
     files:
@@ -195,6 +202,63 @@ targets:
   #---------------------------------------
     << : *lint_ghdl_synth
     description     : Synthesis check of sbi_SPI_wrapper, late RX sampling (input registers)
+    parameters      :
+      - RX_LATE_SAMPLE=true
+
+  #---------------------------------------
+  # Synthesis : size of sbi_SPI_wrapper with the generics of the target,
+  # Xilinx Artix-7 (LUT, FF, BRAM, DSP) and sky130 (area), by Yosys and
+  # its GHDL plugin. Same configurations as lint_ghdl_synth_*.
+  # The pre_run hook (yosys_synth.sh of asylum:utils:yosys_synth) adds
+  # yosys_synth.mk to the edalize Makefile.
+  #---------------------------------------
+  syn_default : &syn
+    << : *lint_ghdl
+    description     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, default generics (PicoSoC)
+    filesets_append : [syn, syn_yosys]
+    tools :
+      ghdl :
+        run_options     : ["--no-run"]
+    hooks :
+      pre_run : [yosys_synth]
+
+  #---------------------------------------
+  syn_sim_basic :
+  #---------------------------------------
+    << : *syn
+    description     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, generics of sim_basic
+    parameters      :
+      - PRESCALER_RATIO=00001111
+      - DEPTH_CMD=4
+      - DEPTH_TX=8
+      - DEPTH_RX=8
+      - HANDLE_HOLD_WP=false
+
+  #---------------------------------------
+  syn_sim_models :
+  #---------------------------------------
+    << : *syn
+    description     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, generics of the model testbenches
+    parameters      :
+      - PRESCALER_RATIO=00001111
+      - DEPTH_CMD=4
+      - DEPTH_TX=4
+      - DEPTH_RX=4
+
+  #---------------------------------------
+  syn_fixed_prescaler :
+  #---------------------------------------
+    << : *syn
+    description     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, fixed prescaler
+    parameters      :
+      - USER_DEFINE_PRESCALER=false
+      - PRESCALER_RATIO=00001111
+
+  #---------------------------------------
+  syn_rx_late_sample :
+  #---------------------------------------
+    << : *syn
+    description     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, late RX sampling (input registers)
     parameters      :
       - RX_LATE_SAMPLE=true
 
@@ -507,6 +571,12 @@ scripts:
   ghdl_synth :
     cmd : [bash, ghdl_synth.sh]
 
+  #---------------------------------------
+  # pre_run hook of syn_* (cwd = work_root)
+  #---------------------------------------
+  yosys_synth :
+    cmd : [bash, yosys_synth.sh]
+
 #=========================================
 parameters :
 #=========================================
@@ -524,7 +594,7 @@ parameters :
     paramtype   : generic
 
   #---------------------------------------
-  # Generics of sbi_SPI_wrapper (lint_ghdl_synth_*)
+  # Generics of sbi_SPI_wrapper (lint_ghdl_synth_*, syn_*)
   #---------------------------------------
   USER_DEFINE_PRESCALER :
     description : true, prescaler register writable by software ; false, ratio fixed to PRESCALER_RATIO

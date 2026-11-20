@@ -32,4 +32,9 @@ sim_s25fl512s_quad_io_read_cont : Simulation of sbi_SPI with the s25fl512s flash
 sim_s25fl512s_quad_read         : Simulation of sbi_SPI with the s25fl512s flash model - QOR (0x6B)
 sim_s25fl512s_read              : Simulation of sbi_SPI with the s25fl512s flash model - Read (0x03)
 sim_s35hl256t                   : Simulation of sbi_SPI with the s35hl256t flash model - Read, Fast Read
+syn_default                     : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, default generics (PicoSoC)
+syn_fixed_prescaler             : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, fixed prescaler
+syn_rx_late_sample              : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, late RX sampling (input registers)
+syn_sim_basic                   : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, generics of sim_basic
+syn_sim_models                  : Synthesis (Artix-7, sky130) of sbi_SPI_wrapper, generics of the model testbenches
 

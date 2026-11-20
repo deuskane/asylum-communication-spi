@@ -10,7 +10,12 @@
 -- Platform   :
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
--- Description: UVVM/SBI testbench for the SBI SPI DUT
+-- Description: UVVM/SBI testbench for the SBI SPI DUT with a flash model
+--              TESTS_LIST : scenarios run in sequence, separated by ','
+--                           (tb_SPI_models_tests_pkg), each one after a
+--                           reset pulse ; "" : build and elaboration only
+--              MODEL      : flash model (the dual and quad scenarios need
+--                           s25fl512s)
 -------------------------------------------------------------------------------
 -- Copyright (c) 2025
 -------------------------------------------------------------------------------
@@ -18,6 +23,10 @@
 -- Date        Version  Author   Description
 -- 2025-05-31  1.0      mrosiere Created
 -- 2026-08-01  1.1      mrosiere Use UVVM SBI VIP and clock generator
+-- 2026-11-20  1.2      mrosiere TESTS_LIST, scenarios in
+--                               tb_SPI_models_<group>_pkg, helpers in
+--                               tb_SPI_models_bfm_pkg, reset pulse before
+--                               each scenario
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -34,11 +43,17 @@ library asylum;
 use     asylum.sbi_pkg.all;
 use     asylum.spi_pkg.all;
 use     asylum.SPI_csr_pkg.all;
+use     asylum.string_pkg.all;
 use     asylum.techmap_pkg.all;
+
+library work;
+use     work.tb_SPI_models_bfm_pkg.all;
+use     work.tb_SPI_models_tests_pkg.all;
 
 entity tb is
   generic (
-    MODEL : string := "m25p40" -- m25p40 s25fl064p
+    TESTS_LIST : string := "";       -- Scenarios, e.g. "read,fast_read"
+    MODEL      : string := "m25p40"  -- m25p40 s25fl064p
   );
 end tb;
 
@@ -46,7 +61,6 @@ architecture sim of tb is
 
   constant C_SCOPE         : string := "TB_SPI";
   constant HANDLE_HOLD_WP  : boolean := true;
-  constant C_POLL_MAX      : positive := 10000; -- Max number of status register polls
 
   signal clk_i             : std_logic := '0';
   signal clk_ena           : boolean   := true;
@@ -76,8 +90,6 @@ architecture sim of tb is
   signal HOLDNeg           : std_logic;
 
 begin
-
-  arst_b_i <= '0', '1' after 100 ns;
 
   clock_generator(clk_i, clk_ena, 20 ns, "TB Clock");
 
@@ -378,339 +390,37 @@ begin
     end if;
   end process p_check_hold_wp;
 
-  process
-    
-    variable V_SBI_BFM_CONFIG_SPI : t_sbi_bfm_config := C_SBI_BFM_CONFIG_DEFAULT;
-    variable wdata                : std_logic_vector(8-1 downto 0);
-    variable rdata                : std_logic_vector(8-1 downto 0);
-
+  -----------------------------------------------------------------------------
+  -- Sequencer
+  -----------------------------------------------------------------------------
+  p_sequencer : process
   begin
+    log(ID_LOG_HDR, "MODEL = " & MODEL & ", TESTS_LIST : " & TESTS_LIST, C_SCOPE);
 
-    -- BFM Configuration
-    V_SBI_BFM_CONFIG_SPI.max_wait_cycles            := 1000;
-
-    sbi_if <= init_sbi_if_signals(SPI_ADDR_WIDTH, SPI_DATA_WIDTH);
-    wait until arst_b_i = '1';
-    wait until rising_edge(clk_i);
-
-    log(ID_SEQUENCER, "Reset released, starting SPI SBI test", C_SCOPE);
-
-    wait for 800 us;
-
-    log(ID_LOG_HDR, "Configuration of the Prescaler (Divide by 6)", C_SCOPE);
-    sbi_write(addr_value => SPI_PRESCALER, data_value => x"02", msg => "Set prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_PRESCALER, data_exp   => x"02", msg => "Read back prescaler", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    log(ID_LOG_HDR, "Configure and verify SPI control registers", C_SCOPE);
-    sbi_write(addr_value => SPI_CFG      , data_value => x"01", msg => "Enable SPI", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_CFG      , data_exp   => x"01", msg => "Read back enabled config", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-
-    log(ID_LOG_HDR, "Perform Single Read (0x03) - At address 0x000005 (24b)", C_SCOPE);
-
-    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
-              or SPI_CMD_LAST_DISABLE_RAW
-              or SPI_CMD_ENABLE_TX_ENABLE_RAW
-              or SPI_CMD_ENABLE_RX_DISABLE_RAW
-              or SPI_CMD_SIZE_SINGLE_RAW
-              or x"03");
-
-    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"03", msg => "SPI Instruction 0x03",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Address 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
-              or SPI_CMD_LAST_DISABLE_RAW
-              or SPI_CMD_ENABLE_TX_DISABLE_RAW
-              or SPI_CMD_ENABLE_RX_ENABLE_RAW
-              or SPI_CMD_SIZE_SINGLE_RAW
-              or x"03");
-
-    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"06", msg => "Read Byte @ 0x000005",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"07", msg => "Read Byte @ 0x000006",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"08", msg => "Read Byte @ 0x000007",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"09", msg => "Read Byte @ 0x000008",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    wdata := (   SPI_CMD_CFG_CONFIG_RAW 
-              or SPI_CMD_LAST_ENABLE_RAW
-              or SPI_CMD_ENABLE_TX_DISABLE_RAW
-              or SPI_CMD_ENABLE_RX_DISABLE_RAW
-              or SPI_CMD_SIZE_SINGLE_RAW
-              or x"00");
-
-    sbi_write(addr_value => SPI_CMD      , data_value => wdata, msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    log(ID_LOG_HDR, "Configuration of the Prescaler (Divide by 2)", C_SCOPE);
-    sbi_write(addr_value => SPI_PRESCALER, data_value => x"00", msg => "Set prescaler",            clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    log(ID_LOG_HDR, "Perform Fast Read (0x0B) - At address 0x000010 (24b)", C_SCOPE);
-
-    sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"0B", msg => "SPI Instruction 0x0B",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000010",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000010",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_DATA     , data_value => x"10", msg => "SPI Address 0x000010",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    sbi_write(addr_value => SPI_CMD      , data_value => x"00", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    sbi_write(addr_value => SPI_CMD      , data_value => x"10", msg => "SPI RX 1 Bytes without last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_write(addr_value => SPI_CMD      , data_value => x"ce", msg => "SPI RX 15 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"11", msg => "Read Byte @ 0x000010",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"12", msg => "Read Byte @ 0x000011",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"13", msg => "Read Byte @ 0x000012",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"14", msg => "Read Byte @ 0x000013",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"15", msg => "Read Byte @ 0x000014",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"16", msg => "Read Byte @ 0x000015",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"17", msg => "Read Byte @ 0x000016",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"18", msg => "Read Byte @ 0x000017",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"19", msg => "Read Byte @ 0x000018",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1a", msg => "Read Byte @ 0x000019",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1b", msg => "Read Byte @ 0x00001a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1c", msg => "Read Byte @ 0x00001b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1d", msg => "Read Byte @ 0x00001c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1e", msg => "Read Byte @ 0x00001d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"1f", msg => "Read Byte @ 0x00001e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-    sbi_check(addr_value => SPI_DATA     , data_exp   => x"20", msg => "Read Byte @ 0x00001f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-    if MODEL = "s25fl512s" 
-    then
-
-      -----------------------------------------------------------------------------------
-      -- Read 1-1-2
-      -----------------------------------------------------------------------------------
-      log(ID_LOG_HDR, "Perform DOR (0x3B) - At address 0x000020 (24b)", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"3B", msg => "SPI Instruction 0x3B",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"20", msg => "SPI Address 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"00", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"17", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"21", msg => "Read Byte @ 0x000020",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"22", msg => "Read Byte @ 0x000021",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"23", msg => "Read Byte @ 0x000022",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"24", msg => "Read Byte @ 0x000023",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"25", msg => "Read Byte @ 0x000024",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"26", msg => "Read Byte @ 0x000025",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"27", msg => "Read Byte @ 0x000026",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"28", msg => "Read Byte @ 0x000027",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"29", msg => "Read Byte @ 0x000028",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2a", msg => "Read Byte @ 0x000029",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2b", msg => "Read Byte @ 0x00002a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2c", msg => "Read Byte @ 0x00002b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2d", msg => "Read Byte @ 0x00002c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2e", msg => "Read Byte @ 0x00002d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"2f", msg => "Read Byte @ 0x00002e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"30", msg => "Read Byte @ 0x00002f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      -----------------------------------------------------------------------------------
-      -- Read 1-2-2
-      -----------------------------------------------------------------------------------
-      log(ID_LOG_HDR, "Perform DIOR (0xBB) - At address 0x000040 (24b)", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"BB", msg => "SPI Instruction 0xBB",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"26", msg => "SPI TX 3 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000040",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000040",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"46", msg => "SPI Address 0x000040",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"04", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"17", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"47", msg => "Read Byte @ 0x000046",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"48", msg => "Read Byte @ 0x000047",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"49", msg => "Read Byte @ 0x000048",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4a", msg => "Read Byte @ 0x000049",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4b", msg => "Read Byte @ 0x00004a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4c", msg => "Read Byte @ 0x00004b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4d", msg => "Read Byte @ 0x00004c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4e", msg => "Read Byte @ 0x00004d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4f", msg => "Read Byte @ 0x00004e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"50", msg => "Read Byte @ 0x00004f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"51", msg => "Read Byte @ 0x000050",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"52", msg => "Read Byte @ 0x000051",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"53", msg => "Read Byte @ 0x000052",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"54", msg => "Read Byte @ 0x000053",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"55", msg => "Read Byte @ 0x000054",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"56", msg => "Read Byte @ 0x000055",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      -----------------------------------------------------------------------------------
-      -- Read 1-1-4
-      -----------------------------------------------------------------------------------
-
-      log(ID_LOG_HDR, "WREN Enable write", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 1 Byte with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"06", msg => "SPI Instruction 0x06",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      log(ID_LOG_HDR, "WRR Enable QUAD - CR Bit 1 = 1", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"62", msg => "SPI TX 3 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"01", msg => "SPI Instruction 0x01",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "Status Register",          clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"02", msg => "Configuration Register",   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      log(ID_LOG_HDR, "WRDI Disable write", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"60", msg => "SPI TX 1 Bytes with last", clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"04", msg => "SPI Instruction 0x04",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      log(ID_LOG_HDR, "RDSR1 until WIP is 0", C_SCOPE);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Byte",            clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"05", msg => "SPI Instruction 0x05",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      -- Poll SR1 until WIP (bit 0) is 0, with a bounded number of polls
-      rdata := x"FF";
-      for i in 1 to C_POLL_MAX loop
-        sbi_write(addr_value => SPI_CMD      , data_value => x"10", msg => "SPI RX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-        sbi_read (addr_value => SPI_DATA     , data_value => rdata, msg => "SR1 -> WIP",               clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-        exit when rdata(0) = '0';
-      end loop;
-      check_value(rdata(0), '0', ERROR, "SR1.WIP cleared after at most " & to_string(C_POLL_MAX) & " polls", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"40", msg => "Stop command",             clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      
-      log(ID_LOG_HDR, "Perform QOR (0x6B) - At address 0x000020 (24b)", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"23", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"6B", msg => "SPI Instruction 0x3B",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"30", msg => "SPI Address 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"00", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"1b", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"31", msg => "Read Byte @ 0x000030",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"32", msg => "Read Byte @ 0x000031",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"33", msg => "Read Byte @ 0x000032",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"34", msg => "Read Byte @ 0x000033",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"35", msg => "Read Byte @ 0x000034",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"36", msg => "Read Byte @ 0x000035",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"37", msg => "Read Byte @ 0x000036",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"38", msg => "Read Byte @ 0x000037",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"39", msg => "Read Byte @ 0x000038",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3a", msg => "Read Byte @ 0x000039",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3b", msg => "Read Byte @ 0x00003a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3c", msg => "Read Byte @ 0x00003b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3d", msg => "Read Byte @ 0x00003c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3e", msg => "Read Byte @ 0x00003d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"3f", msg => "Read Byte @ 0x00003e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"40", msg => "Read Byte @ 0x00003f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      -----------------------------------------------------------------------------------
-      -- Read 1-4-4
-      -----------------------------------------------------------------------------------
-      log(ID_LOG_HDR, "Perform QIOR (0xEB) - At address 0x000046 (24b)", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"EB", msg => "SPI Instruction 0xEB",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"2b", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000046",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000046",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"46", msg => "SPI Address 0x000046",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "Mode 0",                   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"09", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"1b", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"47", msg => "Read Byte @ 0x000046",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"48", msg => "Read Byte @ 0x000047",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"49", msg => "Read Byte @ 0x000048",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4a", msg => "Read Byte @ 0x000049",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4b", msg => "Read Byte @ 0x00004a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4c", msg => "Read Byte @ 0x00004b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4d", msg => "Read Byte @ 0x00004c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4e", msg => "Read Byte @ 0x00004d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"4f", msg => "Read Byte @ 0x00004e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"50", msg => "Read Byte @ 0x00004f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"51", msg => "Read Byte @ 0x000050",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"52", msg => "Read Byte @ 0x000051",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"53", msg => "Read Byte @ 0x000052",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"54", msg => "Read Byte @ 0x000053",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"55", msg => "Read Byte @ 0x000054",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"56", msg => "Read Byte @ 0x000055",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      -----------------------------------------------------------------------------------
-      -- Read 1-4-4 in continous mode
-      -----------------------------------------------------------------------------------
-      log(ID_LOG_HDR, "Perform QIOR (0xEB) in continous mode - At address 0x000066 and 0x000086 (24b)", C_SCOPE);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"20", msg => "SPI TX 1 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"EB", msg => "SPI Instruction 0xEB",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"2b", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000066",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000066",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"66", msg => "SPI Address 0x000066",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"a0", msg => "Mode 0",                   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"09", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"1b", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"67", msg => "Read Byte @ 0x000066",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"68", msg => "Read Byte @ 0x000067",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"69", msg => "Read Byte @ 0x000068",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6a", msg => "Read Byte @ 0x000069",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6b", msg => "Read Byte @ 0x00006a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6c", msg => "Read Byte @ 0x00006b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6d", msg => "Read Byte @ 0x00006c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6e", msg => "Read Byte @ 0x00006d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"6f", msg => "Read Byte @ 0x00006e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"70", msg => "Read Byte @ 0x00006f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"71", msg => "Read Byte @ 0x000070",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"72", msg => "Read Byte @ 0x000071",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"73", msg => "Read Byte @ 0x000072",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"74", msg => "Read Byte @ 0x000073",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"75", msg => "Read Byte @ 0x000074",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"76", msg => "Read Byte @ 0x000075",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"2b", msg => "SPI TX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000086",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"00", msg => "SPI Address 0x000086",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"86", msg => "SPI Address 0x000086",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_DATA     , data_value => x"a0", msg => "Mode 0",                   clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
-      sbi_write(addr_value => SPI_CMD      , data_value => x"09", msg => "Dummy Cycle",              clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-  
-      sbi_write(addr_value => SPI_CMD      , data_value => x"1b", msg => "SPI RX 4 Bytes",           clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_write(addr_value => SPI_CMD      , data_value => x"CB", msg => "SPI RX 12 Bytes with last",clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"87", msg => "Read Byte @ 0x000086",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"88", msg => "Read Byte @ 0x000087",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"89", msg => "Read Byte @ 0x000088",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8a", msg => "Read Byte @ 0x000089",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8b", msg => "Read Byte @ 0x00008a",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8c", msg => "Read Byte @ 0x00008b",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8d", msg => "Read Byte @ 0x00008c",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8e", msg => "Read Byte @ 0x00008d",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"8f", msg => "Read Byte @ 0x00008e",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"90", msg => "Read Byte @ 0x00008f",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"91", msg => "Read Byte @ 0x000090",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"92", msg => "Read Byte @ 0x000091",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"93", msg => "Read Byte @ 0x000092",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"94", msg => "Read Byte @ 0x000093",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"95", msg => "Read Byte @ 0x000094",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-      sbi_check(addr_value => SPI_DATA     , data_exp   => x"96", msg => "Read Byte @ 0x000095",     clk => clk_i, sbi_if => sbi_if, config => V_SBI_BFM_CONFIG_SPI);
-
+    -- Every name is checked before the first scenario
+    for i in 1 to list_length(TESTS_LIST) loop
+      if not list_contains(C_TESTS, list_item(TESTS_LIST, i))
+      then
+        alert(TB_ERROR, "Unknown test """ & list_item(TESTS_LIST, i) & """ (tests : " & C_TESTS & ")", C_SCOPE);
+      elsif not applies(list_item(TESTS_LIST, i), MODEL)
+      then
+        alert(TB_ERROR, "Test """ & list_item(TESTS_LIST, i) & """ needs MODEL = s25fl512s", C_SCOPE);
       end if;
-
-    for i in 1 to 10 
-    loop
-      wait until rising_edge(clk_i);
     end loop;
 
-    report "[TB_SPI] All SBI SPI checks passed";
+    for i in 1 to list_length(TESTS_LIST) loop
+      -- Reset pulse, bus inactive : each scenario starts from reset (the
+      -- flash model is not reset)
+      sbi_if <= init_sbi_if_signals(SPI_ADDR_WIDTH, SPI_DATA_WIDTH);
+      do_reset(clk_i, arst_b_i);
+
+      log(ID_LOG_HDR, "TEST " & integer'image(i) & "/" & integer'image(list_length(TESTS_LIST)) & " : " & list_item(TESTS_LIST, i), C_SCOPE);
+      run_test(list_item(TESTS_LIST, i), clk_i, sbi_if);
+    end loop;
+
     report_alert_counters(FINAL);
     std.env.stop;
     wait;
-  end process;
+  end process p_sequencer;
 
 end sim;

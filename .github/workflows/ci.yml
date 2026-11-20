@@ -172,8 +172,33 @@ jobs:
     with:
       name: lint_ghdl_synth_sim_models
 
+  syn_default:
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
+    with:
+      name: syn_default
+
+  syn_fixed_prescaler:
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
+    with:
+      name: syn_fixed_prescaler
+
+  syn_rx_late_sample:
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
+    with:
+      name: syn_rx_late_sample
+
+  syn_sim_basic:
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
+    with:
+      name: syn_sim_basic
+
+  syn_sim_models:
+    uses: deuskane/asylum-ci/.github/workflows/vhdl-ci.yml@main
+    with:
+      name: syn_sim_models
+
   badges:
-    needs: [sim_at25df161, sim_basic, sim_basic_cs_high, sim_basic_disable, sim_basic_dual, sim_basic_keep, sim_basic_late, sim_basic_loopback, sim_basic_quad, sim_basic_reset_values, sim_basic_single, sim_basic_status, sim_basic_stop, sim_cy15b104qs, sim_cy15v104qs, sim_m25p40, sim_m45pe80, sim_s25fl064p, sim_s25fl512s, sim_s25fl512s_dual_io_read, sim_s25fl512s_dual_read, sim_s25fl512s_fast_read, sim_s25fl512s_quad_io_read, sim_s25fl512s_quad_io_read_cont, sim_s25fl512s_quad_read, sim_s25fl512s_read, sim_s35hl256t, lint_ghdl, lint_ghdl_synth_default, lint_ghdl_synth_fixed_prescaler, lint_ghdl_synth_rx_late_sample, lint_ghdl_synth_sim_basic, lint_ghdl_synth_sim_models]
+    needs: [sim_at25df161, sim_basic, sim_basic_cs_high, sim_basic_disable, sim_basic_dual, sim_basic_keep, sim_basic_late, sim_basic_loopback, sim_basic_quad, sim_basic_reset_values, sim_basic_single, sim_basic_status, sim_basic_stop, sim_cy15b104qs, sim_cy15v104qs, sim_m25p40, sim_m45pe80, sim_s25fl064p, sim_s25fl512s, sim_s25fl512s_dual_io_read, sim_s25fl512s_dual_read, sim_s25fl512s_fast_read, sim_s25fl512s_quad_io_read, sim_s25fl512s_quad_io_read_cont, sim_s25fl512s_quad_read, sim_s25fl512s_read, sim_s35hl256t, lint_ghdl, lint_ghdl_synth_default, lint_ghdl_synth_fixed_prescaler, lint_ghdl_synth_rx_late_sample, lint_ghdl_synth_sim_basic, lint_ghdl_synth_sim_models, syn_default, syn_fixed_prescaler, syn_rx_late_sample, syn_sim_basic, syn_sim_models]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write

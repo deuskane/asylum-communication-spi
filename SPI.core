@@ -79,11 +79,18 @@ filesets:
   sim_basic:
   #---------------------------------------
     files:
+      - sim/basic/tb_SPI_bfm_pkg.vhd
+      - sim/basic/tb_SPI_reset_pkg.vhd
+      - sim/basic/tb_SPI_modes_pkg.vhd
+      - sim/basic/tb_SPI_cmd_pkg.vhd
+      - sim/basic/tb_SPI_tests_pkg.vhd
       - sim/basic/tb_SPI.vhd
 #    logical_name : work
     file_type : vhdlSource-2008
     depend       :
       - bitvis:verification:uvvm
+      # string_pkg list_length / list_item / list_contains (TESTS_LIST)
+      - ">=asylum:utils:pkg:1.10.0"
 
   #---------------------------------------
   models:
@@ -217,6 +224,8 @@ targets:
     filesets_append :
       - sim_basic
     toplevel        : tb_SPI
+    parameters      :
+      - TESTS_LIST=reset_values,single,dual,quad,stop,cs_high,keep,loopback,disable,status
     default_tool    : ghdl
     tools :
       ghdl :
@@ -234,6 +243,7 @@ targets:
     << : *sim_basic
     description     : Simulation of sbi_SPI with RX_LATE_SAMPLE and a slave output valid time longer than half a SCLK period (UVVM)
     parameters      :
+      - TESTS_LIST=reset_values,single,dual,quad,stop,cs_high,keep,loopback,disable,status
       - RX_LATE_SAMPLE=true
       - SLAVE_TV_NS=25
 
@@ -319,6 +329,12 @@ parameters :
     description : SPI Memory Model
     datatype    : str
     default     : m25p40
+    paramtype   : generic
+
+  TESTS_LIST :
+    description : Scenarios of tb_SPI basic run in sequence, separated by ',' (names in sim/basic/tb_SPI_tests_pkg.vhd), empty = build only
+    datatype    : str
+    default     : ""
     paramtype   : generic
 
   #---------------------------------------

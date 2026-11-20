@@ -1,0 +1,60 @@
+{
+ "signal": [
+  {
+   "name": "CS#",
+   "wave": "10................1"
+  },
+  {},
+  {
+   "name": "SCLK mode 0 (CPOL 0, CPHA 0)",
+   "wave": "0.HlHlHlHlHlHlHlHl."
+  },
+  {
+   "name": "SCLK mode 2 (CPOL 1, CPHA 0)",
+   "wave": "1.LhLhLhLhLhLhLhLh."
+  },
+  {
+   "name": "MOSI / MISO (CPHA 0)",
+   "wave": "z3.3.3.3.3.3.3.3.xz",
+   "data": [
+    "b7",
+    "b6",
+    "b5",
+    "b4",
+    "b3",
+    "b2",
+    "b1",
+    "b0"
+   ]
+  },
+  {},
+  {
+   "name": "SCLK mode 1 (CPOL 0, CPHA 1)",
+   "wave": "0.hLhLhLhLhLhLhLhL."
+  },
+  {
+   "name": "SCLK mode 3 (CPOL 1, CPHA 1)",
+   "wave": "1.lHlHlHlHlHlHlHlH."
+  },
+  {
+   "name": "MOSI / MISO (CPHA 1)",
+   "wave": "zx4.4.4.4.4.4.4.4.z",
+   "data": [
+    "b7",
+    "b6",
+    "b5",
+    "b4",
+    "b3",
+    "b2",
+    "b1",
+    "b0"
+   ]
+  }
+ ],
+ "head": {
+  "text": "SPI modes: one byte, MSB first"
+ },
+ "foot": {
+  "text": "Arrows: sampling edges. CPHA 0 samples on the leading SCLK edge, CPHA 1 on the trailing edge."
+ }
+}

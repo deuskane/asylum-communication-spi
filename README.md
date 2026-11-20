@@ -110,7 +110,7 @@ The cores of the Asylum IPs are published in the FuseSoC library [asylum-cores](
 ```bash
 pip install fusesoc
 fusesoc library add https://github.com/deuskane/asylum-cores
-fusesoc run --target sim_basic asylum:communication:SPI      # needs GHDL
+fusesoc run --target sim_basic_single asylum:communication:SPI  # needs GHDL
 ```
 
 To use the IP in your design, add `asylum:communication:SPI` to the `depend` list of your core and instantiate `sbi_SPI` (library `asylum`):
@@ -368,20 +368,57 @@ For transfers longer than 4 bytes, send one `CONFIG` command then `KEEP` command
 
 | File | DUT | Description |
 |------|-----|-------------|
-| [sim/basic/tb_SPI.vhd](sim/basic/tb_SPI.vhd) | `sbi_SPI` | Self-checking UVVM testbench with the SBI VIP and a SPI slave model in the bench. The slave checks MOSI, drives MISO or the data lanes according to CPOL/CPHA, and checks the SCLK idle level on the CS# edges. Scenarios: reset values; the 4 SPI modes with 4 prescalers (SCLK period checked), single 1 and 4 bytes, dual and quad TX and RX, commands chained without `last` then STOP; `KEEP` command (1 + 9 bytes); loopback; abort by `spi_enable = 0`; status flags and busy, master stalled by a full RX FIFO |
-| [sim/models/tb_SPI.vhd](sim/models/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench against a real SPI flash model (generic `MODEL`): Read (0x03), Fast Read (0x0B); on `s25fl512s` also dual and quad reads (0x3B, 0xBB, 0x6B, 0xEB, continuous 0xEB) |
+| [sim/basic/tb_SPI.vhd](sim/basic/tb_SPI.vhd) | `sbi_SPI` | Self-checking UVVM testbench with the SBI VIP and a SPI slave model in the bench, generics `TESTS_LIST` (scenarios, see below), `RX_LATE_SAMPLE` (of the DUT) and `SLAVE_TV_NS` (output valid time of the slave). The slave checks MOSI, drives MISO or the data lanes according to CPOL/CPHA, and checks the SCLK idle level on the CS# edges; a monitor checks the CS# high time between 2 transactions. The scenarios configure the slave and read its results through the records `tb_req` / `tb_rsp`. Scenarios in [tb_SPI_reset_pkg](sim/basic/tb_SPI_reset_pkg.vhd), [tb_SPI_modes_pkg](sim/basic/tb_SPI_modes_pkg.vhd) and [tb_SPI_cmd_pkg](sim/basic/tb_SPI_cmd_pkg.vhd), names and dispatch in [tb_SPI_tests_pkg](sim/basic/tb_SPI_tests_pkg.vhd), helpers (register accesses, configuration, slave requests and checks, reset pulse) in [tb_SPI_bfm_pkg](sim/basic/tb_SPI_bfm_pkg.vhd) |
+| [sim/models/tb_SPI.vhd](sim/models/tb_SPI.vhd) | `sbi_SPI` | UVVM testbench against a real SPI flash model, generics `TESTS_LIST` and `MODEL`. Scenarios in [tb_SPI_models_read_pkg](sim/models/tb_SPI_models_read_pkg.vhd) (every model) and [tb_SPI_models_multi_io_pkg](sim/models/tb_SPI_models_multi_io_pkg.vhd) (`s25fl512s` only), names, applicability and dispatch in [tb_SPI_models_tests_pkg](sim/models/tb_SPI_models_tests_pkg.vhd), helpers in [tb_SPI_models_bfm_pkg](sim/models/tb_SPI_models_bfm_pkg.vhd). The flash models are not reset: the first scenario waits their power-up time (800 µs), each scenario sets what it needs (quad enable) and leaves the flash in its standard mode |
 
 Flash models in [models/](models/) (Free Model Foundry, core [SPI_models.core](SPI_models.core)): `at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s25fl512s`, `s35hl256t`.
 
+### Scenarios (`TESTS_LIST`)
+
+The scenarios are chosen at run time with the generic `TESTS_LIST`: names separated by `,` without space (`single,status,single`), a name may be repeated. The sequencer first checks every name (an unknown name, or a scenario that does not apply to `MODEL`, is a `TB_ERROR` before any scenario runs), then for each scenario drives a reset pulse with the bus inactive, logs `TEST <i>/<N> : <name>` and runs it: each scenario starts from reset and configures the DUT itself. The empty list (default) only compiles and elaborates the testbench. The list is parsed and its names checked with `list_length` / `list_item` / `list_contains` of `asylum.string_pkg` (`asylum:utils:pkg` >= 1.10.0).
+
+`tb_SPI` basic (checks counted as the `=> OK` lines of the log; the mode scenarios run the 4 SPI modes with the prescalers 0, 1, 2 and 5):
+
+| Name | Checks | Description |
+|------|--------|-------------|
+| `reset_values` | 8 | Reset values of `cfg`, `status`, `prescaler`; with `spi_enable = 0` CS# and SCLK are driven (CS# high, SCLK at CPOL), the IO pads are disabled |
+| `single` | 96 | Single full duplex 1 and 4 bytes: MOSI and MISO bytes, SCLK period and half period |
+| `dual` | 68 | Dual TX only (the slave checks the lanes) and RX only (the slave drives the lanes), 3 bytes |
+| `quad` | 76 | Quad TX only and RX only, 4 bytes |
+| `stop` | 56 | Commands without `last` keep CS# low with SCLK idle, then a STOP command ends the transaction |
+| `cs_high` | 40 | 2 transactions queued back to back: CS# high time >= `CS_HIGH_MIN_CYCLES` |
+| `keep` | 20 | `KEEP` command (1 + 9 bytes, 6-bit `nb_bytes`); a dummy `KEEP` command with `last` is not a STOP |
+| `loopback` | 9 | Loopback: the RX bytes are the TX bytes |
+| `disable` | 14 | `spi_enable = 0` aborts the transaction (CS# driven high, SCLK at CPOL), the commands and TX bytes written while disabled are dropped |
+| `status` | 49 | Status flags and busy: TX FIFO full without command, busy during the transaction, master stalled by a full RX FIFO |
+
+Flash model testbench (checks with `MODEL = s25fl512s`):
+
+| Name | Checks | Models | Description |
+|------|--------|--------|-------------|
+| `read` | 6 | all | Read (0x03), 4 bytes at 0x000005, prescaler 2 |
+| `fast_read` | 18 | all | Fast Read (0x0B), 16 bytes at 0x000010, prescaler 0 |
+| `dual_read` | 18 | `s25fl512s` | DOR (0x3B), read 1-1-2 |
+| `dual_io_read` | 18 | `s25fl512s` | DIOR (0xBB), read 1-2-2 |
+| `quad_read` | 19 | `s25fl512s` | Quad enable (WREN, WRR CR1.QUAD, WRDI, WIP polling), then QOR (0x6B), read 1-1-4 |
+| `quad_io_read` | 19 | `s25fl512s` | Quad enable, then QIOR (0xEB), read 1-4-4 |
+| `quad_io_read_cont` | 35 | `s25fl512s` | Quad enable, then QIOR in continuous mode: a read with the instruction (mode 0xA0), a read without it (mode 0x00: back to the standard mode) |
+
 ### Targets
 
-| Target | Description |
-|--------|-------------|
-| `sim_basic` | `tb_SPI` with the slave model of the bench |
-| `sim_basic_late` | Same with `RX_LATE_SAMPLE = true` and a slave output valid time (25 ns) longer than half a SCLK period |
-| `sim_<model>` | Flash model testbench, one target per model (8 targets) |
-| `lint_ghdl` | GHDL `-Wall` analysis and elaboration of [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) |
-| `lint_ghdl_synth_<config>` | `ghdl --synth` check (no latch, synthesizable) for 5 generic configurations: `default`, `sim_basic`, `sim_models`, `fixed_prescaler`, `rx_late_sample` |
+| Target | Toplevel | Description |
+|--------|----------|-------------|
+| `default` | `asylum.sbi_SPI` | HDL fileset + CSR generation (not a simulation) |
+| `sim_basic` | `tb_SPI` | Reference configuration of `tb_SPI` basic (default generics: RX sampled on the sample edge): build and elaboration only (`TESTS_LIST` empty), base of the scenario targets and of the list runs |
+| `sim_basic_<name>` | `tb_SPI` | One target per scenario of `tb_SPI` basic: `sim_basic_reset_values`, `_single`, `_dual`, `_quad`, `_stop`, `_cs_high`, `_keep`, `_loopback`, `_disable`, `_status` (436 checks in all) |
+| `sim_basic_late` | `tb_SPI` | `RX_LATE_SAMPLE = true` and a slave output valid time (25 ns) longer than half a SCLK period, every scenario (436 checks) |
+| `sim_s25fl512s` | `tb` | Reference configuration of the flash model testbench (`s25fl512s`, the only model with the dual and quad scenarios): build and elaboration only |
+| `sim_s25fl512s_<name>` | `tb` | One target per scenario with `s25fl512s`: `sim_s25fl512s_read`, `_fast_read`, `_dual_read`, `_dual_io_read`, `_quad_read`, `_quad_io_read`, `_quad_io_read_cont` (133 checks in all) |
+| `sim_<model>` | `tb` | Other flash models (`at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s35hl256t`): `read` and `fast_read` (24 checks) |
+| `lint_ghdl` | `asylum.sbi_SPI_wrapper` | GHDL `-Wall` analysis and elaboration of [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) |
+| `lint_ghdl_synth_<config>` | `asylum.sbi_SPI_wrapper` | `ghdl --synth` check (no latch, synthesizable) for 5 generic configurations: `default`, `sim_basic`, `sim_models`, `fixed_prescaler`, `rx_late_sample` |
+
+The reference configuration of a testbench has a build-only base target and one target per scenario: one CI job per scenario, a failure is isolated. Every other configuration has one target that runs its whole list: the `TEST <i>/<N>` header names a failing scenario. FuseSoC replaces the `parameters` list of an inherited target, so each target repeats the generics of its configuration.
 
 Every `sim_*` and `lint_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM). The `sim` and `lint` badges count the passed and failed targets of the last run on `main`.
 
@@ -391,11 +428,30 @@ From a clone of [asylum-project](https://github.com/deuskane/asylum-project) (GH
 
 ```bash
 make help                        # variables, rules and targets
-make sim_basic                   # one target, log in log/
+make sim_basic_single            # one scenario, log in log/
+make sim_basic_late              # every scenario of a configuration
 make nonreg_sim                  # every sim_* target
 make nonreg_lint                 # every lint_* target
-make TARGETS_FILTER=^sim_s nonreg_sim
+make TARGETS_FILTER=^sim_s25 nonreg_sim
 ```
+
+To run a list of scenarios, build the testbench once, then run the list without recompiling, either with FuseSoC (same `--build-root` and `--no-export` as the Makefile, so that the build of the target is reused; any generic of the target can be overridden after the VLNV):
+
+```bash
+make sim_basic                   # build and elaboration (TESTS_LIST empty)
+fusesoc --cores-root . run --build-root build --no-export --run --target sim_basic asylum:communication:SPI:2.2.0 --TESTS_LIST=quad,status,quad
+make sim_s25fl512s
+fusesoc --cores-root . run --build-root build --no-export --run --target sim_s25fl512s asylum:communication:SPI:2.2.0 --TESTS_LIST=quad_read,read
+```
+
+or in the build directory of the target. `EXTRA_OPTIONS` replaces every generic set by the target: repeat the generics of the configuration, else their default values apply (`MODEL=m25p40`):
+
+```bash
+cd build/asylum_communication_SPI_2.2.0/sim_s25fl512s-ghdl
+make run EXTRA_OPTIONS="-gTESTS_LIST=quad_read,read -gMODEL=s25fl512s"
+```
+
+To add a scenario: a `test_<name>` procedure in a scenario package (in the `sim_basic` or `models` fileset), its name in `C_TESTS` and its case in `run_test` of the `tests_pkg`, a `sim_basic_<name>` (or `sim_s25fl512s_<name>`) target and the name in the `TESTS_LIST` of the other configurations in [SPI.core](SPI.core), then `make mk/targets.txt` and `make ci_generate`.
 
 Outside the CI, GHDL writes a waveform `dut.fst`, and `sbi_SPI` writes the dumps `dump_spi_cmd.txt`, `dump_spi_tx.txt`, `dump_spi_rx.txt`.
 
@@ -404,7 +460,7 @@ Outside the CI, GHDL writes a waveform `dut.fst`, and `sbi_SPI` writes the dumps
 | Core | Repository | Purpose |
 |------|------------|---------|
 | `asylum:utils:generators` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | regtool (register generator) and the CSR building blocks (`csr_reg`, `csr_fifo`) |
-| `asylum:utils:pkg` | [asylum-utils-pkg](https://github.com/deuskane/asylum-utils-pkg) | Common packages (`sbi_pkg`, ...) |
+| `asylum:utils:pkg` | [asylum-utils-pkg](https://github.com/deuskane/asylum-utils-pkg) | Common packages (`sbi_pkg`, ...); the testbenches need >= 1.10.0 (`string_pkg` lists of `TESTS_LIST`) |
 | `asylum:utils:ghdl_synth` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | `ghdl --synth` check of the `lint_ghdl_synth_*` targets |
 | `asylum:target:techmap` | [asylum-target-techmap](https://github.com/deuskane/asylum-target-techmap) | Technology cells, model testbench |
 | `bitvis:verification:uvvm` | [UVVM](https://github.com/UVVM/UVVM) | Verification library and SBI VIP |

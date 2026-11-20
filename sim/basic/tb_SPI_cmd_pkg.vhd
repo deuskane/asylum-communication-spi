@@ -18,6 +18,8 @@
 -- Revisions  :
 -- Date        Version  Author   Description
 -- 2026-11-20  1.0      mrosiere Created (split of tb_SPI)
+-- 2026-11-20  1.1      mrosiere status : wait long enough to see the master
+--                               stalled by the full RX FIFO
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -158,7 +160,9 @@ package body tb_SPI_cmd_pkg is
     write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, true, false, 4), "Status : command RX 4 bytes, not last", clk, sbi_if);
     write_reg(SPI_CMD, cmd(SPI_CMD_SIZE_SINGLE_RAW, false, true, true , 2), "Status : command RX 2 bytes, last", clk, sbi_if);
     poll_status(x"0C", x"08", "Status RX FIFO full", clk, sbi_if);
-    cycles(20*(C_RATIO+1), clk);
+    -- Several byte times (16*(ratio+1) cycles each) : the 10th byte is
+    -- received, the master must hold it (no overwrite) and keep CS# active
+    cycles(100*(C_RATIO+1), clk);
     check_reg(SPI_STATUS, x"59", "Status RX FIFO full, master waiting (tx_empty, rx_full, cmd_empty, busy)", clk, sbi_if);
     check_value(pads.cs_b, '0', ERROR, "Status RX FIFO full : CS# still active", C_TB_SCOPE);
     for i in 0 to 9 loop

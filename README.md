@@ -207,17 +207,17 @@ The FIFO depths set most of the area of the IP.
 
 Figures of the `syn_*` targets (`make nonreg_syn`, see [Targets](#targets)): [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) with the generics of each configuration, synthesized by Yosys and its GHDL plugin; the reports are in the build directory of each target. FIFO depths as command / TX / RX.
 
-| Configuration | LUT¹ | FF¹ | BRAM¹ | DSP¹ | Area² (µm²) | kGE³ |
-|---|---|---|---|---|---|---|
-| `syn_default` (FIFOs 8/8/8) | 160 + 24 | 116 | 0 | 0 | 12968.69 | 3.455 |
-| `syn_sim_basic` (FIFOs 4/8/8, prescaler reset 15) | 155 + 24 | 114 | 0 | 0 | 11573.60 | 3.083 |
-| `syn_sim_models` (FIFOs 4/4/4, prescaler reset 15) | 150 + 24 | 110 | 0 | 0 | 8810.95 | 2.347 |
-| `syn_fixed_prescaler` (FIFOs 8/8/8, prescaler fixed to 15) | 160 + 24 | 108 | 0 | 0 | 12594.58 | 3.355 |
-| `syn_rx_late_sample` (FIFOs 8/8/8, `RX_LATE_SAMPLE`) | 167 + 24 | 127 | 0 | 0 | 13188.90 | 3.514 |
+| Configuration | LUT¹ | LUTRAM¹ | FF¹ | CARRY4¹ | MUXF7/F8¹ | BRAM¹ | DSP¹ | Area² (µm²) | kGE³ |
+|---|---|---|---|---|---|---|---|---|---|
+| `syn_default` (FIFOs 8/8/8) | 265 | 24 | 116 | 11 | 22 | 0 | 0 | 12968.69 | 3.455 |
+| `syn_sim_basic` (FIFOs 4/8/8, prescaler reset 15) | 258 | 24 | 114 | 11 | 17 | 0 | 0 | 11573.60 | 3.083 |
+| `syn_sim_models` (FIFOs 4/4/4, prescaler reset 15) | 249 | 24 | 110 | 11 | 8 | 0 | 0 | 8810.95 | 2.347 |
+| `syn_fixed_prescaler` (FIFOs 8/8/8, prescaler fixed to 15) | 257 | 24 | 108 | 11 | 23 | 0 | 0 | 12594.58 | 3.355 |
+| `syn_rx_late_sample` (FIFOs 8/8/8, `RX_LATE_SAMPLE`) | 274 | 24 | 127 | 11 | 31 | 0 | 0 | 13188.90 | 3.514 |
 
-¹ Xilinx Artix-7 (LUT6), Yosys 0.33 `synth_xilinx -flatten -noiopad -noclkbuf`, before place and route: an estimate, Vivado may differ. LUT: LUTs as logic + LUTs as memory (`RAM32M`, the three FIFOs). An `INV` counts as a LUT, unless it only drives flip-flop control pins (clock, clock enable, set, reset), which Vivado absorbs.
+¹ Xilinx Artix-7 (LUT6), Yosys 0.33 `synth_xilinx -flatten -noiopad -noclkbuf`, before place and route: every cell of the netlist is counted, Vivado may differ. An `INV` counts as a `LUT1`: `synth_xilinx` puts one on the reset pin of each flip-flop with the active-low reset. The FIFO storage is in LUTRAM (`RAM32M`), not in BRAM.
 
-² SkyWater sky130 `sky130_fd_sc_hd`, typical corner (tt, 25 °C, 1.80 V), Yosys 0.33 `synth` + `dfflibmap` + `abc -liberty`: standard-cell area only, no timing constraint, no buffering, clock tree or placement; memories become flip-flops (no SRAM macro).
+² SkyWater sky130 `sky130_fd_sc_hd`, typical corner (tt, 25 °C, 1.80 V), Yosys 0.33 `synth` + `dfflibmap` + `abc -liberty`: standard-cell area only, no timing constraint, no buffering, clock tree or placement; the FIFO storage becomes flip-flops (no SRAM macro).
 
 ³ Area in thousands of NAND2 gate equivalents (`sky130_fd_sc_hd__nand2_1` = 3.7536 µm²).
 

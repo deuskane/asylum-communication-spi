@@ -6,13 +6,13 @@
     <IP>.core (VLNV, targets, depends), mk/targets.txt, sim/, syn/, esw/.
   Sections, in this order:
     badges / title + one-line pitch / Overview / Features / Block Diagram /
-    Getting Started / Hardware Interfaces / Configuration /
+    Getting Started / Hardware Interfaces / Configuration / Resources /
     Theory of Operation / Registers / Programmer's Guide /
     Design Verification / Dependencies and Related IPs / License
   Rules:
     - English, short and factual: every statement backed by the sources.
     - No VLNV line: the version badge shows it.
-    - Badges: first line version, license; second line CI, lint, sim.
+    - Badges: first line version, license; second line CI, lint, sim, syn.
     - Block diagram and FSM: pages Overview and FSM of doc/<NAME>.drawio, exported to
       doc/<NAME>-Overview.png and doc/<NAME>-FSM.png (make -C doc).
     - Timing diagrams: WaveDrom source doc/<NAME>-<what>.json, rendered
@@ -30,6 +30,7 @@
 [![CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml/badge.svg)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 [![lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Flint.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 [![sim](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsim.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
+[![syn](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdeuskane%2Fasylum-communication-spi%2Fbadges%2Fsyn.json)](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml)
 
 # SPI master
 
@@ -45,12 +46,13 @@ Part of the [Asylum project](https://github.com/deuskane/asylum-project), a coll
 4. [Getting Started](#getting-started)
 5. [Hardware Interfaces](#hardware-interfaces)
 6. [Configuration](#configuration)
-7. [Theory of Operation](#theory-of-operation)
-8. [Registers](#registers)
-9. [Programmer's Guide](#programmers-guide)
-10. [Design Verification](#design-verification)
-11. [Dependencies and Related IPs](#dependencies-and-related-ips)
-12. [License](#license)
+7. [Resources](#resources)
+8. [Theory of Operation](#theory-of-operation)
+9. [Registers](#registers)
+10. [Programmer's Guide](#programmers-guide)
+11. [Design Verification](#design-verification)
+12. [Dependencies and Related IPs](#dependencies-and-related-ips)
+13. [License](#license)
 
 ## Overview
 
@@ -200,6 +202,24 @@ Generics of `sbi_SPI`:
 | `FILENAME_CMD` / `FILENAME_TX` / `FILENAME_RX` | string | `"dump_spi_cmd.txt"` / `"dump_spi_tx.txt"` / `"dump_spi_rx.txt"` | Simulation only: dump files of the accepted commands, sent and received bytes |
 
 The FIFO depths set most of the area of the IP.
+
+## Resources
+
+Figures of the `syn_*` targets (`make nonreg_syn`, see [Targets](#targets)): [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) with the generics of each configuration, synthesized by Yosys and its GHDL plugin; the reports are in the build directory of each target. FIFO depths as command / TX / RX.
+
+| Configuration | LUT¹ | FF¹ | BRAM¹ | DSP¹ | Area² (µm²) | kGE³ |
+|---|---|---|---|---|---|---|
+| `syn_default` (FIFOs 8/8/8) | 160 + 24 | 116 | 0 | 0 | 12968.69 | 3.455 |
+| `syn_sim_basic` (FIFOs 4/8/8, prescaler reset 15) | 155 + 24 | 114 | 0 | 0 | 11573.60 | 3.083 |
+| `syn_sim_models` (FIFOs 4/4/4, prescaler reset 15) | 150 + 24 | 110 | 0 | 0 | 8810.95 | 2.347 |
+| `syn_fixed_prescaler` (FIFOs 8/8/8, prescaler fixed to 15) | 160 + 24 | 108 | 0 | 0 | 12594.58 | 3.355 |
+| `syn_rx_late_sample` (FIFOs 8/8/8, `RX_LATE_SAMPLE`) | 167 + 24 | 127 | 0 | 0 | 13188.90 | 3.514 |
+
+¹ Xilinx Artix-7 (LUT6), Yosys 0.33 `synth_xilinx -flatten -noiopad -noclkbuf`, before place and route: an estimate, Vivado may differ. LUT: LUTs as logic + LUTs as memory (`RAM32M`, the three FIFOs). An `INV` counts as a LUT, unless it only drives flip-flop control pins (clock, clock enable, set, reset), which Vivado absorbs.
+
+² SkyWater sky130 `sky130_fd_sc_hd`, typical corner (tt, 25 °C, 1.80 V), Yosys 0.33 `synth` + `dfflibmap` + `abc -liberty`: standard-cell area only, no timing constraint, no buffering, clock tree or placement; memories become flip-flops (no SRAM macro).
+
+³ Area in thousands of NAND2 gate equivalents (`sky130_fd_sc_hd__nand2_1` = 3.7536 µm²).
 
 ## Theory of Operation
 
@@ -399,10 +419,11 @@ Flash model testbench (checks with `MODEL = s25fl512s`):
 | `sim_<model>` | `tb` | Other flash models (`at25df161`, `cy15b104qs`, `cy15v104qs`, `m25p40`, `m45pe80`, `s25fl064p`, `s35hl256t`): `read` and `fast_read` (24 checks) |
 | `lint_ghdl` | `asylum.sbi_SPI_wrapper` | GHDL `-Wall` analysis and elaboration of [syn/sbi_SPI_wrapper.vhd](syn/sbi_SPI_wrapper.vhd) |
 | `lint_ghdl_synth_<config>` | `asylum.sbi_SPI_wrapper` | `ghdl --synth` check (no latch, synthesizable) for 5 generic configurations: `default`, `sim_basic`, `sim_models`, `fixed_prescaler`, `rx_late_sample` |
+| `syn_<config>` | `asylum.sbi_SPI_wrapper` | Synthesis with Yosys, Artix-7 and sky130 (see [Resources](#resources)), same 5 configurations as `lint_ghdl_synth_<config>`: `syn_default`, `syn_sim_basic`, `syn_sim_models`, `syn_fixed_prescaler`, `syn_rx_late_sample` |
 
 The reference configuration of a testbench has a build-only base target and one target per scenario: one CI job per scenario, a failure is isolated. Every other configuration has one target that runs its whole list: the `TEST <i>/<N>` header names a failing scenario. FuseSoC replaces the `parameters` list of an inherited target, so each target repeats the generics of its configuration.
 
-Every `sim_*` and `lint_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM). The `sim` and `lint` badges count the passed and failed targets of the last run on `main`.
+Every `sim_*`, `lint_*` and `syn_*` target is a job of the [GitHub CI](https://github.com/deuskane/asylum-communication-spi/actions/workflows/ci.yml), run in the [asylum-env](https://github.com/deuskane/asylum-ci) image (GHDL, FuseSoC, UVVM, Yosys). The `sim`, `lint` and `syn` badges count the passed and failed targets of the last run on `main`.
 
 ### How to Run
 
@@ -414,6 +435,7 @@ make sim_basic_single            # one scenario, log in log/
 make sim_basic_late              # every scenario of a configuration
 make nonreg_sim                  # every sim_* target
 make nonreg_lint                 # every lint_* target
+make nonreg_syn                  # every syn_* target (Yosys, figures of Resources)
 make TARGETS_FILTER=^sim_s25 nonreg_sim
 ```
 
@@ -444,6 +466,7 @@ Outside the CI, GHDL writes a waveform `dut.fst`, and `sbi_SPI` writes the dumps
 | `asylum:utils:generators` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | regtool (register generator) and the CSR building blocks (`csr_reg`, `csr_fifo`) |
 | `asylum:utils:pkg` | [asylum-utils-pkg](https://github.com/deuskane/asylum-utils-pkg) | Common packages (`sbi_pkg`, ...); the testbenches need >= 1.10.0 (`string_pkg` lists of `TESTS_LIST`) |
 | `asylum:utils:ghdl_synth` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | `ghdl --synth` check of the `lint_ghdl_synth_*` targets |
+| `asylum:utils:yosys_synth` | [asylum-utils-generators](https://github.com/deuskane/asylum-utils-generators) | Yosys synthesis of the `syn_*` targets (Artix-7 and sky130) |
 | `asylum:target:techmap` | [asylum-target-techmap](https://github.com/deuskane/asylum-target-techmap) | Technology cells, model testbench |
 | `bitvis:verification:uvvm` | [UVVM](https://github.com/UVVM/UVVM) | Verification library and SBI VIP |
 | `fmf:memory:flash_nor` | this repository | SPI flash models |
